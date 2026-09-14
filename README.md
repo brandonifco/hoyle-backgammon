@@ -58,6 +58,18 @@ the page cited. That last one is what the retracted map got wrong.
 | Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |
 | Continue with both players wholly suspended | `UnsupportedInteraction` | `full-table-suspension` |
 
+**This table is now a fact rather than a claim.** The gate derives it from the map and checks
+it both ways: every unresolved result in `src/` must be the one the correspondence table of
+`rules-factory/docs/corpus-map.md` predicts from its entry's fields, and every entry whose
+fields predict an unresolved reason must have a code path that returns it. A result the map
+does not predict means something was implemented without being mapped; an entry predicting a
+result no code returns means the map asserts what the code disproves. The one row it cannot
+check is this table's last line: correspondence row 7 is about a *pair* of entries and about
+interactions the map does not enumerate, so that line is verified only for its place in the
+row order — row 7 is reached only when rows 1-6 do not match — and for its entry being
+implemented, as row 7 requires. The gate prints that limit, and the rows this map gives it no
+instance of, on every run.
+
 Every one of these is now sanctioned by the map, which two of them were not. `game-value` was
 recorded `clarity: clear` -- asserting the corpus determines one answer for every input --
 while this line declined; it is `ambiguous` with `fate: unresolved` now, and its `question`
