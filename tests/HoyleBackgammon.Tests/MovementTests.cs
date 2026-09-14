@@ -210,6 +210,38 @@ public class EnterFromBarTests
         Assert.NotEmpty(plays);
     }
 
+    // The one case on which the corpus's two statements of where a man may be played
+    // disagree, and the only test in this repository that distinguishes them. White has a man
+    // up and two of his own men on his pip 24 -- the ace point in Black's inner table, which
+    // is where the corpus's own starting arrangement puts them, and which an ace enters on.
+    private static Position WithOwnPointInTheAdversarysHomeTable() => Board.Of(
+        Board.Men().At(Geometry.BarPip, 1).At(24, 2).RestAt(6),
+        Board.Men().RestAt(13));
+
+    [Fact]
+    public void Entry_is_permitted_on_a_point_the_entering_players_own_men_hold()
+    {
+        // legal-destination admits a point "occupied by one or more men of the player";
+        // enter-from-bar, three sentences later, admits only "a vacant point or blot". The
+        // destination here is neither vacant nor a blot, so under the strict reading no move
+        // exists and this test fails. rules-factory/docs/decisions/0006 rules that the
+        // general qualification governs entry and the entry sentence is shorthand for it.
+        var position = WithOwnPointInTheAdversarysHomeTable();
+
+        Assert.Equal(Quarter.AdversaryInner, Geometry.QuarterOf(24));
+        Assert.True(position.HasMadePoint(Player.White, 24));
+        Assert.False(position.HasBlot(Player.White, 24));
+        Assert.Equal(0, position.AdversaryMen(Player.White, 24));
+
+        var move = Assert.Single(Movement.MovesForDie(position, Player.White, 1));
+
+        Assert.Equal(Geometry.BarPip, move.From);
+        Assert.Equal(24, move.To);
+        Assert.Equal(MoveKind.Entry, move.Kind);
+        Assert.False(move.TakesUpBlot);
+        Assert.Equal(3, position.Apply(Player.White, Geometry.BarPip, 24).Men(Player.White, 24));
+    }
+
     [Fact]
     public void A_blot_hit_begins_its_journey_anew_however_far_advanced()
     {
@@ -264,6 +296,43 @@ public class FullTableSuspensionTests
         var move = Assert.Single(Movement.MovesForDie(position, Player.White, 6));
         Assert.Equal(19, move.To);
         Assert.True(move.TakesUpBlot);
+    }
+
+    [Fact]
+    public void A_point_held_by_the_entering_players_own_men_does_not_make_the_table_full()
+    {
+        // "Completely full--i.e., each point occupied by two or more men" is unqualified, and
+        // taken literally this table answers it: all six of Black's home points carry two or
+        // more men. One of them carries WHITE's. rules-factory/docs/decisions/0006 rules that
+        // "full" means full of the adverse player's men, which is the only reading consistent
+        // with the general rule governing entry -- a point a man may enter on cannot be one
+        // that shuts him out. Under the literal reading White is suspended and this fails.
+        // Black holds his own pips 2 through 6 (White's 23 down to 19); White holds his 24,
+        // which is Black's ace point.
+        var position = Board.Of(
+            Board.Men().At(Geometry.BarPip, 1).At(24, 2).RestAt(6),
+            Board.Men().At(2, 2).At(3, 2).At(4, 2).At(5, 2).At(6, 2).RestAt(13));
+
+        // Every point of the table is occupied by two or more men, whosever they are.
+        for (int pip = 19; pip <= 24; pip++)
+        {
+            Assert.True(
+                position.Men(Player.White, pip) + position.AdversaryMen(Player.White, pip) >= 2,
+                $"pip {pip} is not occupied by two or more men");
+        }
+
+        Assert.True(Movement.MustEnterFromBar(position, Player.White));
+        Assert.False(Movement.IsWhollySuspended(position, Player.White));
+
+        // And the open point is the one his own men hold, entered with an ace. Every other
+        // number is refused by two of Black's men, which is what leaves the ace alone to
+        // carry the reading.
+        var move = Assert.Single(Movement.MovesForDie(position, Player.White, 1));
+        Assert.Equal(24, move.To);
+        for (int die = 2; die <= 6; die++)
+        {
+            Assert.Empty(Movement.MovesForDie(position, Player.White, die));
+        }
     }
 
     [Fact]

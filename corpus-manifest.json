@@ -18,14 +18,14 @@
     {
       "path": "corpus-map.json",
       "sourceId": "hoyle-1909",
-      "contentHash": "92468053c7978e03a0c011acba4fabed0eef1ec76256ccd2caf4c643e35b187c",
+      "contentHash": "787aa20efe4a47194144f366b6938efa25578029bd8a64cb41528328d285b7fc",
       "hashDerivation": "file-bytes-as-committed",
       "upstream": {
         "repository": "rules-factory",
         "path": "examples/hoyle-backgammon/corpus-map.json",
-        "commit": "de59930"
+        "commit": "7d13c27"
       },
-      "divergesFromUpstream": "This copy is the upstream map with two engine-authored fields added to every entry the engine implements: status, raised from 'mapped' to 'implemented', and implementedIn, naming the ruleset and version that implements it. Two entries additionally carry an engine-authored note (must-play-whole-throw, stake-multiplier) recording that they are implemented and decline a stated case, which status has no value for -- finding 12 in MAP-FINDINGS.md. Nothing else differs: no locator, evidence, clarity, scope, dependsOn, gatedBy or ambiguity here has been edited, and corrections this build found are recorded in MAP-FINDINGS.md rather than applied.",
+      "divergesFromUpstream": "This copy is the upstream map with exactly two engine-authored fields, and nothing else: status, raised from 'mapped' to 'implemented' on every entry the engine implements, and implementedIn, naming the ruleset and version that implements it. Those are build facts, which only the engine can know; issue #17 in rules-factory names them as the legitimate divergence. Everything else matches the upstream bytes field for field -- locator, kind, scope, clarity, dependsOn, gatedBy, evidence, ambiguity, beyondAdapter and note -- and the two engine-authored notes that used to sit on must-play-whole-throw and stake-multiplier are gone: decision 0005 decoupled status from ambiguity.fate, so there is no longer a shortfall for a note to apologise for, and both entries' notes now say the same thing in both copies. Corrections this build found are recorded in MAP-FINDINGS.md and accepted upstream, never applied here alone.",
       "whyPinned": "The map is the oracle scripts/validate.sh validates the code against, and the engine writes into it. Unpinned, an edit to the oracle would look the same as an edit to the code passing."
     }
   ]

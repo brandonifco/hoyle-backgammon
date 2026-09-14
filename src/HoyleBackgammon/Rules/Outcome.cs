@@ -77,18 +77,22 @@ public static class Outcome
     /// <c>{bar 1, off 3}</c> is a backgammon by the corpus's words and has borne off three
     /// men. What does overlap is a loser who has borne off nothing <em>and</em> has a man up
     /// or in the winner's home table: he answers the gammon condition and the backgammon
-    /// condition both, and that is the case an ordering had to be chosen for. The map records
-    /// this entry <c>clarity: clear</c> and does not record that a choice was made; see
-    /// finding 4 in <c>MAP-FINDINGS.md</c>.
+    /// condition both, and that is the case an ordering had to be chosen for. The map's
+    /// <c>note</c> records that the choice was made; its <c>ambiguity.question</c> does not
+    /// name it, because the ordering the corpus "plainly intends" is not the case this rule
+    /// declines. See finding 4 in <c>MAP-FINDINGS.md</c>.
     /// </para>
     /// <para>
-    /// The three are not exhaustive, which the map does not record. A loser who has borne off
-    /// a man, been taken up, re-entered and run the man clear of the winner's home table
-    /// satisfies none of them: he has begun to bear off, so it is not a gammon; his men are
-    /// not all home, so it is not a hit; he is neither up nor in the winner's home table, so
-    /// it is not a backgammon. That case returns
-    /// <see cref="UnresolvedReason.RequiresInterpretation"/>. See finding 4 in
-    /// <c>MAP-FINDINGS.md</c>: the entry is recorded <c>clarity: clear</c> and is not.
+    /// The three are not exhaustive. A loser who has borne off a man, been taken up,
+    /// re-entered and run the man clear of the winner's home table satisfies none of them: he
+    /// has begun to bear off, so it is not a gammon; his men are not all home, so it is not a
+    /// hit; he is neither up nor in the winner's home table, so it is not a backgammon. That
+    /// case returns <see cref="UnresolvedReason.RequiresInterpretation"/>, and it is the one
+    /// case this rule declines: the entry is <c>clarity: ambiguous</c> with
+    /// <c>fate: unresolved</c> and its <c>question</c> names exactly this finish. It used to
+    /// be recorded <c>clarity: clear</c> while this line declined — the map saying the case
+    /// could not happen while the engine handled it — which is finding 4 in
+    /// <c>MAP-FINDINGS.md</c>.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentException">If <paramref name="winner"/> has not in fact won.</exception>
@@ -144,52 +148,46 @@ public static class Outcome
     }
 
     /// <summary>
-    /// What the result pays, as a multiple of the single stake.
+    /// What the result pays, as a multiple of the single stake, under the multiple the players
+    /// agreed for a backgammon.
     /// </summary>
     /// <remarks>
-    /// <see cref="MapEntries.StakeMultiplier"/>: a hit is the single stake, a gammon "double
-    /// the agreed stake", and a backgammon "either thrice or four times (as may have been
-    /// agreed)". The corpus delegates the last figure to the players, so the engine declines
-    /// rather than picking one. Callers who have agreed a figure pass it to
-    /// <see cref="Pays(GameValue, int)"/>.
+    /// <para>
+    /// <see cref="MapEntries.StakeMultiplier"/> states all three figures: a hit is the single
+    /// stake, a gammon "double the agreed stake", and a backgammon "either thrice or four
+    /// times (as may have been agreed) the amount of the single stake". Only the last is
+    /// delegated, and the corpus names the decider, so it is not a gap. It is
+    /// <see cref="MapEntries.AgreedBackgammonMultiple"/>, an assertion of its own, and this
+    /// rule depends on it — which is why the parameter is required rather than optional and
+    /// why there is no overload that does without it. An engine that returned
+    /// <see cref="UnresolvedReason.RequiresInterpretation"/> here would be declining a job the
+    /// corpus gave it the means to do.
+    /// </para>
+    /// <para>
+    /// The result carries the agreement back out (<see cref="StakeDue.Agreement"/>) for the
+    /// same reason a <see cref="GameRecord"/> carries the position it was played from: an
+    /// asserted input that vanishes into a number cannot be attributed afterwards. It carries
+    /// it for a hit and a gammon too, which the agreement does not change. There used to be a
+    /// one-argument overload that declined a backgammon; it was removed with the map's
+    /// reclassification — a source-breaking change, recorded in
+    /// <c>rules-factory/docs/decisions/0005</c>.
+    /// </para>
     /// </remarks>
-    public static Resolution<int> Pays(GameValue value) => value switch
+    /// <param name="value">The kind of win.</param>
+    /// <param name="agreed">The players' agreement. Demanded, never inferred.</param>
+    /// <exception cref="ArgumentNullException">If <paramref name="agreed"/> is null.</exception>
+    public static StakeDue Pays(GameValue value, AgreedBackgammonMultiple agreed)
     {
-        GameValue.Hit => Resolution<int>.FromValue(1),
-        GameValue.Gammon => Resolution<int>.FromValue(2),
-        _ => Resolution<int>.FromUnresolved(new UnresolvedResult(
-            UnresolvedReason.RequiresInterpretation,
-            "settle whether a backgammon pays thrice or four times the single stake",
-            MapEntries.StakeMultiplier.Locator)),
-    };
+        ArgumentNullException.ThrowIfNull(agreed);
 
-    /// <summary>
-    /// What the result pays, given the figure the players agreed for a backgammon.
-    /// </summary>
-    /// <remarks>
-    /// The agreement is the players', not the engine's, so it is supplied rather than
-    /// inferred. The corpus does bound it: "either thrice or four times", and nothing else.
-    /// </remarks>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// If <paramref name="agreedForBackgammon"/> is neither three nor four.
-    /// </exception>
-    public static int Pays(GameValue value, int agreedForBackgammon)
-    {
-        if (agreedForBackgammon is not (3 or 4))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(agreedForBackgammon),
-                agreedForBackgammon,
-                $"a backgammon pays thrice or four times the single stake and nothing else "
-                + $"[{MapEntries.StakeMultiplier.Locator}].");
-        }
-
-        return value switch
+        int multiple = value switch
         {
             GameValue.Hit => 1,
             GameValue.Gammon => 2,
-            _ => agreedForBackgammon,
+            _ => agreed.Multiple,
         };
+
+        return new StakeDue(value, multiple, agreed);
     }
 
     /// <summary>

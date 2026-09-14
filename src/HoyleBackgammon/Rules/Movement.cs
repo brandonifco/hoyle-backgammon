@@ -37,6 +37,15 @@ public static class Movement
     /// is either vacant or occupied by one or more men of the player, or by one man only of
     /// the adversary." Two or more adversary men — a point the adversary has made,
     /// <see cref="MapEntries.MadePoint"/> — refuses the move.
+    /// <para>
+    /// This governs entry from the bar as well, which is a <em>decision</em> and not a reading
+    /// the corpus forces. Three sentences later <see cref="MapEntries.EnterFromBar"/> gives an
+    /// entering man only "a vacant point or blot", dropping this rule's second arm — a point
+    /// the player's own men hold. The corpus says it twice, differently, and
+    /// <c>rules-factory/docs/decisions/0006</c> rules that the general qualification governs
+    /// and the entry sentence is shorthand for it. Both entries are <c>clarity: ambiguous</c>
+    /// with <c>fate: decision</c> naming that record.
+    /// </para>
     /// </remarks>
     public static bool IsPermittedDestination(Position position, Player player, int pip)
     {
@@ -75,6 +84,16 @@ public static class Movement
     /// observable: a suspended player does not throw, so the dice are not consumed and the
     /// next throw from a seeded generator belongs to his adversary. Treating suspension as an
     /// empty turn would change every subsequent throw in the game.
+    /// </para>
+    /// <para>
+    /// <b>"Full" means full of the <em>adversary's</em> men</b>, which the corpus's "each
+    /// point occupied by two or more men" does not say — read literally, two of the entering
+    /// player's own men would shut the table against him. That is a decision, not the only
+    /// reading: <c>rules-factory/docs/decisions/0006</c>, the same record that rules the
+    /// general destination rule governs entry, and necessarily so, since a point a man may
+    /// enter on cannot be one that shuts him out. Hence
+    /// <see cref="Position.HasMadePoint"/> against the <em>adversary</em> below, and not a
+    /// count of whoever's men stand there.
     /// </para>
     /// </remarks>
     public static bool IsWhollySuspended(Position position, Player player)

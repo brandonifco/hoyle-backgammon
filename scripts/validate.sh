@@ -243,6 +243,230 @@ for p in problems:
 sys.exit(1 if problems else 0)
 PY
 
+# The step above compares two spellings of the same promise -- id, name, citation -- and would
+# pass on a map that contradicted the engine in every other field. This one makes the stronger
+# claim rules-factory/docs/corpus-map.md calls "the first thing the factory should enforce once
+# it exists": that an engine's honest answer about what it cannot do is DERIVABLE from its map.
+# The correspondence table there, ordered and first-match-wins since factory decision 0005,
+# turns each entry's fields into a prediction of the UnresolvedReason the engine returns for it.
+# Both directions are failures. A reason the engine can return whose entry predicts a different
+# one -- or none -- means something was implemented without being mapped; an entry predicting a
+# reason no code path returns means the map asserts something the code disproves. The check
+# prints, every run, the rows it could not evaluate and the rows this map gives it no instance
+# of; a gate is trusted, so it must not read as though it proved more than it did.
+run "every unresolved reason and every map entry agree with the correspondence table" python3 - <<'PYCORR'
+import json
+import pathlib
+import re
+import sys
+
+# The kernel's closed UnresolvedReason vocabulary, transcribed from the correspondence table
+# rather than read out of RulesKernel: an expectation taken from the thing under test proves
+# nothing. A reason the kernel gains and this list has not is caught below as unreadable.
+REASONS = {
+    "OutsideCurrentScope",
+    "UnsupportedRule",
+    "MissingRulesData",
+    "RequiresInterpretation",
+    "UnsupportedInteraction",
+}
+
+
+def first_matching_row(entry, by_id):
+    """The correspondence table of rules-factory/docs/corpus-map.md, in order.
+
+    First match wins (factory decision 0005): not-in-scope and not-built dominate, and the
+    remaining rows describe what a *built* entry returns. Returns the row, the reason it
+    predicts (None where the row predicts no decline), and why it fired.
+
+    Row 7 is deliberately absent -- see ROW7.
+    """
+    if entry.get("scope") == "out":
+        return 1, "OutsideCurrentScope", "scope: out"
+    if entry.get("status") in ("mapped", "blocked"):
+        return 2, "UnsupportedRule", f"status: {entry.get('status')} -- read, not built"
+    if "definedElsewhere" in entry:
+        return 3, "MissingRulesData", "carries definedElsewhere"
+    if "beyondAdapter" in entry:
+        return 4, "MissingRulesData", "carries beyondAdapter"
+    if entry.get("kind") == "operation":
+        for dep in entry.get("dependsOn") or []:
+            target = by_id.get(dep)
+            if target and target.get("kind") == "value" and target.get("status") != "implemented":
+                return 5, "MissingRulesData", f"operation whose value dependency {dep} is unimplemented"
+    if (entry.get("ambiguity") or {}).get("fate") == "unresolved":
+        return 6, "RequiresInterpretation", "ambiguity.fate: unresolved"
+    if entry.get("kind") == "assertion":
+        return 8, None, "kind: assertion -- the engine demands the value and proceeds"
+    # Rows 1-8 are not exhaustive by design: a built, clear, unambiguous rule matches none of
+    # them, because the engine simply answers it. That is not a failure -- but it does predict
+    # that no code path declines citing the entry, and the map -> code direction checks that.
+    return None, None, "matches no row: a built, clear, unambiguous rule the engine answers"
+
+
+ROW7 = (
+    "row 7 (two implemented entries with no entry for their combination -> "
+    "UnsupportedInteraction) is a fact about a PAIR, and about interactions the map does not "
+    "enumerate. No per-entry predicate can express it, so it is not evaluated. What IS checked "
+    "for an UnsupportedInteraction site is row 7's PLACE in the order -- it is reached only "
+    "when rows 1-6 do not match -- and that its entry is implemented, as row 7 requires"
+)
+
+problems = []
+
+mapped = json.loads(pathlib.Path("corpus-map.json").read_text(encoding="utf-8"))
+by_id = {e["id"]: e for e in mapped["entries"]}
+
+# --- what the engine can actually return ------------------------------------------------
+#
+# Every `new UnresolvedResult(...)` in src/, paired with the MapEntries property it cites.
+# Doc comments come out first: several of them name a reason in prose, and a sentence is not
+# a return.
+SITE = re.compile(
+    r"new UnresolvedResult\(\s*UnresolvedReason\.(\w+)\s*,(?:(?!new UnresolvedResult).)*?"
+    r"MapEntries\.(\w+)\.Locator\s*\)")
+
+sites = []          # (file, reason, MapEntries property)
+constructions = 0   # every `new UnresolvedResult(` on disk, readable by the regex or not
+for source in sorted(pathlib.Path("src").rglob("*.cs")):
+    if "obj" in source.parts:
+        continue
+    code = " ".join(
+        line for line in source.read_text(encoding="utf-8").splitlines()
+        if not line.lstrip().startswith("///"))
+    code = re.sub(r"\s+", " ", code)
+    constructions += len(re.findall(r"new UnresolvedResult\(", code))
+    sites.extend(
+        (str(source), m.group(1), m.group(2)) for m in SITE.finditer(code))
+
+# A site this check cannot read is a site it cannot vouch for, and the code -> map direction
+# claims to cover every one of them. So the count is asserted rather than assumed.
+if len(sites) != constructions:
+    problems.append(
+        f"src/ constructs UnresolvedResult {constructions} time(s) but only {len(sites)} of "
+        "them have the shape this check reads (a literal UnresolvedReason and a "
+        "MapEntries.<Entry>.Locator). The unread one is unchecked: give it that shape, or "
+        "teach this check the new one.")
+
+# MapEntries property -> map entry id, so a citation in code resolves to a row of the map.
+entries_source = re.sub(
+    r"\s+", " ", pathlib.Path("src/HoyleBackgammon/MapEntries.cs").read_text(encoding="utf-8"))
+declared = dict(re.findall(
+    r"public static MapEntry (\w+) \{ get; \} = Entry\( ?\"([^\"]+)\"", entries_source))
+
+if not sites:
+    problems.append("no UnresolvedResult site was found in src/ at all, so nothing was checked")
+if not declared:
+    problems.append("no MapEntry declaration was found in MapEntries.cs, so nothing was checked")
+
+# --- code -> map: every reason the engine can return, against its cited entry -------------
+
+verified_code, partial = [], []
+cited_by_reason = {}
+for path, reason, prop in sites:
+    where = f"{path}: {reason} citing MapEntries.{prop}"
+    if reason not in REASONS:
+        problems.append(
+            f"{where}: {reason!r} is outside the UnresolvedReason vocabulary the "
+            "correspondence table is written against")
+        continue
+    entry_id = declared.get(prop)
+    if entry_id is None:
+        problems.append(f"{where}: MapEntries declares no entry named {prop}")
+        continue
+    entry = by_id.get(entry_id)
+    if entry is None:
+        problems.append(
+            f"{where}: cites map entry {entry_id!r}, which corpus-map.json does not carry -- "
+            "something was implemented without being mapped")
+        continue
+    cited_by_reason.setdefault(reason, set()).add(entry_id)
+
+    row, predicted, why = first_matching_row(entry, by_id)
+    if reason == "UnsupportedInteraction":
+        if row is not None and row != 8:
+            problems.append(
+                f"{where}: row 7 is reached only when rows 1-6 do not match, but {entry_id} "
+                f"matches row {row} ({why}), which predicts {predicted}")
+        elif entry.get("status") != "implemented":
+            problems.append(
+                f"{where}: row 7 is about two IMPLEMENTED entries, and {entry_id} is status "
+                f"{entry.get('status')!r}")
+        else:
+            partial.append(f"{entry_id} in {path}")
+        continue
+    if row is None:
+        problems.append(
+            f"{where}: {entry_id} matches no correspondence row -- the map says the engine "
+            f"answers it ({why}) -- yet the code declines")
+    elif predicted is None:
+        problems.append(
+            f"{where}: {entry_id} matches row {row} ({why}), which says the engine returns "
+            "nothing and demands the value")
+    elif predicted != reason:
+        problems.append(
+            f"{where}: {entry_id} matches row {row} ({why}), which predicts {predicted}")
+    else:
+        verified_code.append(f"{entry_id} (row {row} -> {reason})")
+
+# --- map -> code: every reason the map predicts, against the engine -----------------------
+
+verified_map, rows_seen = [], set()
+for entry in mapped["entries"]:
+    row, predicted, why = first_matching_row(entry, by_id)
+    if row is not None:
+        rows_seen.add(row)
+    cited = {r for r, ids in cited_by_reason.items() if entry["id"] in ids}
+    # The map cannot predict an UnsupportedInteraction, row 7 being unevaluable, so a site
+    # returning one is evidence neither for nor against its entry in this direction.
+    cited.discard("UnsupportedInteraction")
+
+    if predicted is None:
+        if cited:
+            problems.append(
+                f"{entry['id']}: the map says the engine answers it ({why}) but the code "
+                f"returns {', '.join(sorted(cited))} citing it -- the map asserts something "
+                "the code disproves")
+        continue
+
+    # Where the entry names its own reason, it must name the one its row predicts; otherwise
+    # the map contradicts the table before the code is even consulted.
+    named = (entry.get("ambiguity") or {}).get("unresolvedReason")
+    if named is not None and named != predicted:
+        problems.append(
+            f"{entry['id']}: ambiguity.unresolvedReason is {named!r}, but the entry matches "
+            f"row {row} ({why}), which predicts {predicted}")
+
+    if predicted not in cited:
+        problems.append(
+            f"{entry['id']}: matches row {row} ({why}), so the engine must be able to return "
+            f"{predicted} citing it, and no code path does")
+    else:
+        verified_map.append(f"{entry['id']} (row {row} -> {predicted})")
+    for other in sorted(cited - {predicted}):
+        problems.append(
+            f"{entry['id']}: matches row {row} ({why}), which predicts {predicted}, but the "
+            f"code also returns {other} citing it")
+
+for p in problems:
+    print(f"error: {p}", file=sys.stderr)
+if problems:
+    sys.exit(1)
+
+unexercised = sorted({1, 2, 3, 4, 5, 6, 8} - rows_seen)
+print(
+    f"{len(sites)} unresolved results in src/, all of them read, against "
+    f"{len(mapped['entries'])} map entries, both directions.\n"
+    f"     code -> map: {len(verified_code)} fully verified -- {'; '.join(verified_code)}.\n"
+    f"     map -> code: {len(verified_map)} verified -- {'; '.join(verified_map)}; every "
+    f"other entry predicts no unresolved reason and no code path declines citing it.\n"
+    f"     NOT VERIFIED: {ROW7}. {len(partial)} site(s) so checked: "
+    f"{'; '.join(partial) or 'none'}.\n"
+    f"     NOT EXERCISED: no entry in this map reaches row(s) "
+    f"{', '.join(str(r) for r in unexercised) or '(none)'}. Those rows are transcribed above "
+    f"and this map proves nothing about them.")
+PYCORR
+
 # BeyondAdapter's remarks say in so many words that nothing inside this engine calls it: the
 # handedness of a physical board is a fact no player-relative rule can want. A decline nothing
 # reaches is honest only while the code saying so is true, and that sentence would otherwise

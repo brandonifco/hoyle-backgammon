@@ -91,43 +91,100 @@ public class GameValueTests
     }
 }
 
+/// <summary>
+/// stake-multiplier and the assertion it depends on. The corpus names the players as the
+/// decider for a backgammon, so the engine demands the figure rather than declining it —
+/// rules-factory/docs/decisions/0005, and finding 9 in MAP-FINDINGS.md.
+/// </summary>
 public class StakeTests
 {
+    private static AgreedBackgammonMultiple Agreed(int multiple) =>
+        new(multiple, AgreedBy: "StakeTests, standing in for the players");
+
     [Fact]
     public void A_hit_pays_the_single_stake() =>
-        Assert.Equal(1, Assert.IsType<Resolution<int>.Resolved>(Outcome.Pays(GameValue.Hit)).Value);
+        Assert.Equal(1, Outcome.Pays(GameValue.Hit, Agreed(4)).Multiple);
 
     [Fact]
     public void A_gammon_pays_double() =>
-        Assert.Equal(2, Assert.IsType<Resolution<int>.Resolved>(Outcome.Pays(GameValue.Gammon)).Value);
-
-    [Fact]
-    public void A_backgammon_is_whatever_the_players_agreed_and_the_engine_declines_to_guess()
-    {
-        var unresolved = Assert.IsType<Resolution<int>.Unresolved>(Outcome.Pays(GameValue.Backgammon));
-
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
-        Assert.Equal(MapEntries.StakeMultiplier.Locator, unresolved.Result.Locator);
-    }
+        Assert.Equal(2, Outcome.Pays(GameValue.Gammon, Agreed(4)).Multiple);
 
     [Theory]
     [InlineData(3)]
     [InlineData(4)]
-    public void Given_the_agreement_a_backgammon_pays_it(int agreed) =>
-        Assert.Equal(agreed, Outcome.Pays(GameValue.Backgammon, agreed));
+    public void A_backgammon_pays_the_multiple_the_players_agreed(int agreed) =>
+        Assert.Equal(agreed, Outcome.Pays(GameValue.Backgammon, Agreed(agreed)).Multiple);
 
     [Theory]
     [InlineData(2)]
     [InlineData(5)]
     [InlineData(0)]
-    public void The_corpus_bounds_the_agreement_to_thrice_or_four_times(int agreed) =>
-        Assert.Throws<ArgumentOutOfRangeException>(() => Outcome.Pays(GameValue.Backgammon, agreed));
+    [InlineData(-3)]
+    public void The_corpus_bounds_the_agreement_to_thrice_or_four_times(int agreed)
+    {
+        // "Either thrice or four times (as may have been agreed)" delegates the figure and
+        // bounds it in the same breath. The bound is a rule the corpus states, so it survives
+        // into the type rather than being discarded with the delegation.
+        var error = Assert.Throws<ArgumentOutOfRangeException>(
+            () => new AgreedBackgammonMultiple(agreed, AgreedBy: "StakeTests"));
+
+        Assert.Contains(
+            MapEntries.AgreedBackgammonMultiple.Locator.Citation,
+            error.Message,
+            StringComparison.Ordinal);
+    }
 
     [Fact]
     public void An_agreement_does_not_change_what_a_hit_or_a_gammon_pays()
     {
-        Assert.Equal(1, Outcome.Pays(GameValue.Hit, 4));
-        Assert.Equal(2, Outcome.Pays(GameValue.Gammon, 4));
+        Assert.Equal(1, Outcome.Pays(GameValue.Hit, Agreed(3)).Multiple);
+        Assert.Equal(1, Outcome.Pays(GameValue.Hit, Agreed(4)).Multiple);
+        Assert.Equal(2, Outcome.Pays(GameValue.Gammon, Agreed(3)).Multiple);
+        Assert.Equal(2, Outcome.Pays(GameValue.Gammon, Agreed(4)).Multiple);
+    }
+
+    [Theory]
+    [InlineData(GameValue.Hit)]
+    [InlineData(GameValue.Gammon)]
+    [InlineData(GameValue.Backgammon)]
+    public void The_agreement_is_recorded_alongside_the_outcome(GameValue value)
+    {
+        // Demand, attribute, record alongside the outcome, never infer. The first three are
+        // the three assertions below; the fourth is that there is no overload without it.
+        var agreement = new AgreedBackgammonMultiple(
+            AgreedBackgammonMultiple.FourTimes,
+            AgreedBy: "the two players, before the first game of the rubber",
+            Justification: MapEntries.AgreedBackgammonMultiple.Locator);
+
+        var due = Outcome.Pays(value, agreement);
+
+        Assert.Equal(value, due.Value);
+        Assert.Same(agreement, due.Agreement);
+        Assert.Equal(
+            "the two players, before the first game of the rubber", due.Agreement.AgreedBy);
+        Assert.Equal(MapEntries.AgreedBackgammonMultiple.Locator, due.Agreement.Justification);
+    }
+
+    [Fact]
+    public void An_agreement_nobody_is_answerable_for_is_refused()
+    {
+        Assert.Throws<ArgumentNullException>(() => new AgreedBackgammonMultiple(3, null!));
+        Assert.Throws<ArgumentException>(() => new AgreedBackgammonMultiple(3, "   "));
+    }
+
+    [Fact]
+    public void The_figure_is_demanded_and_never_inferred() =>
+        Assert.Throws<ArgumentNullException>(() => Outcome.Pays(GameValue.Backgammon, null!));
+
+    [Fact]
+    public void An_uncited_agreement_says_so_rather_than_implying_a_source()
+    {
+        // Two people at a board have nothing to cite, and the record should not read as
+        // though they did.
+        Assert.Contains(
+            "uncited",
+            new AgreedBackgammonMultiple(3, "two players").ToString(),
+            StringComparison.Ordinal);
     }
 }
 

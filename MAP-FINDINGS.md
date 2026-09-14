@@ -23,6 +23,13 @@ This repository's copy of the map is the corrected one; see
 are kept as written rather than rewritten into the present tense, because a log of what a
 build found is worth less if it is edited to agree with the outcome.
 
+**Six more were accepted in a second round**, driven by the factory's decisions
+`0005-a-field-earns-its-place-by-being-checkable` and
+`0006-the-general-rule-governs-entry-and-full-means-adversely-full`: 4, 9, 11, 12, 13 and 14.
+Two of those — 11 and 14 — were findings where the map was *right*, and what the second round
+added is a record rather than a correction. Same convention: the finding stands as written,
+with what was accepted appended.
+
 ---
 
 ## 1. `starting-position` is not beyond the adapter. It is stated in prose. — **map at fault**
@@ -153,6 +160,17 @@ corpus plainly means the larger name to win and the engine tests backgammon firs
 right all along; only the argument for it was wrong. The entry's `clear` still does not record
 that an ordering had to be chosen.
 
+**Accepted; the map is corrected.** `game-value` is `clarity: ambiguous` with
+`fate: unresolved` and `unresolvedReason: RequiresInterpretation`, and its `question` names the
+uncovered finish exactly. It was the live violation of the correspondence table — an entry
+asserting the corpus determines one answer for every input, while `Outcome.ValueOf` returned
+`RequiresInterpretation` citing it — and the first entry a check of that table would have
+failed on. The declining case ships
+`GameValueTests.The_three_named_results_do_not_cover_every_finish`, which this section already
+named. The second, smaller thing is recorded in the entry's `note` rather than in its
+`question`: the ordering is a choice the corpus makes plainly enough to bake in, so it is not
+what the entry declines.
+
 ---
 
 ## 5. `board-tables` depends on `starting-position`, which is declined — **map at fault**
@@ -259,6 +277,24 @@ implements the note, taking the agreed figure as demanded, attributed input and 
 three or four — which is itself a rule the corpus states and which the `RequiresInterpretation`
 reading throws away.
 
+**Accepted; the map is corrected, and this is the finding that moved the schema.** Factory
+decision `0005` rules that a judgement the corpus deliberately delegates is `kind: assertion`
+— and that the standard is an **entry of its own**, with the rule that consumes it depending
+on it, because `kind` is entry-level and this entry is not only the delegation. It states two
+figures the corpus fixes outright. So it split: `agreed-backgammon-multiple` (`kind:
+assertion`, `clarity: clear`) is the delegated standard, and `stake-multiplier` is
+`clarity: clear` with no `ambiguity` block, depending on it.
+
+The engine changed with it, further than "an overload already anticipates it" suggested.
+`Outcome.Pays(GameValue)` is **gone** — a source-breaking removal from a shipped public type
+with tests on it, and the right outcome: under the correspondence table's row 8 an assertion is
+a parameter, not a failure to resolve, so an overload that declines what the corpus delegated
+is not a second option but a wrong one. `Pays(GameValue, int)` is gone too. A bare `int`
+satisfied *demand* and *never infer* and neither of the other two obligations an assertion
+carries: `AgreedBackgammonMultiple` attributes the figure and bounds it, and `StakeDue` records
+it alongside the outcome. The shape is `AssertedPosition`'s, which had already answered the
+same question for a position.
+
 ---
 
 ## 10. `throw-two-dice`'s evidence is wrong — **map at fault, evidence**
@@ -291,6 +327,19 @@ Recorded as a map finding rather than only an engine behaviour because the corre
 table makes the map answerable for it: an engine's honest answer about what it cannot do
 should be derivable from its map, and this one is not.
 
+**Accepted; recorded rather than given an entry, and the reason is decision `0006`.** Whether
+the position is reachable *in play* turns on the corpus's conflict about entering from the bar
+— factory issue #19, settled by `0006` — and under the reading `0006` adopts it is not: a player's own move never bars his own man, a move never adds
+adversary men to the adversary's home table, and an already-suspended player does not move. So
+there is no sequence of play for an entry to describe, and the corpus describing no such case
+is the right answer rather than an omission. What keeps the branch live is that `Game.Play`
+demands an `AssertedPosition`: a caller may assert the deadlock, and
+`DeterminismTests.Two_players_suspended_against_each_other_is_an_interaction_no_entry_covers`
+does. `UnsupportedInteraction` is therefore an answer about what a caller may assert, which
+`Game.Play`'s comment now says in place of the bare "which fifteen men a side does permit".
+This is also the third bullet of factory issue #13, resolved from `0006` rather than
+independently.
+
 ---
 
 ## 12. `status` has no value for an entry that is half declined — **the method has no field**
@@ -309,6 +358,27 @@ exists. Calling them `implemented` claims a conformance verdict over a case that
 This repository's copy of the map records them as `implemented`, with a note. The honest
 shape would be a status that says "implemented, and declines a stated case" — or a rule that
 an entry whose ambiguity is partial is two entries.
+
+**Accepted; the method is corrected, and this was the only thing 0005 found genuinely
+missing.** `status` and `ambiguity.fate` are **decoupled**: `status` answers *has the engine
+built this entry*, `fate` answers *what happens at runtime when the declining case is reached*,
+and `implemented` with `fate: unresolved` is now legal and means exactly "built, and declines
+the stated case". `declined` is reserved for an entry with no implemented path at all. So the
+note apologising for a status that had no value is gone from both entries, and what the map
+records is a fact rather than a shortfall.
+
+Two riders came with it, both of which this repository now satisfies. Where `fate: unresolved`
+accompanies `implemented`, the conformance verdict covers every case **except** the one
+`ambiguity.question` names, and **the declining case ships a test** —
+`WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it`,
+named in the entry. And the cost, stated where 0005 states it: after the decoupling
+`fate: unresolved` means the engine declines for *at least one* input, not for every input, so
+nothing in the map distinguishes `must-play-whole-throw`, which declines one shape of throw,
+from an entry that declines everything. The totality claim is weaker than it was.
+
+The other half of the finding went the other way. `stake-multiplier` is not a partially
+declining entry at all — see finding 9: it was a delegated standard misfiled as an ambiguity,
+and it split rather than being accommodated.
 
 ---
 
@@ -333,6 +403,12 @@ exactly one shape: either die alone, and not both. That is the map's case, and t
 The engine implements exactly that and declines exactly there. Worth recording because the
 entry as written does not let a reader tell that the decline is rare.
 
+**Accepted; the map is corrected.** The entry's `note` now carries the reading — an obligation
+to play a set of numbers that cannot be extended — and says that it settles every other throw
+from the text, so a reader learns from the entry alone that the decline is one shape of throw
+and not a class of them. It names the test, which is the other half: a reader who doubts the
+boundary can run it.
+
 ---
 
 ## 14. `bearing-off-highest` is clear, and "clear" is not "unsurprising" — **map right**
@@ -349,6 +425,16 @@ The map is right: the corpus determines one answer. What the run showed is that 
 guarantees determinacy and nothing else — not that the answer matches the game as it is played
 now, and not that a reviewer reading the entry would predict it. Recorded because "clear" is
 easy to read as "uncontroversial".
+
+**Accepted; the entry gains a rail rather than a field.** 0005 considered and rejected a
+`surprising: true` flag — a flag saying "this is surprising" is unfalsifiable — and settled on
+the artifact that is not: an entry whose correct reading diverges from what a competent reader
+would assume **names the test that fails under the assumed reading**. The test existed;
+`bearing-off-highest`'s `note` now names it,
+`BearingOffDetailTests.A_blocked_forward_move_bears_off_from_the_highest_point_men_still_above_it`.
+That is the whole of the change here, and it is worth exactly what it is worth: nothing can
+detect a surprising entry whose author never noticed it was surprising, which is the same class
+of failure as a mapper who stopped reading.
 
 ---
 
