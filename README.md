@@ -6,7 +6,7 @@ A deterministic backgammon engine built from a corpus map, on
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
-every validation run. The specification is `corpus-map.json`, twenty-eight entries covering
+every validation run. The specification is `corpus-map.json`, twenty-nine entries covering
 that chapter, hashed on every run too.
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909
@@ -18,8 +18,8 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 |---|---|
 | `src/Tabletop.Dice` | Dice vocabulary over the kernel's `UniformInt`. Ruleset-agnostic, and its own project so that claim is checkable — [decision 0001](docs/decisions/0001-the-dice-pack-is-its-own-project.md). |
 | `src/HoyleBackgammon` | The engine. Board, movement, the bar, bearing off, game value. |
-| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy of the factory's map at `de59930`: 25 entries carry `status: implemented` and `implementedIn`, where the factory's copy has them `mapped`, and two carry an engine-authored note. Nothing else differs — every correction this build found is in `MAP-FINDINGS.md`, not applied here. The divergence is spelled out in `corpus-manifest.json`, which also pins this copy by SHA-256, because the map is the oracle the gate validates the code against and the engine writes into it. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; four have since been accepted and the map corrected. |
+| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy of the factory's map at `7d13c27`: 26 entries carry `status: implemented` and `implementedIn`, where the factory's copy has them `mapped`. Nothing else differs at all -- the two engine-authored notes are gone, because decision 0005 decoupled `status` from `ambiguity.fate` and left no shortfall for them to apologise for — every correction this build found is in `MAP-FINDINGS.md`, not applied here. The divergence is spelled out in `corpus-manifest.json`, which also pins this copy by SHA-256, because the map is the oracle the gate validates the code against and the engine writes into it. |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; ten have since been accepted, in two rounds. |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`. |
 
 ## Every rule cites its entry and its page
@@ -54,12 +54,23 @@ the page cited. That last one is what the retracted map got wrong.
 | Say which side of a board is the inner table | `MissingRulesData` | `inner-table-handedness` |
 | Double the stake | `OutsideCurrentScope` | `doubling-cube` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
-| Say what a backgammon pays | `RequiresInterpretation` | `stake-multiplier` |
 | Play a throw where either die alone goes but not both | `RequiresInterpretation` | `must-play-whole-throw` |
-| Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` (finding 4) |
-| Continue with both players wholly suspended | `UnsupportedInteraction` | `full-table-suspension` (finding 11) |
+| Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |
+| Continue with both players wholly suspended | `UnsupportedInteraction` | `full-table-suspension` |
 
-The last two have no sanction in the map, which is the point: they are findings, not features.
+Every one of these is now sanctioned by the map, which two of them were not. `game-value` was
+recorded `clarity: clear` -- asserting the corpus determines one answer for every input --
+while this line declined; it is `ambiguous` with `fate: unresolved` now, and its `question`
+names the finish exactly (finding 4). The double suspension has no entry and gets none: under
+`rules-factory/docs/decisions/0006` no sequence of play reaches it, so it is an answer about
+what a *caller may assert* rather than about what the rules generate (finding 11).
+
+**What the engine stopped declining.** "Say what a backgammon pays" used to be on this list.
+The corpus does not fail to say: it says thrice or four times, as the players agreed. That is
+a delegated standard, `agreed-backgammon-multiple`, and the engine now demands the figure,
+attributes it and records it alongside the outcome instead of declining -- keeping the bound
+the corpus states, which declining threw away. `Outcome.Pays(GameValue)` was removed with it.
+See `rules-factory/docs/decisions/0005` and finding 9.
 
 The first is the only fact in this corpus genuinely beyond a plain-text adapter, and **no rule
 in this engine reaches it** — every position here is player-relative, so nothing ever asks

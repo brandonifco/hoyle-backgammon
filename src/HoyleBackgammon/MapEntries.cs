@@ -4,7 +4,7 @@ using RulesKernel.Provenance;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The twenty-eight entries of <c>corpus-map.json</c>, one static per entry, with the
+/// The twenty-nine entries of <c>corpus-map.json</c>, one static per entry, with the
 /// citations copied verbatim from the map.
 /// </summary>
 /// <remarks>
@@ -18,6 +18,13 @@ namespace HoyleBackgammon;
 /// — <c>player-count</c>, <c>point-designations</c>, <c>direction-of-travel</c> and
 /// <c>inner-table-handedness</c> — and <c>starting-position</c> is no longer declined. See
 /// <c>docs/decisions/0003</c>.
+/// </para>
+/// <para>
+/// A twenty-ninth followed from <c>rules-factory/docs/decisions/0005</c>: a judgement the
+/// corpus deliberately delegates is an assertion and an entry of its own, so
+/// <c>agreed-backgammon-multiple</c> was split out of <c>stake-multiplier</c>. The same
+/// migration recorded the conflict <c>rules-factory/docs/decisions/0006</c> settles, on
+/// <c>legal-destination</c>, <c>enter-from-bar</c> and <c>full-table-suspension</c>.
 /// </para>
 /// </remarks>
 public static class MapEntries
@@ -42,7 +49,8 @@ public static class MapEntries
     private const string BoardAndMen272 = "BACKGAMMON / The Board and Men / p. 272";
     private const string BoardAndMen273 = "BACKGAMMON / The Board and Men / p. 273";
     private const string Playing = "BACKGAMMON / Playing / p. 273";
-    private const string BearingOff = "BACKGAMMON / Bearing off the Men / p. 275";
+    private const string BearingOff275 = "BACKGAMMON / Bearing off the Men / p. 275";
+    private const string BearingOff277 = "BACKGAMMON / Bearing off the Men / p. 277";
 
     private static MapEntry Entry(string id, string name, string citation) =>
         new(id, name, new SourceLocator(SourceId, citation));
@@ -133,35 +141,48 @@ public static class MapEntries
 
     /// <summary>Bearing off begins when all men are home.</summary>
     public static MapEntry BearingOffEligible { get; } =
-        Entry("bearing-off-eligible", "Bearing off begins when all men are home", BearingOff);
+        Entry("bearing-off-eligible", "Bearing off begins when all men are home", BearingOff275);
 
     /// <summary>Each throw may move within the table or remove a man.</summary>
     public static MapEntry BearingOffMoveOrRemove { get; } =
-        Entry("bearing-off-move-or-remove", "Each throw may move within the table or remove a man", BearingOff);
+        Entry("bearing-off-move-or-remove", "Each throw may move within the table or remove a man", BearingOff275);
 
     /// <summary>An unusable number bears off from the highest occupied point.</summary>
     public static MapEntry BearingOffHighest { get; } =
-        Entry("bearing-off-highest", "An unusable number bears off from the highest occupied point", BearingOff);
+        Entry("bearing-off-highest", "An unusable number bears off from the highest occupied point", BearingOff275);
 
     /// <summary>Doublets bear off or move, or both.</summary>
     public static MapEntry BearingOffDoublets { get; } =
-        Entry("bearing-off-doublets", "Doublets bear off or move, or both", BearingOff);
+        Entry("bearing-off-doublets", "Doublets bear off or move, or both", BearingOff275);
 
     /// <summary>First to remove all men wins.</summary>
     public static MapEntry WinCondition { get; } =
-        Entry("win-condition", "First to remove all men wins", BearingOff);
+        Entry("win-condition", "First to remove all men wins", BearingOff275);
 
-    /// <summary>A win is a hit, a gammon, or a backgammon.</summary>
+    /// <summary>
+    /// A win is a hit, a gammon, or a backgammon. Ambiguous: the three named results do not
+    /// cover every finish, and the fate of the one they miss is unresolved.
+    /// </summary>
     public static MapEntry GameValue { get; } =
-        Entry("game-value", "A win is a hit, a gammon, or a backgammon", BearingOff);
+        Entry("game-value", "A win is a hit, a gammon, or a backgammon", BearingOff275);
 
-    /// <summary>What each result pays. Ambiguous for a backgammon; fate unresolved.</summary>
+    /// <summary>
+    /// The multiple the players agreed a backgammon pays. An assertion: the corpus names the
+    /// decider and bounds the figure, so the engine demands it rather than declining.
+    /// </summary>
+    public static MapEntry AgreedBackgammonMultiple { get; } =
+        Entry(
+            "agreed-backgammon-multiple",
+            "The multiple the players agreed a backgammon pays",
+            BearingOff277);
+
+    /// <summary>What each result pays. Clear: the delegated figure is its own entry.</summary>
     public static MapEntry StakeMultiplier { get; } =
-        Entry("stake-multiplier", "What each result pays", BearingOff);
+        Entry("stake-multiplier", "What each result pays", BearingOff275);
 
     /// <summary>Who throws first in the following game.</summary>
     public static MapEntry NextGameOpening { get; } =
-        Entry("next-game-opening", "Who throws first in the following game", BearingOff);
+        Entry("next-game-opening", "Who throws first in the following game", BearingOff275);
 
     /// <summary>Doubling. Declined: out of scope, absent from a 1909 corpus.</summary>
     public static MapEntry DoublingCube { get; } =

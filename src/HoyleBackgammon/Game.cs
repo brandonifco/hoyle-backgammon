@@ -108,6 +108,17 @@ public static class Game
             // fifteen men a side does permit -- neither can ever move, and the corpus says
             // only that "the adversary continues to throw and move". No entry covers the
             // combination.
+            //
+            // This branch is live, and reachable only from an asserted start. Under
+            // rules-factory/docs/decisions/0006 no sequence of play produces it: a player's
+            // own move never puts his own man on the bar, a move never adds ADVERSARY men to
+            // the adversary's home table, and a player already suspended does not move at all,
+            // so a newly-suspended player was suspended already. (Under the reading 0006
+            // rejected it does arise in play -- enter onto your own blot in the adversary's
+            // table, and that table is then "full" while you still have a man up.) What keeps
+            // it live is that Play demands a position rather than deriving one: a caller may
+            // assert the deadlock, and DeterminismTests
+            // .Two_players_suspended_against_each_other_is_an_interaction_no_entry_covers does.
             if (Movement.IsWhollySuspended(position, toMove))
             {
                 if (Movement.IsWhollySuspended(position, toMove.Adversary()))
