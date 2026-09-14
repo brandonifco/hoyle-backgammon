@@ -53,10 +53,13 @@ public static class Game
     /// Plays a game from <paramref name="start"/>.
     /// </summary>
     /// <remarks>
-    /// The starting position is demanded rather than derived: <c>starting-position</c> is
-    /// declined, so the engine has none of its own (<see cref="Setup.StartingPositionFromCorpus"/>).
-    /// The assertion travels into <see cref="GameRecord.Start"/> so that the result is never
-    /// separated from the thing it depended on that the corpus did not supply.
+    /// The position is demanded rather than defaulted. The engine does have the corpus's
+    /// starting arrangement (<see cref="Setup.StartingPositionFromCorpus"/>) and a caller may
+    /// hand it straight back in, but most games worth playing out here do not begin there —
+    /// a mid-game study or a replayed log begins wherever it begins, and defaulting would
+    /// make "the corpus's arrangement" and "whatever the caller had in mind" look the same in
+    /// the record. So the assertion travels into <see cref="GameRecord.Start"/>, and a reader
+    /// of a result can always see whose position it was played from.
     /// </remarks>
     /// <param name="start">The asserted starting position.</param>
     /// <param name="source">The generator. Consumed one draw per die thrown.</param>

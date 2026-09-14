@@ -121,15 +121,13 @@ public class PackIsRulesetAgnosticTests
         "men", "stake", "table", "home", "player",
     ];
 
-    [Fact]
-    public void The_pack_references_no_engine()
-    {
-        var referenced = typeof(Die).Assembly.GetReferencedAssemblies()
-            .Select(a => a.Name)
-            .ToList();
-
-        Assert.DoesNotContain("HoyleBackgammon", referenced);
-    }
+    // There used to be a test here asserting that this assembly does not reference
+    // HoyleBackgammon. It could only have failed if somebody added the project reference, and
+    // that reference is circular -- the engine references the pack -- so the build rejects it
+    // as MSB4006 before any test runs. It restated a guarantee the compiler already gives,
+    // which is worse than no test, because it looked like evidence for the claim in
+    // Tabletop.Dice.csproj's comment and was not. The comment is the claim; the compiler is
+    // the enforcement; the vocabulary test below is the part that needed a test.
 
     [Fact]
     public void No_public_name_in_the_pack_is_ruleset_vocabulary()

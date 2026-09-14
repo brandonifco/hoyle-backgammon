@@ -6,8 +6,8 @@ A deterministic backgammon engine built from a corpus map, on
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
-every validation run. The specification is `corpus-map.json`, twenty-four entries covering
-that chapter.
+every validation run. The specification is `corpus-map.json`, twenty-eight entries covering
+that chapter, hashed on every run too.
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909
 engine, and `doubling-cube` is recorded as out of scope with that reason rather than omitted.
@@ -18,8 +18,8 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 |---|---|
 | `src/Tabletop.Dice` | Dice vocabulary over the kernel's `UniformInt`. Ruleset-agnostic, and its own project so that claim is checkable — [decision 0001](docs/decisions/0001-the-dice-pack-is-its-own-project.md). |
 | `src/HoyleBackgammon` | The engine. Board, movement, the bar, bearing off, game value. |
-| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy: 21 entries carry `status: implemented` and `implementedIn`, where the factory's copy has them `mapped`. The entries themselves are unchanged — every correction this build found is in `MAP-FINDINGS.md`, not applied here. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings. |
+| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy of the factory's map at `de59930`: 25 entries carry `status: implemented` and `implementedIn`, where the factory's copy has them `mapped`, and two carry an engine-authored note. Nothing else differs — every correction this build found is in `MAP-FINDINGS.md`, not applied here. The divergence is spelled out in `corpus-manifest.json`, which also pins this copy by SHA-256, because the map is the oracle the gate validates the code against and the engine writes into it. |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; four have since been accepted and the map corrected. |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`. |
 
 ## Every rule cites its entry and its page
@@ -38,14 +38,20 @@ carries its entry's locator. `scripts/validate.sh` checks that the code and the 
 entry for entry — a citation in code that the map does not carry, or spells differently, is a
 build failure rather than a matter of care.
 
-Rules the corpus states that the map has **no** entry for are collected in `UnmappedRules`,
-so "what did we implement without a map entry" is one file rather than a re-read.
+There used to be an `UnmappedRules` here, collecting two rules the corpus states that the map
+had no entry for. The corrected map has entries for both (`point-designations`,
+`direction-of-travel`), so the class is gone rather than kept empty.
+
+The gate also checks that each citation *resolves*: that the page it names exists in
+`corpus/hoyle.txt`, that the page falls inside the section it names, and — for the entries
+whose evidence quotes the corpus rather than summarising it — that the quoted sentence is on
+the page cited. That last one is what the retracted map got wrong.
 
 ## What the engine declines
 
 | Asked to | Answers | Entry |
 |---|---|---|
-| Place the men to start | `MissingRulesData` | `starting-position` |
+| Say which side of a board is the inner table | `MissingRulesData` | `inner-table-handedness` |
 | Double the stake | `OutsideCurrentScope` | `doubling-cube` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
 | Say what a backgammon pays | `RequiresInterpretation` | `stake-multiplier` |
@@ -55,18 +61,23 @@ so "what did we implement without a map entry" is one file rather than a re-read
 
 The last two have no sanction in the map, which is the point: they are findings, not features.
 
+The first is the only fact in this corpus genuinely beyond a plain-text adapter, and **no rule
+in this engine reaches it** — every position here is player-relative, so nothing ever asks
+which physical compartment of a board is whose. The gate checks that claim rather than taking
+it on trust.
+
 ## Starting a game
 
-The engine cannot place the men, so it demands a position and records who asserted it —
-[decision 0002](docs/decisions/0002-a-game-begins-from-an-asserted-position.md).
+The engine derives the corpus's starting arrangement, but `Game.Play` still demands a position
+and records who asserted it, because most games worth playing out do not begin at the start —
+[decision 0002](docs/decisions/0002-a-game-begins-from-an-asserted-position.md), amended by
+[decision 0003](docs/decisions/0003-the-engine-derives-the-starting-position.md).
 
 ```csharp
 var start = new AssertedPosition(
-    Position.Create(
-        white: new Dictionary<int, int> { [24] = 2, [13] = 5, [8] = 3, [6] = 5 },
-        black: new Dictionary<int, int> { [24] = 2, [13] = 5, [8] = 3, [6] = 5 }),
+    Setup.StartingPositionFromCorpus(),
     AssertedBy: "me",
-    Justification: new SourceLocator("hoyle-1909", "BACKGAMMON / The Board and Men / p. 272"));
+    Justification: MapEntries.StartingPosition.Locator);
 
 var record = Game.Play(start, Pcg32.FromSeed(20260913, stream: 1), new FirstOptionDecider());
 ```
@@ -89,6 +100,7 @@ the count, not only the outcome.
 ./scripts/validate.sh full
 ```
 
-SDK pin, corpus baseline hash, map correspondence, restore, format, then Debug and
-Release (`CI=true`) builds with zero warnings and the full test run, with the test run
-asserted to have actually happened rather than inferred from an exit code.
+SDK pin, corpus and map baseline hashes, map correspondence, citations resolved against the
+corpus, restore, format, then Debug and Release (`CI=true`) builds with zero warnings and the
+full test run, with the test run asserted to have actually happened rather than inferred from
+an exit code.

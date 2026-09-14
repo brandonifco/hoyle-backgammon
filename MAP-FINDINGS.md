@@ -16,6 +16,13 @@ one is serious (`starting-position`, finding 1); two are entries the map does no
 wrong `clarity` (4), one self-contradicting classification (9), one wrong `evidence` (10) and
 one uncovered interaction (11).
 
+**Four have since been accepted and the map corrected** (factory commit `de59930`): 1, 2, 3
+and 5. Each is marked below with what the corrected map says and what the engine now does.
+This repository's copy of the map is the corrected one; see
+[decision 0003](docs/decisions/0003-the-engine-derives-the-starting-position.md). The findings
+are kept as written rather than rewritten into the present tense, because a log of what a
+build found is worth less if it is edited to agree with the outcome.
+
 ---
 
 ## 1. `starting-position` is not beyond the adapter. It is stated in prose. — **map at fault**
@@ -36,8 +43,10 @@ statement is prose, on p. 272, and a plain-text adapter reads it perfectly:
 "Viz." introduces the figure's content in words. Two plus five plus three plus five is
 fifteen, the four points are named unambiguously in the corpus's own designations, and
 "immediately facing" fixes Black's men by mirror. Read through those designations it gives
-pips 24, 13, 8 and 6 — which is what `tests/HoyleBackgammon.Tests/Corpus.cs` asserts, citing
-p. 272, and what every test in this repository plays from.
+pips 24, 13, 8 and 6 — which is what `tests/HoyleBackgammon.Tests/Corpus.cs` asserted, citing
+p. 272, and what every test in this repository plays from. (That fixture is the production
+rule now: `Setup.StartingPositionFromCorpus` derives those four numbers and
+`StartingPositionTests` reads them back through the corpus's own designations.)
 
 **Why it matters more than the other fifteen.** This is the entry the trial report leads
 with, and the one that motivated a schema change (`beyondAdapter`, decision 0004). The
@@ -47,10 +56,17 @@ confirmed instances, not one, and the open question "does an adapter silently dr
 table produce an entry nobody writes" is joined by its opposite: **an entry written as
 unreadable when the corpus said it twice.** A mapper who found the figure stopped reading.
 
-**What the engine does.** Implements the map as written: `Setup.StartingPositionFromCorpus`
-returns `MissingRulesData`, and `Game.Play` demands an `AssertedPosition` from the caller.
+**What the engine did.** Implemented the map as written: `Setup.StartingPositionFromCorpus`
+returned `MissingRulesData`, and `Game.Play` demanded an `AssertedPosition` from the caller.
 Correcting the map from inside the engine would have hidden the finding, which is the more
 valuable half of this run. See `docs/decisions/0002`.
+
+**Accepted; the map is corrected.** `starting-position` is now an ordinary `status: mapped`
+entry cited to p. 273, with the prose as its evidence and a note recording that it is
+over-determined — footnote 67 needs exactly three men on the outer deuce point for its blot to
+exist, and nineteen opening lines in *Hints for Play* fit this arrangement and no other. The
+engine derives it, `beyondAdapter` passes to the new `inner-table-handedness` entry, and
+`docs/decisions/0003` records what that changed here.
 
 ---
 
@@ -71,8 +87,11 @@ names four points by designation. The `bearing-off-move-or-remove` worked exampl
 presupposes points to enter on. And nothing in the map says there are twenty-four of them,
 which is the single number the whole engine is built around.
 
-`Geometry` implements it and cites `UnmappedRules.PointDesignations`, a locator with no entry
+`Geometry` implemented it and cited `UnmappedRules.PointDesignations`, a locator with no entry
 behind it. `GeometryTests` evidences the complete table of twenty-four names.
+
+**Accepted; the map is corrected.** `point-designations` is an entry, cited to p. 272, and
+`Geometry` cites it as `MapEntries.PointDesignations`. `UnmappedRules` is deleted.
 
 ---
 
@@ -87,8 +106,11 @@ also the only authority for treating the twenty-four points as a single course w
 It is what makes "his own table" mean anything in the bearing-off section, and what makes the
 two players' numberings mirror.
 
-Smaller than finding 2 and the same shape: a load-bearing sentence with no entry. Cited in
+Smaller than finding 2 and the same shape: a load-bearing sentence with no entry. Was cited in
 code as `UnmappedRules.DirectionOfTravel`.
+
+**Accepted; the map is corrected.** `direction-of-travel` is an entry, cited to p. 273, and
+`Geometry` cites it as `MapEntries.DirectionOfTravel`.
 
 ---
 
@@ -119,10 +141,17 @@ constructs it.
 `game-value`. That is an unresolved result whose map entry says it cannot happen. The entry
 should be `clarity: ambiguous` with `fate: unresolved`.
 
-**A second, smaller thing in the same entry.** The three are also not disjoint as written: a
-man up implies nothing has been borne off, so every backgammon is also a gammon. The corpus
-plainly means the larger name to win and the engine tests backgammon first, but the entry's
-`clear` does not record that an ordering had to be chosen.
+**A second, smaller thing in the same entry.** The three are also not disjoint as written. An
+earlier draft of this section, and of the comment in `Outcome.ValueOf` that pointed at it,
+said the reason was that a man up implies nothing has been borne off, so every backgammon is
+also a gammon. **That was false, and it was false in a way this very finding should have
+caught:** a player can bear off and then be hit, which is precisely the manoeuvre the gap case
+above depends on — the loser `{bar 1, off 3, 3:11}` is a backgammon with three men already
+off. The real overlap is narrower: a loser who has borne off nothing *and* has a man up or in
+the winner's home table answers the gammon condition and the backgammon condition both. The
+corpus plainly means the larger name to win and the engine tests backgammon first, which was
+right all along; only the argument for it was wrong. The entry's `clear` still does not record
+that an ordering had to be chosen.
 
 ---
 
@@ -143,6 +172,13 @@ outer table, and his home table is where he bears off from), which the engine us
 everywhere; and the identification of those with the physical compartments of a particular
 board, which the engine never needs and cannot derive. Only the second depends on
 `starting-position`. `Geometry`'s remarks say so explicitly.
+
+**Accepted; the map is corrected.** `board-tables` is narrowed to the player-relative
+structure, and the identification with a physical board's compartments is its own entry,
+`inner-table-handedness` — which carries the `beyondAdapter` that `starting-position` used to,
+and carries it correctly, the left/right identification being stated only in Fig. 1. It is now
+this engine's one `MissingRulesData` decline, reachable through `BeyondAdapter` and reached by
+no rule here.
 
 ---
 

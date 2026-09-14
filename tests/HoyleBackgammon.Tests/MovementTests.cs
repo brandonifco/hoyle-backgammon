@@ -157,6 +157,59 @@ public class EnterFromBarTests
         Assert.All(moves, move => Assert.Equal(Geometry.BarPip, move.From));
     }
 
+    // Two men up, and the adversary's table wide open. Every other bar case in this file has
+    // exactly one man on the bar, which let the whole rule be satisfied by "is there a man up
+    // at all" or by "is there exactly one" indifferently -- and the second is wrong: it would
+    // leave a player with two men up moving his other men freely, which is the opposite of
+    // what enter-from-bar says. These pin the count out of it.
+    // Black's men are all on his own thirteen point, which is White's twelve, so White's inner
+    // entry zone (his 19 through 24) is wide open and every number enters.
+    private static Position WithTwoMenUp() => Board.Of(
+        Board.Men().At(Geometry.BarPip, 2).At(8, 6).RestAt(6),
+        Board.Men().RestAt(13));
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(6)]
+    public void Two_men_up_suspends_the_others_exactly_as_one_does(int die)
+    {
+        var position = WithTwoMenUp();
+
+        Assert.Equal(2, position.OnBar(Player.White));
+        Assert.True(Movement.MustEnterFromBar(position, Player.White));
+
+        // He has six men on his eight point and seven on his six point that any of these
+        // numbers could otherwise move.
+        Assert.True(position.Men(Player.White, 8) > 0);
+        Assert.True(position.Men(Player.White, 6) > 0);
+
+        var move = Assert.Single(Movement.MovesForDie(position, Player.White, die));
+        Assert.Equal(Geometry.BarPip, move.From);
+        Assert.Equal(MoveKind.Entry, move.Kind);
+    }
+
+    [Fact]
+    public void The_second_man_up_is_still_up_when_the_first_has_entered()
+    {
+        // A throw of six trois with two men up: both numbers go on entering, and nothing else
+        // moves. The play is the evidence -- were the second man not gating, the trois would
+        // be free to play a man from the eight point.
+        var plays = Legal.Plays(WithTwoMenUp(), Player.White, new DiceThrow(6, 3));
+
+        Assert.All(plays, play => Assert.Equal(2, play.Moves.Length));
+        Assert.All(plays, play => Assert.All(
+            play.Moves, move => Assert.Equal(Geometry.BarPip, move.From)));
+
+        Assert.All(plays, play =>
+        {
+            Assert.Equal(0, play.Result.OnBar(Player.White));
+            Assert.Equal(1, play.Result.Men(Player.White, 19));
+            Assert.Equal(1, play.Result.Men(Player.White, 22));
+        });
+        Assert.NotEmpty(plays);
+    }
+
     [Fact]
     public void A_blot_hit_begins_its_journey_anew_however_far_advanced()
     {

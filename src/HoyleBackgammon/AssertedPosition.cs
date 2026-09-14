@@ -1,5 +1,5 @@
+using System.Collections.Immutable;
 using RulesKernel.Provenance;
-using RulesKernel.Resolution;
 
 namespace HoyleBackgammon;
 
@@ -8,11 +8,14 @@ namespace HoyleBackgammon;
 /// answerable for.
 /// </summary>
 /// <remarks>
-/// The engine cannot originate a starting position: <c>starting-position</c> is declined
-/// (see <see cref="Setup.StartingPositionFromCorpus"/>). So a game begins from a position a
-/// caller asserts, and the method's treatment of a condition no computation settles applies:
-/// demand it, attribute it, record it alongside the outcome, and never infer it. The
-/// attribution travels with the game's result; see <c>docs/decisions/0002</c>.
+/// The engine <em>can</em> originate the corpus's starting position — see
+/// <see cref="Setup.StartingPositionFromCorpus"/> — so this type is no longer the only way a
+/// game can begin. It stays because most positions are not the starting one: a mid-game
+/// study, a replayed log, an endgame the corpus never states. For those the engine has no
+/// fact and must not invent one, and the method's treatment of a condition no computation
+/// settles applies: demand it, attribute it, record it alongside the outcome, and never infer
+/// it. The attribution travels with the game's result; see <c>docs/decisions/0002</c>, as
+/// amended by <c>docs/decisions/0003</c>.
 /// </remarks>
 /// <param name="Position">The arrangement being asserted.</param>
 /// <param name="AssertedBy">Who is answerable for it. Free text; the engine does not parse it.</param>
@@ -43,27 +46,38 @@ public sealed record AssertedPosition(
 public static class Setup
 {
     /// <summary>
-    /// The starting arrangement, asked of the corpus. Always declines.
+    /// The starting arrangement, derived from the corpus.
     /// </summary>
     /// <remarks>
-    /// <see cref="MapEntries.StartingPosition"/> carries
-    /// <c>beyondAdapter: { adapter: "plain-text", modality: "illustration" }</c>: the rule is
-    /// in the corpus, in Fig. 1, and the declared adapter cannot read a figure. By the
-    /// factory's correspondence table that is <see cref="UnresolvedReason.MissingRulesData"/>.
+    /// <see cref="MapEntries.StartingPosition"/> states it in prose: "two of White's men are
+    /// placed on the ace point in Black's inner table, five are placed on the six point in
+    /// Black's outer table, three on the deuce point in White's outer table, and five on the
+    /// six point in White's inner table. Black's men are placed in like manner on the points
+    /// immediately facing these."
     /// <para>
-    /// This method exists so the decline is <em>reachable</em> rather than being a hole in the
-    /// engine. A caller who asks where to put the men gets an answer that says which entry and
-    /// which page, and can then decide what to assert.
+    /// Read through <see cref="MapEntries.PointDesignations"/> and
+    /// <see cref="MapEntries.DirectionOfTravel"/>, those four points are the mover's own pips
+    /// 24, 13, 8 and 6 (<see cref="Arrangement"/>): Black's inner ace point is the far end of
+    /// White's course, Black's outer six point is 13, White's own outer deuce point is 8, and
+    /// his own inner six point is 6. "Immediately facing" is <see cref="Geometry.Mirror"/>,
+    /// which gives the same four numbers again in Black's own pips — so one table serves both
+    /// sides.
     /// </para>
     /// <para>
-    /// The map is wrong about this entry — the arrangement is also stated in prose on p. 272,
-    /// which a plain-text adapter reads perfectly well. The engine implements the map as
-    /// written and records the defect; see finding 1 in <c>MAP-FINDINGS.md</c>.
+    /// This returns a plain <see cref="Position"/> and not a <c>Resolution</c>: there is
+    /// nothing left for a caller to settle. It used to decline, on a map version since
+    /// retracted; see <c>docs/decisions/0003</c>.
     /// </para>
     /// </remarks>
-    public static Resolution<Position> StartingPositionFromCorpus() =>
-        Resolution<Position>.FromUnresolved(new UnresolvedResult(
-            UnresolvedReason.MissingRulesData,
-            "place the men as at the start of a game",
-            MapEntries.StartingPosition.Locator));
+    public static Position StartingPositionFromCorpus() =>
+        Position.Create(white: Arrangement, black: Arrangement);
+
+    /// <summary>
+    /// The four points of the starting arrangement, in the mover's own pip numbering, with the
+    /// number of his men on each. Two plus five plus three plus five is fifteen, which
+    /// <see cref="Position.Create"/> re-checks against <see cref="MapEntries.MenCount"/>.
+    /// </summary>
+    public static IReadOnlyDictionary<int, int> Arrangement { get; } =
+        ImmutableSortedDictionary.CreateRange(
+            new Dictionary<int, int> { [24] = 2, [13] = 5, [8] = 3, [6] = 5 });
 }

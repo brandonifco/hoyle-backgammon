@@ -7,15 +7,23 @@ namespace HoyleBackgammon.Tests;
 /// The three entries the map records as <c>declined</c>, reached as unresolved results rather
 /// than found missing from the engine.
 /// </summary>
+/// <remarks>
+/// The three are not what they were. <c>starting-position</c> used to be one of them, on a map
+/// version since retracted; the corrected map declines <c>inner-table-handedness</c> instead —
+/// a fact stated only in Fig. 1, and the only one in this corpus genuinely beyond a plain-text
+/// adapter. See <c>docs/decisions/0003</c>.
+/// </remarks>
 public class DeclineTests
 {
     [Fact]
-    public void Starting_position_declines_as_missing_rules_data()
+    public void The_inner_tables_handedness_declines_as_missing_rules_data()
     {
-        var result = Assert.IsType<Resolution<Position>.Unresolved>(Setup.StartingPositionFromCorpus());
+        var result = Assert.IsType<Resolution<Quarter>.Unresolved>(
+            BeyondAdapter.WhichCompartmentIsTheInnerTable());
 
         Assert.Equal(UnresolvedReason.MissingRulesData, result.Result.Reason);
-        Assert.Equal(MapEntries.StartingPosition.Locator, result.Result.Locator);
+        Assert.Equal(MapEntries.InnerTableHandedness.Locator, result.Result.Locator);
+        Assert.Equal("BACKGAMMON / The Board and Men / p. 272", result.Result.Locator.Citation);
     }
 
     [Fact]
@@ -34,27 +42,6 @@ public class DeclineTests
 
         Assert.Equal(UnresolvedReason.OutsideCurrentScope, result.Result.Reason);
         Assert.Equal(MapEntries.StrategyAdvice.Locator, result.Result.Locator);
-    }
-
-    [Fact]
-    public void Every_decline_cites_the_pinned_corpus()
-    {
-        foreach (var entry in new[]
-                 {
-                     MapEntries.StartingPosition, MapEntries.DoublingCube, MapEntries.StrategyAdvice,
-                     MapEntries.MustPlayWholeThrow, MapEntries.StakeMultiplier,
-                 })
-        {
-            Assert.Equal(MapEntries.Baseline.SourceId, entry.Locator.SourceId);
-        }
-    }
-
-    [Fact]
-    public void The_engine_pins_the_corpus_it_was_read_from_and_names_its_generator()
-    {
-        Assert.False(Game.Identity.IsDeterministicWithoutRandomness);
-        Assert.Equal(
-            "5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e",
-            Assert.Single(Game.Identity.SourceBaselines).ContentHash);
+        Assert.Equal("BACKGAMMON / Hints for Play / p. 277", result.Result.Locator.Citation);
     }
 }

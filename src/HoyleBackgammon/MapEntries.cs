@@ -4,7 +4,7 @@ using RulesKernel.Provenance;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The twenty-four entries of <c>corpus-map.json</c>, one static per entry, with the
+/// The twenty-eight entries of <c>corpus-map.json</c>, one static per entry, with the
 /// citations copied verbatim from the map.
 /// </summary>
 /// <remarks>
@@ -12,6 +12,13 @@ namespace HoyleBackgammon;
 /// only says where each rule is written. Where implementing an entry showed the map to be
 /// wrong, the finding is in <c>MAP-FINDINGS.md</c> and is cross-referenced from the rule,
 /// never silently corrected here.
+/// <para>
+/// The map this engine now cites is the corrected one (factory commit <c>de59930</c>), which
+/// was written in answer to findings 1, 2, 3 and 5 of this build. Four entries are new here
+/// — <c>player-count</c>, <c>point-designations</c>, <c>direction-of-travel</c> and
+/// <c>inner-table-handedness</c> — and <c>starting-position</c> is no longer declined. See
+/// <c>docs/decisions/0003</c>.
+/// </para>
 /// </remarks>
 public static class MapEntries
 {
@@ -28,24 +35,50 @@ public static class MapEntries
         contentHash: "5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e",
         hashDerivation: "gutenberg-plain-text-including-boilerplate");
 
-    private const string BoardAndMen = "BACKGAMMON / The Board and Men / p. 271";
+    // The Board and Men runs across three pages and the map cites each rule to the page it is
+    // stated on. One constant a page, not one a section: the correspondence check in
+    // scripts/validate.sh compares these strings with the map's.
+    private const string BoardAndMen271 = "BACKGAMMON / The Board and Men / p. 271";
+    private const string BoardAndMen272 = "BACKGAMMON / The Board and Men / p. 272";
+    private const string BoardAndMen273 = "BACKGAMMON / The Board and Men / p. 273";
     private const string Playing = "BACKGAMMON / Playing / p. 273";
     private const string BearingOff = "BACKGAMMON / Bearing off the Men / p. 275";
 
     private static MapEntry Entry(string id, string name, string citation) =>
         new(id, name, new SourceLocator(SourceId, citation));
 
+    /// <summary>Backgammon is played by two persons.</summary>
+    public static MapEntry PlayerCount { get; } =
+        Entry("player-count", "Backgammon is played by two persons", BoardAndMen271);
+
     /// <summary>Thirty men, fifteen to a side.</summary>
     public static MapEntry MenCount { get; } =
-        Entry("men-count", "Thirty men, fifteen to a side", BoardAndMen);
+        Entry("men-count", "Thirty men, fifteen to a side", BoardAndMen271);
 
     /// <summary>The board is two tables, inner and outer.</summary>
     public static MapEntry BoardTables { get; } =
-        Entry("board-tables", "The board is two tables, inner and outer", BoardAndMen);
+        Entry("board-tables", "The board is two tables, inner and outer", BoardAndMen272);
 
-    /// <summary>The starting arrangement of the men. Declined: beyond the plain-text adapter.</summary>
+    /// <summary>How the twenty-four points are named and numbered.</summary>
+    public static MapEntry PointDesignations { get; } =
+        Entry(
+            "point-designations",
+            "How the twenty-four points are named and numbered",
+            BoardAndMen272);
+
+    /// <summary>
+    /// Which physical compartment of the board is the inner table. Declined: beyond the
+    /// plain-text adapter, and nothing in this engine asks. See <see cref="BeyondAdapter"/>.
+    /// </summary>
+    public static MapEntry InnerTableHandedness { get; } =
+        Entry(
+            "inner-table-handedness",
+            "Which physical compartment of the board is the inner table",
+            BoardAndMen272);
+
+    /// <summary>The starting arrangement of the men.</summary>
     public static MapEntry StartingPosition { get; } =
-        Entry("starting-position", "The starting arrangement of the men", BoardAndMen);
+        Entry("starting-position", "The starting arrangement of the men", BoardAndMen273);
 
     /// <summary>Deciding who begins.</summary>
     public static MapEntry OpeningRoll { get; } =
@@ -62,6 +95,13 @@ public static class MapEntries
     /// <summary>Each die moves one man that many points.</summary>
     public static MapEntry MoveByPip { get; } =
         Entry("move-by-pip", "Each die moves one man that many points", Playing);
+
+    /// <summary>The twenty-four points are one course with two ends.</summary>
+    public static MapEntry DirectionOfTravel { get; } =
+        Entry(
+            "direction-of-travel",
+            "The twenty-four points are one course with two ends",
+            Playing);
 
     /// <summary>Doublets are played twice over.</summary>
     public static MapEntry Doublets { get; } =

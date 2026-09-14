@@ -13,8 +13,10 @@ namespace HoyleBackgammon;
 /// and 25 the bar. The same physical point is index <c>p</c> for one player and
 /// <see cref="Geometry.Mirror"/> of <c>p</c> for the other.
 /// <para>
-/// Nothing in this type knows the starting arrangement. The corpus's is declined
-/// (<c>starting-position</c>), so a position only ever comes from a caller — see
+/// Nothing in this type knows the starting arrangement, and that is now a separation of
+/// concerns rather than a decline: the corpus's arrangement is
+/// <see cref="Setup.StartingPositionFromCorpus"/>, which builds one of these like any other
+/// caller. Any other position comes from a caller who is answerable for it — see
 /// <see cref="AssertedPosition"/>.
 /// </para>
 /// </remarks>
@@ -165,16 +167,22 @@ public sealed class Position : IEquatable<Position>
             throw new InvalidOperationException($"no man of {player}'s stands on pip {from}.");
         }
 
-        int landing = Math.Max(to, Geometry.BorneOffPip);
         var mine = Slots(player).ToBuilder();
         var theirs = Slots(player.Adversary()).ToBuilder();
 
+        // `to` is used as a slot index unclamped. Every producer of a move already lands in
+        // 0..25 -- bearing off names BorneOffPip explicitly rather than arriving there by
+        // subtraction (see Geometry's remarks), so nothing ever computes a negative
+        // destination -- and a caller who invents one gets an index-out-of-range, which is
+        // what a bad argument deserves. There used to be a Math.Max here rounding such a
+        // caller up to 0; it never fired, and quietly correcting a wrong argument is worse
+        // than failing on it.
         mine[from]--;
-        mine[landing]++;
+        mine[to]++;
 
-        if (Geometry.IsPoint(landing) && theirs[Geometry.Mirror(landing)] == 1)
+        if (Geometry.IsPoint(to) && theirs[Geometry.Mirror(to)] == 1)
         {
-            theirs[Geometry.Mirror(landing)] = 0;
+            theirs[Geometry.Mirror(to)] = 0;
             theirs[Geometry.BarPip]++;
         }
 

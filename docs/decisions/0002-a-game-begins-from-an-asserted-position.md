@@ -1,6 +1,14 @@
 # 0002 — A game begins from a position the caller asserts
 
-**Status:** accepted
+**Status:** accepted; amended in part by
+[0003](0003-the-engine-derives-the-starting-position.md).
+
+> **Amendment.** The Context below is written against a version of `corpus-map.json` that has
+> since been retracted. `starting-position` is not declined, the engine derives it, and
+> `Setup.StartingPositionFromCorpus()` no longer returns a `Resolution` — so the first bullet
+> of the Decision, and the first rejected alternative, no longer describe the engine. The rest
+> stands, for the reason the Context's own parenthesis anticipated: a caller may want to start
+> from a position that is not the corpus's, and most do. Read 0003 for what changed.
 
 ## Context
 

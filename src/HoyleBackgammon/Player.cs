@@ -1,6 +1,14 @@
 namespace HoyleBackgammon;
 
-/// <summary>One of the two players. "Backgammon is played by two persons."</summary>
+/// <summary>
+/// One of the two players. <see cref="MapEntries.PlayerCount"/>: "Backgammon is played by two
+/// persons."
+/// </summary>
+/// <remarks>
+/// The type is closed over exactly two, and every player-relative rule here rests on that:
+/// <see cref="Players.Adversary"/> is total only because there is exactly one other player,
+/// and <see cref="Geometry.Mirror"/> pairs the two courses for the same reason.
+/// </remarks>
 public enum Player
 {
     /// <summary>White.</summary>

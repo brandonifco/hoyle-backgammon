@@ -24,14 +24,25 @@ public enum Quarter
 /// <b>The representation.</b> A point is named by the number of pips a man standing on it
 /// still has to travel, counted for the player who owns the man: 24 at the start of his
 /// journey, 1 on his own ace point, 0 once borne off. The bar is pip 25, so entering with a
-/// die of <c>f</c> lands on pip <c>25 - f</c> and every move — entry, ordinary play and
-/// bearing off alike — is <c>to = from - die</c>. This is a representation, not a rule.
+/// die of <c>f</c> lands on pip <c>25 - f</c>. This is a representation, not a rule.
+/// </para>
+/// <para>
+/// <b>How far the arithmetic reaches.</b> It makes entry (<see cref="MoveKind.Entry"/>), ordinary play
+/// (<see cref="MoveKind.Ordinary"/>) and a forward move inside the home table
+/// (<see cref="MoveKind.BearingOffMove"/>) one arithmetic: <c>to = from - die</c>. It does
+/// <em>not</em> extend to removal. <see cref="MoveKind.BearingOffRemove"/> only looks like it
+/// does, because it arises exactly when <c>from == die</c>; and
+/// <see cref="MoveKind.BearingOffHighest"/> plainly does not — it sets
+/// <c>To = <see cref="BorneOffPip"/></c> whatever the die was, so a man borne off the cinque
+/// point by a trois is <c>5/off(3)</c> and not <c>5/2(3)</c>. That is a rule, not arithmetic:
+/// <see cref="MapEntries.BearingOffHighest"/> names the point to remove from and says nothing
+/// about a distance.
 /// </para>
 /// <para>
 /// <b>What the corpus fixes and what it does not.</b> The two ends of the course are stated
-/// (<see cref="UnmappedRules.DirectionOfTravel"/>): a man begins on the ace point of the
+/// (<see cref="MapEntries.DirectionOfTravel"/>): a man begins on the ace point of the
 /// adversary's home table and finishes on the like point of his own. The four quarters
-/// follow from the point designations (<see cref="UnmappedRules.PointDesignations"/>): inner
+/// follow from the point designations (<see cref="MapEntries.PointDesignations"/>): inner
 /// tables number from the far end inward, so the adversary's ace point is his inner table's
 /// farthest point (pip 24) and his six point is next the bar (pip 19); outer tables number
 /// from the bar outward, so the adversary's outer bar point is pip 18 and his outer six point
@@ -41,9 +52,11 @@ public enum Quarter
 /// <para>
 /// What the corpus does <em>not</em> fix, for lack of a readable Fig. 1, is which physical
 /// compartment is the inner table — the text says only that with the men placed as in Fig. 1
-/// the right hand is the inner table. This engine never needs to know: every position it
-/// holds is expressed in the player-relative pips above. See <c>board-tables</c> in
-/// <c>MAP-FINDINGS.md</c>.
+/// the right hand is the inner table. That is its own entry now,
+/// <see cref="MapEntries.InnerTableHandedness"/>, and it is the one fact in this corpus that
+/// is genuinely beyond a plain-text adapter. This engine never needs to know: every position
+/// it holds is expressed in the player-relative pips above. See
+/// <see cref="BeyondAdapter.WhichCompartmentIsTheInnerTable"/>, which no rule here calls.
 /// </para>
 /// </remarks>
 public static class Geometry
@@ -62,7 +75,7 @@ public static class Geometry
 
     /// <summary>
     /// The same physical point, named from the other player's end of the course. Implements
-    /// <see cref="UnmappedRules.DirectionOfTravel"/>: the two courses run in opposite
+    /// <see cref="MapEntries.DirectionOfTravel"/>: the two courses run in opposite
     /// directions over one set of twenty-four points, so the pips at a point sum to 25.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="pip"/> is not a point.</exception>
@@ -95,7 +108,7 @@ public static class Geometry
     /// <summary>
     /// The point's name in Hoyle's vocabulary — "cinque point", "bar point" and so on —
     /// qualified by whose table it is in. Implements
-    /// <see cref="UnmappedRules.PointDesignations"/>.
+    /// <see cref="MapEntries.PointDesignations"/>.
     /// </summary>
     /// <exception cref="ArgumentOutOfRangeException">If <paramref name="pip"/> is not a point.</exception>
     public static string NameOf(int pip)

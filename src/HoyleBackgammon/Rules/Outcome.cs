@@ -67,9 +67,19 @@ public static class Outcome
     /// got all his men into his own home table, and has begun to bear off" (a hit); the winner
     /// finished "before his adversary has begun to do the same" (a gammon); the adversary
     /// "has still a man or men 'up' (i.e., on the bar) or in his (the winner's) home table" (a
-    /// backgammon). Backgammon is tested first: a man on the bar means no man has been borne
-    /// off, so the backgammon condition always implies the gammon condition, and the corpus
-    /// plainly intends the larger name to win.
+    /// backgammon). Backgammon is tested first, because the three conditions overlap and the
+    /// corpus plainly intends the larger name to win.
+    /// </para>
+    /// <para>
+    /// The overlap is smaller than it looks, and worth stating exactly. A man up does
+    /// <em>not</em> imply nothing has been borne off: a player may bear off and then be hit,
+    /// which is the very manoeuvre the gap case below turns on — a loser holding
+    /// <c>{bar 1, off 3}</c> is a backgammon by the corpus's words and has borne off three
+    /// men. What does overlap is a loser who has borne off nothing <em>and</em> has a man up
+    /// or in the winner's home table: he answers the gammon condition and the backgammon
+    /// condition both, and that is the case an ordering had to be chosen for. The map records
+    /// this entry <c>clarity: clear</c> and does not record that a choice was made; see
+    /// finding 4 in <c>MAP-FINDINGS.md</c>.
     /// </para>
     /// <para>
     /// The three are not exhaustive, which the map does not record. A loser who has borne off

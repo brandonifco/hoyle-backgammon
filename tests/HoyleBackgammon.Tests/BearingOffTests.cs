@@ -126,6 +126,40 @@ public class BearingOffDetailTests
     }
 
     [Fact]
+    public void A_blocked_forward_move_bears_off_from_the_highest_point_men_still_above_it()
+    {
+        // White's men stand on his cinque and ace points; Black holds White's deuce point with
+        // two men. A trois can do neither of the two fashions: he has no man on his trois
+        // point to remove, and the only forward move a trois could make -- cinque to deuce --
+        // is refused by legal-destination. So the number "cannot be dealt with after either of
+        // these fashions" and bears a man off the highest occupied point, which is the cinque.
+        //
+        // The modern rule would refuse it: a man stands above the trois point, so nothing may
+        // be borne off from below one. Hoyle's rule as written does not say that, and finding
+        // 14 in MAP-FINDINGS.md records that "clear" is not "unsurprising". The difference is
+        // observable only here -- every other bearing-off case in this file leaves some
+        // forward move playable, which is what kept the two readings indistinguishable.
+        var position = Board.Of(
+            Board.Men().At(5, 2).At(1, 13),
+            Board.Men().At(23, 2).RestAt(1));
+
+        var move = Assert.Single(BearingOff.MovesForDie(position, Player.White, 3));
+
+        Assert.Equal(5, move.From);
+        Assert.Equal(Geometry.BorneOffPip, move.To);
+        Assert.True(move.BearsOff);
+        Assert.Equal(MoveKind.BearingOffHighest, move.Kind);
+        Assert.Equal(MapEntries.BearingOffHighest, move.Authority);
+        Assert.Equal("5/off(3)", move.ToString());
+
+        // And it is the cinque man that goes, not an ace man: the removal names the highest
+        // occupied point and not the point the die names.
+        Assert.Equal(1, position.Apply(Player.White, 5, Geometry.BorneOffPip)
+            .Men(Player.White, 5));
+        Assert.Equal(13, position.Men(Player.White, 1));
+    }
+
+    [Fact]
     public void A_forward_move_within_the_table_can_take_up_a_blot()
     {
         var position = Board.Of(

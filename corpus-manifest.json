@@ -13,5 +13,20 @@
       "retrievedFrom": "https://www.gutenberg.org/ebooks/39445.txt.utf-8",
       "references": []
     }
+  ],
+  "maps": [
+    {
+      "path": "corpus-map.json",
+      "sourceId": "hoyle-1909",
+      "contentHash": "92468053c7978e03a0c011acba4fabed0eef1ec76256ccd2caf4c643e35b187c",
+      "hashDerivation": "file-bytes-as-committed",
+      "upstream": {
+        "repository": "rules-factory",
+        "path": "examples/hoyle-backgammon/corpus-map.json",
+        "commit": "de59930"
+      },
+      "divergesFromUpstream": "This copy is the upstream map with two engine-authored fields added to every entry the engine implements: status, raised from 'mapped' to 'implemented', and implementedIn, naming the ruleset and version that implements it. Two entries additionally carry an engine-authored note (must-play-whole-throw, stake-multiplier) recording that they are implemented and decline a stated case, which status has no value for -- finding 12 in MAP-FINDINGS.md. Nothing else differs: no locator, evidence, clarity, scope, dependsOn, gatedBy or ambiguity here has been edited, and corrections this build found are recorded in MAP-FINDINGS.md rather than applied.",
+      "whyPinned": "The map is the oracle scripts/validate.sh validates the code against, and the engine writes into it. Unpinned, an edit to the oracle would look the same as an edit to the code passing."
+    }
   ]
 }
