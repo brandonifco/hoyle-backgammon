@@ -79,6 +79,11 @@ public static class Opening
     /// An ordinary throw of both dice.
     /// <see cref="MapEntries.ThrowTwoDice"/>: "All subsequent throws are with both dice."
     /// </summary>
+    /// <remarks>
+    /// Six faces a die, from <see cref="MapEntries.DieFaces"/>: the corpus names twenty-one
+    /// throws and calls them "all the possible throws", and twenty-one unordered pairs fix six
+    /// faces. It never says the dice are fair, so this is the support, not the distribution.
+    /// </remarks>
     public static DiceThrow Throw(IRandomSource source)
     {
         ArgumentNullException.ThrowIfNull(source);

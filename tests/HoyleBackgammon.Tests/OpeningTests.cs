@@ -99,3 +99,29 @@ public class OpeningThrowerOptionTests
         Assert.Equal(2, source.Drawn);
     }
 }
+
+public class DieFacesTests
+{
+    [Fact]
+    public void A_throw_shows_the_twenty_one_throws_the_corpus_names_and_no_other()
+    {
+        // die-faces: "all the possible throws", then twenty-one of them, from ACES to SIXES.
+        // Every raw word each die can be handed from 0 to 11 covers each face at least twice
+        // over, so a seventh face would appear here if the dice admitted one.
+        var faces = new SortedSet<int>();
+        var throws = new HashSet<(int Higher, int Lower)>();
+        for (uint first = 0; first < 12; first++)
+        {
+            for (uint second = 0; second < 12; second++)
+            {
+                var thrown = Opening.Throw(new ScriptedSource(first, second));
+                faces.Add(thrown.First);
+                faces.Add(thrown.Second);
+                throws.Add((thrown.Higher, thrown.Lower));
+            }
+        }
+
+        Assert.Equal(new[] { 1, 2, 3, 4, 5, 6 }, faces);
+        Assert.Equal(21, throws.Count);
+    }
+}

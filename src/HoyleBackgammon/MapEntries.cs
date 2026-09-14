@@ -4,7 +4,7 @@ using RulesKernel.Provenance;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The twenty-nine entries of <c>corpus-map.json</c>, one static per entry, with the
+/// The thirty entries of <c>corpus-map.json</c>, one static per entry, with the
 /// citations copied verbatim from the map.
 /// </summary>
 /// <remarks>
@@ -42,15 +42,19 @@ public static class MapEntries
         contentHash: "5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e",
         hashDerivation: "gutenberg-plain-text-including-boilerplate");
 
-    // The Board and Men runs across three pages and the map cites each rule to the page it is
+    // Each section runs across several pages and the map cites each rule to the page it is
     // stated on. One constant a page, not one a section: the correspondence check in
     // scripts/validate.sh compares these strings with the map's.
     private const string BoardAndMen271 = "BACKGAMMON / The Board and Men / p. 271";
     private const string BoardAndMen272 = "BACKGAMMON / The Board and Men / p. 272";
     private const string BoardAndMen273 = "BACKGAMMON / The Board and Men / p. 273";
-    private const string Playing = "BACKGAMMON / Playing / p. 273";
+    private const string Playing273 = "BACKGAMMON / Playing / p. 273";
+    private const string Playing274 = "BACKGAMMON / Playing / p. 274";
+    private const string Playing275 = "BACKGAMMON / Playing / p. 275";
     private const string BearingOff275 = "BACKGAMMON / Bearing off the Men / p. 275";
+    private const string BearingOff276 = "BACKGAMMON / Bearing off the Men / p. 276";
     private const string BearingOff277 = "BACKGAMMON / Bearing off the Men / p. 277";
+    private const string HintsForPlay277 = "BACKGAMMON / Hints for Play / p. 277";
 
     private static MapEntry Entry(string id, string name, string citation) =>
         new(id, name, new SourceLocator(SourceId, citation));
@@ -90,54 +94,54 @@ public static class MapEntries
 
     /// <summary>Deciding who begins.</summary>
     public static MapEntry OpeningRoll { get; } =
-        Entry("opening-roll", "Deciding who begins", Playing);
+        Entry("opening-roll", "Deciding who begins", Playing273);
 
     /// <summary>The opening thrower may keep the throw or throw again.</summary>
     public static MapEntry OpeningThrowerOption { get; } =
-        Entry("opening-thrower-option", "The opening thrower may keep the throw or throw again", Playing);
+        Entry("opening-thrower-option", "The opening thrower may keep the throw or throw again", Playing273);
 
     /// <summary>All subsequent throws use both dice.</summary>
     public static MapEntry ThrowTwoDice { get; } =
-        Entry("throw-two-dice", "All subsequent throws use both dice", Playing);
+        Entry("throw-two-dice", "All subsequent throws use both dice", Playing273);
 
     /// <summary>Each die moves one man that many points.</summary>
     public static MapEntry MoveByPip { get; } =
-        Entry("move-by-pip", "Each die moves one man that many points", Playing);
+        Entry("move-by-pip", "Each die moves one man that many points", Playing273);
 
     /// <summary>The twenty-four points are one course with two ends.</summary>
     public static MapEntry DirectionOfTravel { get; } =
         Entry(
             "direction-of-travel",
             "The twenty-four points are one course with two ends",
-            Playing);
+            Playing273);
 
     /// <summary>Doublets are played twice over.</summary>
     public static MapEntry Doublets { get; } =
-        Entry("doublets", "Doublets are played twice over", Playing);
+        Entry("doublets", "Doublets are played twice over", Playing274);
 
     /// <summary>A man may be played only to a permitted point.</summary>
     public static MapEntry LegalDestination { get; } =
-        Entry("legal-destination", "A man may be played only to a permitted point", Playing);
+        Entry("legal-destination", "A man may be played only to a permitted point", Playing274);
 
     /// <summary>Two men make a point.</summary>
     public static MapEntry MadePoint { get; } =
-        Entry("made-point", "Two men make a point", Playing);
+        Entry("made-point", "Two men make a point", Playing274);
 
     /// <summary>A single man is a blot and may be hit.</summary>
     public static MapEntry BlotHit { get; } =
-        Entry("blot-hit", "A single man is a blot and may be hit", Playing);
+        Entry("blot-hit", "A single man is a blot and may be hit", Playing274);
 
     /// <summary>A man on the bar re-enters before any other man moves.</summary>
     public static MapEntry EnterFromBar { get; } =
-        Entry("enter-from-bar", "A man on the bar re-enters before any other man moves", Playing);
+        Entry("enter-from-bar", "A man on the bar re-enters before any other man moves", Playing274);
 
     /// <summary>Play is wholly suspended against a full home table.</summary>
     public static MapEntry FullTableSuspension { get; } =
-        Entry("full-table-suspension", "Play is wholly suspended against a full home table", Playing);
+        Entry("full-table-suspension", "Play is wholly suspended against a full home table", Playing274);
 
     /// <summary>The whole throw must be played if it can be. Ambiguous; fate unresolved.</summary>
     public static MapEntry MustPlayWholeThrow { get; } =
-        Entry("must-play-whole-throw", "The whole throw must be played if it can be", Playing);
+        Entry("must-play-whole-throw", "The whole throw must be played if it can be", Playing275);
 
     /// <summary>Bearing off begins when all men are home.</summary>
     public static MapEntry BearingOffEligible { get; } =
@@ -149,22 +153,22 @@ public static class MapEntries
 
     /// <summary>An unusable number bears off from the highest occupied point.</summary>
     public static MapEntry BearingOffHighest { get; } =
-        Entry("bearing-off-highest", "An unusable number bears off from the highest occupied point", BearingOff275);
+        Entry("bearing-off-highest", "An unusable number bears off from the highest occupied point", BearingOff276);
 
     /// <summary>Doublets bear off or move, or both.</summary>
     public static MapEntry BearingOffDoublets { get; } =
-        Entry("bearing-off-doublets", "Doublets bear off or move, or both", BearingOff275);
+        Entry("bearing-off-doublets", "Doublets bear off or move, or both", BearingOff276);
 
     /// <summary>First to remove all men wins.</summary>
     public static MapEntry WinCondition { get; } =
-        Entry("win-condition", "First to remove all men wins", BearingOff275);
+        Entry("win-condition", "First to remove all men wins", BearingOff276);
 
     /// <summary>
     /// A win is a hit, a gammon, or a backgammon. Ambiguous: the three named results do not
     /// cover every finish, and the fate of the one they miss is unresolved.
     /// </summary>
     public static MapEntry GameValue { get; } =
-        Entry("game-value", "A win is a hit, a gammon, or a backgammon", BearingOff275);
+        Entry("game-value", "A win is a hit, a gammon, or a backgammon", BearingOff276);
 
     /// <summary>
     /// The multiple the players agreed a backgammon pays. An assertion: the corpus names the
@@ -178,17 +182,28 @@ public static class MapEntries
 
     /// <summary>What each result pays. Clear: the delegated figure is its own entry.</summary>
     public static MapEntry StakeMultiplier { get; } =
-        Entry("stake-multiplier", "What each result pays", BearingOff275);
+        Entry("stake-multiplier", "What each result pays", BearingOff276);
 
     /// <summary>Who throws first in the following game.</summary>
     public static MapEntry NextGameOpening { get; } =
-        Entry("next-game-opening", "Who throws first in the following game", BearingOff275);
+        Entry("next-game-opening", "Who throws first in the following game", BearingOff277);
 
-    /// <summary>Doubling. Declined: out of scope, absent from a 1909 corpus.</summary>
+    /// <summary>
+    /// The faces a die bears, and the throws a pair of them can show. The corpus never writes
+    /// "six" of a die; it names all twenty-one throws of a pair and calls them all the possible
+    /// throws, which fixes six faces. Stated in a section <see cref="StrategyAdvice"/> declines.
+    /// </summary>
+    public static MapEntry DieFaces { get; } =
+        Entry(
+            "die-faces",
+            "The faces a die bears, and the throws a pair of them can show",
+            HintsForPlay277);
+
+    /// <summary>Doubling the stake during play. Declined: out of scope, absent from a 1909 corpus.</summary>
     public static MapEntry DoublingCube { get; } =
-        Entry("doubling-cube", "Doubling", "(absent)");
+        Entry("doubling-cube", "Doubling the stake during play", BoardAndMen272);
 
-    /// <summary>Opening play advice. Declined: out of scope, non-normative.</summary>
+    /// <summary>The advisory principles of play. Declined: out of scope, non-normative.</summary>
     public static MapEntry StrategyAdvice { get; } =
-        Entry("strategy-advice", "Opening play advice", "BACKGAMMON / Hints for Play / p. 277");
+        Entry("strategy-advice", "The advisory principles of play", HintsForPlay277);
 }
