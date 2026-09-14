@@ -242,28 +242,36 @@ if len(items) != 1:
     print(f"error: expected exactly one RulesFactoryMap item from the restored package, found {len(items)}", file=sys.stderr)
     sys.exit(1)
 i = items[0]
-print("\n".join([i["FullPath"], i["PackageId"], i["PackageVersion"]]))
+checker = i.get("ConsumerChecker", "")
+if not checker:
+    print("error: the RulesFactoryMap item names no ConsumerChecker; the package predates rules-factory#51", file=sys.stderr)
+    sys.exit(1)
+print("\n".join([i["FullPath"], i["PackageId"], i["PackageVersion"], checker]))
 ' "$MAP_ITEM")"; then
     mapfile -t MAP_FIELDS <<<"$MAP_ARGS"
     PACKAGE_MAP="${MAP_FIELDS[0]}"
+    CONSUMER_CHECKER="${MAP_FIELDS[3]}"
     run "corpus-map.json is merge(${MAP_FIELDS[1]}@${MAP_FIELDS[2]}, corpus-map.overlay.json)" \
         python3 scripts/map-overlay.py check --package-map "$PACKAGE_MAP" \
           --package-id "${MAP_FIELDS[1]}" --package-version "${MAP_FIELDS[2]}" \
           --overlay corpus-map.overlay.json --map corpus-map.json --manifest corpus-manifest.json || true
+    # rules-factory#39, #51 and 0015 (merge rule 6): the map's structure was checked before the
+    # package could be a version, so it is not re-checked here. What is re-checked is what the
+    # overlay can change -- check-map.py's status-dependent checks (vocabulary, status, absent,
+    # correspondence) -- and they are run from the restored package's own tools/check-map.py,
+    # not a copy, so a change to them arrives with the next package version. Rows 2 and 5 of
+    # the correspondence table are additionally held against the code by the correspondence
+    # step below, which reads src/ and which the packaged checker cannot.
+    run "packaged check-map.py --phase consumer passes on the merged map (${MAP_FIELDS[1]}@${MAP_FIELDS[2]})" \
+        python3 "$CONSUMER_CHECKER" --phase consumer --manifest corpus-manifest.json corpus-map.json || true
   else
     fail "the restored map package could not be located"
+    fail "packaged check-map.py --phase consumer (no package to run it from)"
   fi
 else
   skipped "corpus-map.json is merge(package, overlay)"
+  skipped "packaged check-map.py --phase consumer passes on the merged map"
 fi
-
-# rules-factory#39 and 0015: the map's structure was checked before the package could be a
-# version, so it is not re-checked here. What is re-checked is what the overlay can change --
-# check-map.py's STATUS_DEPENDENT checks, transcribed in scripts/check-map-consumer.py -- on
-# the merged map. Rows 2 and 5 of the correspondence table are held against the code by the
-# correspondence step below.
-run "status-dependent map checks pass on the merged map (vocabulary, status, absent, correspondence)" \
-    python3 scripts/check-map-consumer.py corpus-map.json || true
 
 # The engine's SourceBaselineId claims a digest for a named derivation, and whether anyone can
 # check that claim is a property of the corpus, not of this script (rules-factory decision

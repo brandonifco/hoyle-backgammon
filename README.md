@@ -9,7 +9,7 @@ eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt
 every validation run. The specification is `corpus-map.json`, thirty-two entries covering
 that chapter. The map is not copied from the factory: it comes from the package
 [`RulesFactory.Maps.HoyleBackgammon`](https://www.nuget.org/packages/RulesFactory.Maps.HoyleBackgammon)
-1.0.0, and the engine adds only its own build facts on top
+2.0.0, and the engine adds only its own build facts on top
 ([rules-factory decision 0015](https://github.com/brandonifco/rules-factory/blob/main/docs/decisions/0015-a-map-is-published-as-a-versioned-package.md)).
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909
@@ -21,7 +21,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 |---|---|
 | `src/Tabletop.Dice` | Dice vocabulary over the kernel's `UniformInt`. Ruleset-agnostic, and its own project so that claim is checkable — [decision 0001](docs/decisions/0001-the-dice-pack-is-its-own-project.md). |
 | `src/HoyleBackgammon` | The engine. Board, movement, the bar, bearing off, game value. |
-| `corpus-map.json` | The specification, and the only thing the code cites. It is `merge(package, overlay)`: the map in `RulesFactory.Maps.HoyleBackgammon` 1.0.0, referenced at an exact version in `Directory.Packages.props` and pinned by content hash in `packages.lock.json`, with `corpus-map.overlay.json` applied. It is committed because the gate's other steps read it, and the gate fails if it is not exactly that merge. Do not edit it by hand: edit the overlay and regenerate with `scripts/map-overlay.py merge`. |
+| `corpus-map.json` | The specification, and the only thing the code cites. It is `merge(package, overlay)`: the map in `RulesFactory.Maps.HoyleBackgammon` 2.0.0, referenced at an exact version in `Directory.Packages.props` and pinned by content hash in `packages.lock.json`, with `corpus-map.overlay.json` applied. It is committed because the gate's other steps read it, and the gate fails if it is not exactly that merge. Do not edit it by hand: edit the overlay and regenerate with `scripts/map-overlay.py merge`. |
 | `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 28 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
 | `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; ten have since been accepted, in two rounds. |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`. |
