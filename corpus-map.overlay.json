@@ -1,0 +1,486 @@
+{
+  "player-count": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "PlayerCountTests.A_game_is_played_by_exactly_two_persons_turn_and_turn_about",
+        "mutation": "Players.Adversary returned the player himself (`player` for `player == Player.White ? Player.Black : Player.White`), so one person plays alone; this test went red. It went red too with Players.Both reduced to White alone, and with a third value, Red, added to Player."
+      }
+    ]
+  },
+  "men-count": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "PositionTests.A_side_with_the_wrong_number_of_men_is_refused",
+        "mutation": "Position.ToSlots refused only a side of more than fifteen (`total > MenPerPlayer` for `total != MenPerPlayer`); this test went red on fourteen."
+      },
+      {
+        "test": "PositionTests.Thirty_men_fifteen_to_a_side",
+        "mutation": "Position.MenPerPlayer set to 14; this test went red."
+      }
+    ]
+  },
+  "board-tables": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "GeometryTests.Each_quarter_holds_six_points",
+        "mutation": "Geometry.QuarterOf ended the inner table at pip 5 (`<= 5 => Quarter.OwnInner`); this test went red."
+      },
+      {
+        "test": "GeometryTests.Each_table_is_marked_with_twelve_points_six_at_either_end",
+        "mutation": "The same mutation, the inner table ending at pip 5; this test went red."
+      }
+    ]
+  },
+  "point-designations": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "GeometryTests.Every_point_has_its_corpus_name",
+        "mutation": "Geometry.NameOf called an outer table's first point the ace point rather than the bar point; this test went red."
+      }
+    ]
+  },
+  "starting-position": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "StartingPositionTests.The_four_points_are_the_four_the_corpus_names",
+        "mutation": "Setup.Arrangement put the three men on pip 7 instead of pip 8; this test went red."
+      }
+    ]
+  },
+  "opening-roll": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "OpeningRollTests.The_higher_single_die_gives_the_right_to_begin",
+        "mutation": "Opening.RollForTheRight gave the right to begin to the lower die; this test went red."
+      },
+      {
+        "test": "OpeningRollTests.The_other_player_begins_when_his_is_the_higher",
+        "mutation": "The same mutation, the lower die begins; this test went red."
+      },
+      {
+        "test": "OpeningRollTests.In_the_event_of_a_tie_the_players_throw_again",
+        "mutation": "Opening.RollForTheRight accepted the first pair thrown, ties included (`attempt.First > 0` for `attempt.First != attempt.Second`); this test went red."
+      }
+    ]
+  },
+  "opening-thrower-option": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "OpeningThrowerOptionTests.He_may_adopt_the_points_shown_by_the_two_dice",
+        "mutation": "Opening.OpeningThrow inverted the option (`!adopt ? roll.Deciding : Throw(source)`); this test went red."
+      },
+      {
+        "test": "OpeningThrowerOptionTests.Or_he_may_throw_again_with_both_dice",
+        "mutation": "The same mutation, the option inverted; this test went red."
+      }
+    ]
+  },
+  "throw-two-dice": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "OpeningThrowerOptionTests.Every_subsequent_throw_is_with_both_dice",
+        "mutation": "Opening.Throw threw one die and doubled its face instead of throwing the pair; this test went red."
+      }
+    ]
+  },
+  "move-by-pip": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "MoveByPipTests.Six_trois_moves_one_man_six_and_then_the_same_or_another_man_three",
+        "mutation": "Movement.MovesForDie let only the rearmost man move, so the trois could not go to another man; this test went red."
+      },
+      {
+        "test": "MoveByPipTests.A_man_may_not_be_played_off_the_board_before_bearing_off_begins",
+        "mutation": "Movement.MovesForDie offered a move past the ace point before bearing off (`to < 1 || IsPermittedDestination(...)` for `to >= 1 && IsPermittedDestination(...)`); this test went red."
+      }
+    ]
+  },
+  "direction-of-travel": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "GeometryTests.The_two_courses_run_opposite_over_one_set_of_points",
+        "mutation": "Geometry.Mirror returned its argument, so both players' courses ran the same way; this test went red."
+      },
+      {
+        "test": "GeometryTests.A_mans_own_ace_point_faces_the_adversarys_ace_point",
+        "mutation": "The same mutation, Mirror as the identity; this test went red."
+      }
+    ]
+  },
+  "doublets": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "EntitlementTests.Doublets_are_played_twice_over",
+        "mutation": "Movement.Entitlement gave doublets two numbers instead of four; this test went red."
+      }
+    ]
+  },
+  "legal-destination": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "LegalDestinationTests.An_adversarys_men_on_the_destination",
+        "mutation": "Movement.IsPermittedDestination refused a point holding one adversary man (`== 0` for `<= 1`); this test went red."
+      }
+    ]
+  },
+  "made-point": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "FullTableSuspensionTests.Six_points_held_by_two_or_more_suspends_his_play_altogether",
+        "mutation": "Position.HasMadePoint required three men (`>= 3` for `>= 2`); this test went red."
+      },
+      {
+        "test": "PositionTests.Two_men_make_a_point_and_one_is_a_blot",
+        "mutation": "The same mutation, three men to a point; this test went red. Before it was strengthened it checked only the six point, which starts with five men, and stayed green; it now checks White's 24, which starts with exactly two."
+      }
+    ]
+  },
+  "blot-hit": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "PositionTests.A_lone_adversary_man_on_the_destination_is_taken_up_onto_the_bar",
+        "mutation": "Position.Apply removed a hit blot from its point without putting it on the bar; this test went red."
+      },
+      {
+        "test": "EnterFromBarTests.A_blot_hit_begins_its_journey_anew_however_far_advanced",
+        "mutation": "The same mutation, a hit blot not put on the bar; this test went red."
+      }
+    ]
+  },
+  "enter-from-bar": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "EnterFromBarTests.While_a_man_is_up_the_play_of_his_other_men_is_suspended",
+        "mutation": "Movement.MovesForDie never took the entry branch, so a player with a man up moved his other men; this test went red."
+      },
+      {
+        "test": "EnterFromBarTests.Entry_is_available_only_where_the_adversarys_table_is_open",
+        "mutation": "The same mutation, the entry branch never taken; this test went red."
+      },
+      {
+        "test": "EnterFromBarTests.Two_men_up_suspends_the_others_exactly_as_one_does",
+        "mutation": "Movement.MustEnterFromBar held only for exactly one man up (`== 1` for `> 0`); this test went red."
+      },
+      {
+        "test": "EnterFromBarTests.The_second_man_up_is_still_up_when_the_first_has_entered",
+        "mutation": "The same mutation, exactly one man up; this test went red."
+      },
+      {
+        "test": "EnterFromBarTests.Entry_is_permitted_on_a_point_the_entering_players_own_men_hold",
+        "mutation": "Movement.MovesForDie refused entry onto a point the entering player's own men hold -- the strict reading 0006 rejected; this test went red."
+      }
+    ]
+  },
+  "full-table-suspension": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "FullTableSuspensionTests.Six_points_held_by_two_or_more_suspends_his_play_altogether",
+        "mutation": "Movement.IsWhollySuspended always returned false; this test went red."
+      },
+      {
+        "test": "FullTableSuspensionTests.A_point_held_by_the_entering_players_own_men_does_not_make_the_table_full",
+        "mutation": "Movement.IsWhollySuspended counted a point as full on two men of either side -- the literal reading 0006 rejected; this test went red."
+      }
+    ]
+  },
+  "must-play-whole-throw": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "WholeThrowTests.A_throw_that_can_be_played_whole_must_be",
+        "mutation": "LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, and no filter to the compelled use); this test went red. The maximal filter alone removed was not caught by it, because from the start every leaf is whole."
+      },
+      {
+        "test": "WholeThrowTests.Doublets_that_cannot_be_played_four_times_are_played_as_far_as_they_go",
+        "mutation": "The same mutation, partial plays offered; this test went red."
+      },
+      {
+        "test": "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it",
+        "mutation": "LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red."
+      },
+      {
+        "test": "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+        "mutation": "The same mutation, the incomparable case resolved silently; this test went red."
+      },
+      {
+        "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
+        "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing."
+      }
+    ]
+  },
+  "bearing-off-eligible": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "BearingOffEligibilityTests.Fourteen_home_and_one_out_does_not",
+        "mutation": "BearingOff.IsEligible ignored a man on pip 7 (the outer-table loop started at 8); this test went red."
+      },
+      {
+        "test": "BearingOffEligibilityTests.A_man_hit_back_out_mid_bear_off_stops_it",
+        "mutation": "BearingOff.IsEligible ignored a single man on the bar (`> 1` for `> 0`); this test went red."
+      }
+    ]
+  },
+  "bearing-off-move-or-remove": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "BearingOffWorkedExampleTests.For_the_quatre_he_may_remove_from_the_quatre_point_or_advance_cinque_to_ace",
+        "mutation": "BearingOff.MovesForDie never removed a man from the point the die names; this test went red."
+      },
+      {
+        "test": "BearingOffWorkedExampleTests.For_the_trois_he_has_no_man_on_that_point_and_must_play_forward",
+        "mutation": "BearingOff.MovesForDie offered no forward move within the table; this test went red."
+      }
+    ]
+  },
+  "bearing-off-highest": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "BearingOffDetailTests.A_blocked_forward_move_bears_off_from_the_highest_point_men_still_above_it",
+        "mutation": "BearingOff.MovesForDie applied the modern rule, bearing off only from a point below the die; this test went red and no other did."
+      },
+      {
+        "test": "BearingOffWorkedExampleTests.A_six_cannot_be_dealt_with_and_bears_off_from_the_cinque_point",
+        "mutation": "BearingOff.MovesForDie bore off from the lowest occupied point instead of the highest; this test went red."
+      }
+    ]
+  },
+  "bearing-off-doublets": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "BearingOffWorkedExampleTests.Deuces_bear_off_three_and_the_fourth_man_is_played_forward",
+        "mutation": "LegalPlays refused to mix bearing off and moving within one doublets play (the 'or both' dropped); this test went red."
+      },
+      {
+        "test": "BearingOffDetailTests.Doublets_may_be_played_wholly_by_bearing_off",
+        "mutation": "LegalPlays refused any bearing off with doublets; this test went red. It stayed green under the no-mixing mutation above."
+      }
+    ]
+  },
+  "win-condition": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "BearingOffDetailTests.The_last_man_off_wins_the_game",
+        "mutation": "BearingOff.HasWon required more than fifteen men off, so nobody ever won; this test went red."
+      },
+      {
+        "test": "DeterminismTests.A_finished_game_ends_with_the_winner_bearing_off_his_last_man",
+        "mutation": "BearingOff.HasWon held once any man was off; this test went red. The_last_man_off_wins_the_game stayed green under it."
+      }
+    ]
+  },
+  "game-value": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "GameValueTests.The_adversary_bearing_off_makes_it_a_hit",
+        "mutation": "Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); this test went red."
+      },
+      {
+        "test": "GameValueTests.A_man_up_makes_it_a_backgammon",
+        "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red."
+      },
+      {
+        "test": "GameValueTests.The_three_named_results_do_not_cover_every_finish",
+        "mutation": "Outcome.ValueOf called the uncovered finish a hit instead of declining; this test went red."
+      }
+    ]
+  },
+  "agreed-backgammon-multiple": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "StakeTests.The_corpus_bounds_the_agreement_to_thrice_or_four_times",
+        "mutation": "AgreedBackgammonMultiple admitted a multiple of 2 as well as 3 and 4; this test went red."
+      },
+      {
+        "test": "StakeTests.The_figure_is_demanded_and_never_inferred",
+        "mutation": "Outcome.Pays inferred thrice when no agreement was given, instead of throwing; this test went red."
+      }
+    ]
+  },
+  "stake-multiplier": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "StakeTests.A_gammon_pays_double",
+        "mutation": "Outcome.Pays paid a gammon the single stake; this test went red."
+      },
+      {
+        "test": "StakeTests.A_backgammon_pays_the_multiple_the_players_agreed",
+        "mutation": "Outcome.Pays paid a backgammon thrice whatever was agreed; this test went red."
+      }
+    ]
+  },
+  "hit-pays-single-stake": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "StakeTests.A_hit_pays_the_single_stake",
+        "mutation": "Outcome.Pays paid a hit double; this test went red."
+      },
+      {
+        "test": "StakeTests.An_agreement_does_not_change_what_a_hit_or_a_gammon_pays",
+        "mutation": "Outcome.Pays paid a hit the agreed multiple less two, so it varied with the agreement; this test went red."
+      }
+    ]
+  },
+  "next-game-opening": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "NextGameTests.The_winner_of_a_hit_throws_first_in_the_game_next_following",
+        "mutation": "Outcome.Next inverted the hit test (`!=` for `==`); this test went red."
+      },
+      {
+        "test": "NextGameTests.After_a_gammon_or_backgammon_the_players_throw_again_for_the_right",
+        "mutation": "The same mutation, Next inverted; this test went red."
+      },
+      {
+        "test": "DeterminismTests.The_winner_of_a_hit_opens_the_next_game_without_a_roll_for_the_right",
+        "mutation": "Game.Play rolled for the right to begin even when an opener was supplied; this test went red."
+      }
+    ]
+  },
+  "die-faces": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 1
+    },
+    "tests": [
+      {
+        "test": "DieFacesTests.A_throw_shows_the_twenty_one_throws_the_corpus_names_and_no_other",
+        "mutation": "Die.D6 constructed a five-faced die; this test went red."
+      }
+    ]
+  }
+}

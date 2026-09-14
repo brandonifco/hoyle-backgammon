@@ -21,4 +21,13 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!-- Every package, the map included, is pinned by content hash in each project's
+       packages.lock.json. CI restores in locked mode, so a lock file that disagrees with the
+       references, or a package whose bytes differ from the hash, fails the restore rather
+       than being re-resolved. scripts/validate.sh passes locked mode explicitly as well. -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+  </PropertyGroup>
+
 </Project>

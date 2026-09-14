@@ -12,6 +12,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The map is referenced, never copied (rules-factory decision 0015). An exact version,
+         in brackets, so no restore can float to another one; packages.lock.json pins its
+         content hash. The engine's own build facts live in corpus-map.overlay.json. -->
+    <PackageVersion Include="RulesFactory.Maps.HoyleBackgammon" Version="[1.0.0]" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="xunit" Version="2.9.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />

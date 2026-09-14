@@ -3,6 +3,11 @@
   <ItemGroup>
     <PackageReference Include="RulesKernel" />
     <PackageReference Include="RulesKernel.Randomness" />
+    <!-- The map this engine is built from. It carries no assemblies: its build props add one
+         RulesFactoryMap item naming the restored corpus-map.json and corpus-manifest.json,
+         which scripts/validate.sh reads. PrivateAssets keeps it from flowing to anything that
+         references this project. -->
+    <PackageReference Include="RulesFactory.Maps.HoyleBackgammon" PrivateAssets="all" />
     <ProjectReference Include="../Tabletop.Dice/Tabletop.Dice.csproj" />
   </ItemGroup>
 

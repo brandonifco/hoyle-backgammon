@@ -8,8 +8,9 @@
 #   * the pinned corpus still hashes to the baseline the engine cites, verified under the
 #     posture the manifest declares for it, and reported NOT VERIFIED -- never ok -- where
 #     that posture leaves the bytes out of reach;
-#   * the map does too, because it is the oracle the next two steps judge the code against and
-#     the engine writes into it;
+#   * the map is the factory's published package plus this engine's overlay of three fields, and
+#     nothing else: it is the oracle the next steps judge the code against, so the engine may
+#     write into it only what rules-factory decision 0015 lets it own;
 #   * the code and the map name the same entries and spell the same citations;
 #   * and those citations resolve in the corpus: the page exists, it falls in the section
 #     named, and a quoted sentence is on the page it is attributed to;
@@ -212,6 +213,58 @@ else
   printf '%sok%s   SDK %s (rollForward=%s)\n' "$GREEN" "$OFF" "$actual" "$roll"
 fi
 
+# Restore comes first because the map is a package (rules-factory decision 0015): nothing below
+# can be judged against a map that has not been restored. Locked mode means packages.lock.json
+# decides, and a reference, a lock file or a package's bytes that disagree fail here instead of
+# being re-resolved.
+step "Restore (locked)"
+RESTORED=0
+run "dotnet restore --locked-mode" dotnet restore "$SOLUTION" --locked-mode && RESTORED=1 || true
+
+# The map is RulesFactory.Maps.HoyleBackgammon at the exact version Directory.Packages.props
+# names, plus corpus-map.overlay.json: status, implementedIn and tests, and nothing else, on
+# entries the package has. corpus-map.json is committed because every step after this reads it,
+# so it is checked to be exactly merge(package, overlay), and corpus-manifest.json to name the
+# package that was restored. The package's own build props say where NuGet put the map, so this
+# does not guess at the global packages folder. See scripts/map-overlay.py for the merge rules.
+step "Map = merge(package, overlay)"
+if [[ "$RESTORED" -eq 1 ]]; then
+  MAP_TF="$(python3 -c 'import re;print(re.search(r"<TargetFrameworks>([^;<]+)",open("Directory.Build.props").read()).group(1))')"
+  MAP_ITEM="$(dotnet msbuild src/HoyleBackgammon/HoyleBackgammon.csproj -getItem:RulesFactoryMap \
+      -p:TargetFramework="$MAP_TF" 2>/dev/null || true)"
+  if MAP_ARGS="$(python3 -c '
+import json, sys
+try:
+    items = json.loads(sys.argv[1])["Items"]["RulesFactoryMap"]
+except Exception:
+    items = []
+if len(items) != 1:
+    print(f"error: expected exactly one RulesFactoryMap item from the restored package, found {len(items)}", file=sys.stderr)
+    sys.exit(1)
+i = items[0]
+print("\n".join([i["FullPath"], i["PackageId"], i["PackageVersion"]]))
+' "$MAP_ITEM")"; then
+    mapfile -t MAP_FIELDS <<<"$MAP_ARGS"
+    PACKAGE_MAP="${MAP_FIELDS[0]}"
+    run "corpus-map.json is merge(${MAP_FIELDS[1]}@${MAP_FIELDS[2]}, corpus-map.overlay.json)" \
+        python3 scripts/map-overlay.py check --package-map "$PACKAGE_MAP" \
+          --package-id "${MAP_FIELDS[1]}" --package-version "${MAP_FIELDS[2]}" \
+          --overlay corpus-map.overlay.json --map corpus-map.json --manifest corpus-manifest.json || true
+  else
+    fail "the restored map package could not be located"
+  fi
+else
+  skipped "corpus-map.json is merge(package, overlay)"
+fi
+
+# rules-factory#39 and 0015: the map's structure was checked before the package could be a
+# version, so it is not re-checked here. What is re-checked is what the overlay can change --
+# check-map.py's STATUS_DEPENDENT checks, transcribed in scripts/check-map-consumer.py -- on
+# the merged map. Rows 2 and 5 of the correspondence table are held against the code by the
+# correspondence step below.
+run "status-dependent map checks pass on the merged map (vocabulary, status, absent, correspondence)" \
+    python3 scripts/check-map-consumer.py corpus-map.json || true
+
 # The engine's SourceBaselineId claims a digest for a named derivation, and whether anyone can
 # check that claim is a property of the corpus, not of this script (rules-factory decision
 # 0013). Each corpus in corpus-manifest.json declares its verification posture:
@@ -319,34 +372,6 @@ case "$posture_status" in
      NOT_VERIFIED+=("corpus verification posture") ;;
   *) fail "every corpus verified under its declared posture" ;;
 esac
-
-# The map is the oracle the two steps below validate against, and until now only one of the
-# two files they read was pinned. The corpus was; the map was not -- and this engine writes
-# into the map, stamping status, implementedIn and tests on the entries it implements. An oracle
-# that the thing under test edits, and that nothing re-derives, is not an oracle. So the map
-# is hashed the same way the corpus is, in corpus-manifest.json, which is the one file in the
-# repository nothing edits in the course of building the engine.
-run "corpus-map.json matches its pinned hash" python3 - <<'PY'
-import hashlib
-import json
-import pathlib
-import sys
-
-manifest = json.loads(pathlib.Path("corpus-manifest.json").read_text(encoding="utf-8"))
-pins = [m for m in manifest.get("maps", []) if m.get("path") == "corpus-map.json"]
-if len(pins) != 1:
-    print("error: corpus-manifest.json does not pin corpus-map.json exactly once", file=sys.stderr)
-    sys.exit(1)
-
-digest = hashlib.sha256(pathlib.Path("corpus-map.json").read_bytes()).hexdigest()
-if digest != pins[0]["contentHash"]:
-    print(
-        f"error: corpus-map.json hashes to {digest}, corpus-manifest.json pins "
-        f"{pins[0]['contentHash']}. If the map was meant to change, update the pin in the "
-        "same commit and say in the message what changed and why.",
-        file=sys.stderr)
-    sys.exit(1)
-PY
 
 # Every rule in this engine names a map entry. If the code names an entry the map does not
 # carry, or spells a citation differently from the map, the promise that a reader can get
@@ -841,9 +866,6 @@ print(
     f"{', '.join(quoted)}. {len(summarised)} summarise their evidence instead of quoting it, "
     f"so nothing below the page was checked for them: {', '.join(summarised)}.")
 PYCITE
-
-step "Restore"
-run "dotnet restore" dotnet restore "$SOLUTION" || true
 
 step "Format"
 run "dotnet format --verify-no-changes" \
