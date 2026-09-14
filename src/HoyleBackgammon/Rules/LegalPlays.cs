@@ -34,6 +34,33 @@ public static class LegalPlays
     /// returns <see cref="UnresolvedReason.RequiresInterpretation"/> rather than silently
     /// adopting the modern convention of compelling the higher die.
     /// </para>
+    /// <para>
+    /// <b>The enumeration contract.</b> <see cref="Game.Play"/> records a choice as an index
+    /// into this list, so its length and order are part of replay as much as the dice are,
+    /// and changing either changes what every recorded index means. They are fixed by, and
+    /// only by, the following:
+    /// </para>
+    /// <list type="number">
+    /// <item>The distinct numbers of the entitlement are tried highest first
+    /// (<see cref="Movement.Entitlement"/> already orders a throw higher first; this sorts
+    /// again, so the order does not depend on the caller).</item>
+    /// <item>For each number, moves come in <see cref="Movement.MovesForDie"/>'s order —
+    /// highest origin first.</item>
+    /// <item>The search is depth-first: at each step every number still available is tried in
+    /// that order, and each move is followed to the end before the next is tried. A line is
+    /// appended when it cannot be extended, so the list is in depth-first pre-order of
+    /// lines.</item>
+    /// <item>A memo on (position reached, how many of each number used) prunes any line that
+    /// reaches a state an earlier line already reached. Of several orderings of moves that
+    /// arrive at the same state, <em>only the first enumerated survives</em>; this is what
+    /// fixes the length, and it is why rules 1–3 decide which moves are written down.</item>
+    /// <item>Lines not using the compelled numbers are then removed, keeping the order of the
+    /// rest.</item>
+    /// </list>
+    /// <para>
+    /// No hash-set or dictionary iteration order reaches the list. <c>PlayEnumerationTests</c>
+    /// pins the result for six-trois and double deuces from the starting position.
+    /// </para>
     /// </remarks>
     /// <param name="position">The position before the throw is played.</param>
     /// <param name="player">The player to move.</param>
