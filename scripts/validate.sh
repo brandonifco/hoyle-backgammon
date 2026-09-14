@@ -578,19 +578,6 @@ for path, reason, prop in sites:
 
 # --- map -> code: every reason the map predicts, against the engine -----------------------
 
-# Row 2 says a `mapped` entry returns UnsupportedRule. Since rules-factory#2, `mapped` also
-# covers an entry the engine HAS built but no test proves -- "code without them is mapped,
-# whatever the repository contains" -- and for such an entry no decline path exists, because
-# the code answers. The two readings cannot be told apart from the map, so the exception is a
-# list, not a rule: each id is named here with its reason, the check fails for any other
-# row-2 entry with no UnsupportedRule path, and fails for a listed id that is no longer
-# row 2 (a stale exception is how a list like this rots).
-UNTESTED_BUT_BUILT = {
-    "player-count": "Player has two values and every rule is player-relative, but no test goes "
-                    "red under any sensible mutation of 'two persons'; demoted under rules-factory#2",
-}
-untested_seen = []
-
 verified_map, rows_seen = [], set()
 for entry in mapped["entries"]:
     row, predicted, why = first_matching_row(entry, by_id)
@@ -617,9 +604,6 @@ for entry in mapped["entries"]:
             f"{entry['id']}: ambiguity.unresolvedReason is {named!r}, but the entry matches "
             f"row {row} ({why}), which predicts {predicted}")
 
-    if row == 2 and entry["id"] in UNTESTED_BUT_BUILT and not cited:
-        untested_seen.append(entry["id"])
-        continue
     if predicted not in cited:
         problems.append(
             f"{entry['id']}: matches row {row} ({why}), so the engine must be able to return "
@@ -630,11 +614,6 @@ for entry in mapped["entries"]:
         problems.append(
             f"{entry['id']}: matches row {row} ({why}), which predicts {predicted}, but the "
             f"code also returns {other} citing it")
-
-for stale in sorted(set(UNTESTED_BUT_BUILT) - set(untested_seen)):
-    problems.append(
-        f"{stale}: listed in UNTESTED_BUT_BUILT but it is no longer a row-2 entry with no decline "
-        "path; remove it from the list")
 
 for p in problems:
     print(f"error: {p}", file=sys.stderr)
@@ -650,9 +629,6 @@ print(
     f"other entry predicts no unresolved reason and no code path declines citing it.\n"
     f"     NOT VERIFIED: {ROW7}. {len(partial)} site(s) so checked: "
     f"{'; '.join(partial) or 'none'}.\n"
-    f"     NOT VERIFIED: row 2 predicts UnsupportedRule for {len(untested_seen)} entry(ies) the "
-    f"engine built but no test proves, and no code path returns it: "
-    f"{'; '.join(f'{i} ({UNTESTED_BUT_BUILT[i]})' for i in untested_seen) or 'none'}.\n"
     f"     NOT EXERCISED: no entry in this map reaches row(s) "
     f"{', '.join(str(r) for r in unexercised) or '(none)'}. Those rows are transcribed above "
     f"and this map proves nothing about them.")

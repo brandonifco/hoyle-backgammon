@@ -23,7 +23,17 @@
       "clarity": "clear",
       "dependsOn": [],
       "evidence": "Backgammon is played by two persons, on a special \"board\" with thirty \"men,\" fifteen white and fifteen black (or red), similar to those used for the game of Draughts.",
-      "status": "mapped",
+      "status": "implemented",
+      "implementedIn": {
+        "ruleset": "hoyle-1909-backgammon",
+        "version": 1
+      },
+      "tests": [
+        {
+          "test": "PlayerCountTests.A_game_is_played_by_exactly_two_persons_turn_and_turn_about",
+          "mutation": "Players.Adversary returned the player himself (`player` for `player == Player.White ? Player.Black : Player.White`), so one person plays alone; this test went red. It went red too with Players.Both reduced to White alone, and with a third value, Red, added to Player."
+        }
+      ],
       "note": "men-count took the thirty men from this sentence and left the two persons in it. The engine's Player type and every player-relative rule rest on the count; nothing mapped it."
     },
     {
@@ -437,7 +447,11 @@
       "tests": [
         {
           "test": "FullTableSuspensionTests.Six_points_held_by_two_or_more_suspends_his_play_altogether",
-          "mutation": "Position.HasMadePoint required three men (`>= 3` for `>= 2`); this test went red. PositionTests.Two_men_make_a_point_and_one_is_a_blot stayed green under it and is not named."
+          "mutation": "Position.HasMadePoint required three men (`>= 3` for `>= 2`); this test went red."
+        },
+        {
+          "test": "PositionTests.Two_men_make_a_point_and_one_is_a_blot",
+          "mutation": "The same mutation, three men to a point; this test went red. Before it was strengthened it checked only the six point, which starts with five men, and stayed green; it now checks White's 24, which starts with exactly two."
         }
       ],
       "note": "Demonstrate two men and one. The span stops before the sentence's last clause, \"it is always an object to do this\", which is advice inside a normative section and is dropped rather than mapped - the instance docs/method.md names. Cited p. 273 until the span was quoted and checked."
@@ -607,6 +621,10 @@
         {
           "test": "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
           "mutation": "The same mutation, the incomparable case resolved silently; this test went red."
+        },
+        {
+          "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
+          "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing."
         }
       ],
       "ambiguity": {

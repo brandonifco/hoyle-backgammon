@@ -87,15 +87,25 @@ public class PositionTests
     [Fact]
     public void Two_men_make_a_point_and_one_is_a_blot()
     {
+        // White's ace point in Black's table (his pip 24) starts with exactly two men, so the
+        // threshold itself is under test: two make the point, and moving one leaves a blot.
         var start = Corpus.StartingPosition.Position;
+        Assert.Equal(2, start.Men(Player.White, 24));
 
-        Assert.True(start.HasMadePoint(Player.White, 6));
-        Assert.False(start.HasBlot(Player.White, 6));
+        Assert.True(start.HasMadePoint(Player.White, 24));
+        Assert.False(start.HasBlot(Player.White, 24));
 
         var after = start.Apply(Player.White, 24, 18);
+        Assert.Equal(1, after.Men(Player.White, 24));
         Assert.True(after.HasBlot(Player.White, 24));
         Assert.False(after.HasMadePoint(Player.White, 24));
         Assert.True(after.HasBlot(Player.White, 18));
+
+        // More than two still make the point and are no blot; an empty point is neither.
+        Assert.True(start.HasMadePoint(Player.White, 6));
+        Assert.False(start.HasBlot(Player.White, 6));
+        Assert.False(start.HasMadePoint(Player.White, 1));
+        Assert.False(start.HasBlot(Player.White, 1));
     }
 
     [Fact]
