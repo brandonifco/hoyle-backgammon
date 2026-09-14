@@ -42,7 +42,8 @@ jobs:
         with:
           dotnet-version: ${{ steps.sdk.outputs.version }}
 
-      # The gate re-derives the corpus hash, re-derives the map hash, checks every MapEntries
+      # The gate restores the map package in locked mode, checks corpus-map.json is exactly the
+      # package plus the engine's overlay, re-derives the corpus hash, checks every MapEntries
       # citation against the map and every map citation against the corpus's own page markers,
       # and asserts that the tests actually ran rather than that dotnet exited 0.
       - name: Validate

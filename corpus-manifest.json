@@ -21,15 +21,12 @@
     {
       "path": "corpus-map.json",
       "sourceId": "hoyle-1909",
-      "contentHash": "917288cb01e9b7ecf0fb6d0079befbfee8c6bfad5fec688f2fac76dad00c4a9c",
-      "hashDerivation": "file-bytes-as-committed",
       "upstream": {
-        "repository": "rules-factory",
-        "path": "examples/hoyle-backgammon/corpus-map.json",
-        "commit": "7900af21662e4f6d5eead0e8713159977647ed36"
+        "package": "RulesFactory.Maps.HoyleBackgammon",
+        "version": "1.0.0"
       },
-      "divergesFromUpstream": "This copy is the upstream map with exactly three engine-authored fields, and nothing else: status, raised from 'mapped' to 'implemented' on every entry the engine implements and whose tests were each shown to fail; implementedIn, naming the ruleset and version that implements it; and tests, naming the tests that prove each implemented entry with the mutation that turned each one red. All three are build facts, which only the engine can know: issue #17 in rules-factory names the first two as the legitimate divergence, and tests (rules-factory #2) is the verdict that status now requires. docs/corpus-map.md does not itself say which fields a consumer owns, so tests is treated as engine-owned by the same reasoning as #17. Everything else matches the upstream bytes field for field -- locator, kind, scope, clarity, dependsOn, enabledBy, suspendedBy, derivedFrom, crossReferences, absentFrom, evidence, ambiguity, beyondAdapter and note. Corrections this build found are recorded in MAP-FINDINGS.md and accepted upstream, never applied here alone.",
-      "whyPinned": "The map is the oracle scripts/validate.sh validates the code against, and the engine writes into it. Unpinned, an edit to the oracle would look the same as an edit to the code passing."
+      "overlay": "corpus-map.overlay.json",
+      "derivation": "corpus-map.json is merge(package map, overlay) under rules-factory decision 0015. The package is referenced at an exact version in Directory.Packages.props and pinned by content hash in src/HoyleBackgammon/packages.lock.json, restored in locked mode; the overlay sets only status, implementedIn and tests, the build facts only this engine can know. scripts/validate.sh fails if the overlay sets any other field or names an entry the package lacks, if corpus-map.json is not exactly the merge, or if this upstream is not the restored package. Corrections this build finds go upstream (MAP-FINDINGS.md) and arrive as a new package version, never applied here."
     }
   ]
 }
