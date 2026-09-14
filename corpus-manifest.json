@@ -21,14 +21,14 @@
     {
       "path": "corpus-map.json",
       "sourceId": "hoyle-1909",
-      "contentHash": "a58ec58941abd8bd79b9ef05b8e09c1188a4c37f0871fc2ab4037a51246a829f",
+      "contentHash": "917288cb01e9b7ecf0fb6d0079befbfee8c6bfad5fec688f2fac76dad00c4a9c",
       "hashDerivation": "file-bytes-as-committed",
       "upstream": {
         "repository": "rules-factory",
         "path": "examples/hoyle-backgammon/corpus-map.json",
         "commit": "7900af21662e4f6d5eead0e8713159977647ed36"
       },
-      "divergesFromUpstream": "This copy is the upstream map with exactly three engine-authored fields, and nothing else: status, raised from 'mapped' to 'implemented' on every entry the engine implements and whose tests were each shown to fail; implementedIn, naming the ruleset and version that implements it; and tests, naming the tests that prove each implemented entry with the mutation that turned each one red. All three are build facts, which only the engine can know: issue #17 in rules-factory names the first two as the legitimate divergence, and tests (rules-factory #2) is the verdict that status now requires. docs/corpus-map.md does not itself say which fields a consumer owns, so tests is treated as engine-owned by the same reasoning as #17. Everything else matches the upstream bytes field for field -- locator, kind, scope, clarity, dependsOn, enabledBy, suspendedBy, derivedFrom, crossReferences, absentFrom, evidence, ambiguity, beyondAdapter and note. player-count stays 'mapped' although the engine plays two players: no test fails under any sensible mutation of that rule. Corrections this build found are recorded in MAP-FINDINGS.md and accepted upstream, never applied here alone.",
+      "divergesFromUpstream": "This copy is the upstream map with exactly three engine-authored fields, and nothing else: status, raised from 'mapped' to 'implemented' on every entry the engine implements and whose tests were each shown to fail; implementedIn, naming the ruleset and version that implements it; and tests, naming the tests that prove each implemented entry with the mutation that turned each one red. All three are build facts, which only the engine can know: issue #17 in rules-factory names the first two as the legitimate divergence, and tests (rules-factory #2) is the verdict that status now requires. docs/corpus-map.md does not itself say which fields a consumer owns, so tests is treated as engine-owned by the same reasoning as #17. Everything else matches the upstream bytes field for field -- locator, kind, scope, clarity, dependsOn, enabledBy, suspendedBy, derivedFrom, crossReferences, absentFrom, evidence, ambiguity, beyondAdapter and note. Corrections this build found are recorded in MAP-FINDINGS.md and accepted upstream, never applied here alone.",
       "whyPinned": "The map is the oracle scripts/validate.sh validates the code against, and the engine writes into it. Unpinned, an edit to the oracle would look the same as an edit to the code passing."
     }
   ]

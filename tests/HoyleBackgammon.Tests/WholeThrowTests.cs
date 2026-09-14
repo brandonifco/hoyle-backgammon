@@ -32,17 +32,29 @@ public class WholeThrowTests
         Assert.All(plays, play => Assert.Equal(9, play.PipsUsed));
     }
 
-    [Fact]
-    public void Where_only_one_die_can_ever_be_played_that_die_is_compelled()
+    [Theory]
+    [InlineData(6)]
+    [InlineData(3)]
+    public void Where_only_one_die_can_ever_be_played_that_die_is_compelled(int playable)
     {
-        // The trois landing is blocked as well, so the six on the eight point is the only
-        // number that can be played at all, and it must be.
-        var position = OneMobileMan(blockTheTroisLanding: true);
+        // One mobile man on the eight point and one stuck on the far ace point (Black holds
+        // White's 18 and 21). For the six, Black also holds White's cinque point, so the trois
+        // cannot be played from the eight; for the trois, he holds White's deuce point instead,
+        // so the six cannot. Either way exactly one number of the six-trois can be played at
+        // all -- the higher or the lower -- and it must be: neither declining the throw
+        // altogether nor preferring the higher number is open to him.
+        int blockedWhitePip = playable == 6 ? 5 : 2;
+        var position = Board.Of(
+            Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
+            Board.Men().At(7, 2).At(4, 2).At(Geometry.Mirror(blockedWhitePip), 2).RestAt(12));
 
         var play = Assert.Single(Legal.Plays(position, Player.White, new DiceThrow(6, 3)));
 
-        Assert.Equal(6, play.PipsUsed);
-        Assert.Equal(2, Assert.Single(play.Moves).To);
+        Assert.Equal(playable, play.PipsUsed);
+        var move = Assert.Single(play.Moves);
+        Assert.Equal(8, move.From);
+        Assert.Equal(8 - playable, move.To);
+        Assert.Equal(1, play.Result.Men(Player.White, 8 - playable));
     }
 
     [Fact]
