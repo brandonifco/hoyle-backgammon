@@ -19,7 +19,8 @@ merge(package, overlay), as 0015 defines it -- each rule is also a failure below
      the top-level fields;
   5. the committed corpus-map.json equals the merge as parsed JSON.
 
-(Rule 6, the consumer-phase checks on the merge, is scripts/check-map-consumer.py.)
+(Rule 6, the consumer-phase checks on the merge, is the package's own tools/check-map.py
+--phase consumer, which scripts/validate.sh runs.)
 
 Where the overlay's fields land inside an entry is serialisation, not meaning: they are placed,
 in the order status, implementedIn, tests, where upstream's `status` was. That keeps

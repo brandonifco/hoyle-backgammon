@@ -15,7 +15,7 @@
     <!-- The map is referenced, never copied (rules-factory decision 0015). An exact version,
          in brackets, so no restore can float to another one; packages.lock.json pins its
          content hash. The engine's own build facts live in corpus-map.overlay.json. -->
-    <PackageVersion Include="RulesFactory.Maps.HoyleBackgammon" Version="[1.0.0]" />
+    <PackageVersion Include="RulesFactory.Maps.HoyleBackgammon" Version="[2.0.0]" />
   </ItemGroup>
 
   <ItemGroup>
