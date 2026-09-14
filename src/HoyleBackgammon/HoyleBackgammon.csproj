@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="RulesKernel" />
+    <PackageReference Include="RulesKernel.Randomness" />
+    <ProjectReference Include="../Tabletop.Dice/Tabletop.Dice.csproj" />
+  </ItemGroup>
+
+</Project>

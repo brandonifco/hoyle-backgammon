@@ -1,0 +1,193 @@
+using System.Collections.Immutable;
+using RulesKernel.Resolution;
+
+namespace HoyleBackgammon;
+
+/// <summary>
+/// Turning a throw into the set of plays the corpus allows.
+/// </summary>
+public static class LegalPlays
+{
+    /// <summary>
+    /// Every play <paramref name="player"/> may make with <paramref name="entitlement"/>, or an
+    /// unresolved result where the corpus does not settle which of two incomparable plays is
+    /// compelled.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="MapEntries.MustPlayWholeThrow"/>: "Any part of a throw which cannot be
+    /// played is lost to the thrower, but every player is compelled to play the whole of his
+    /// throw if it is possible to do so."
+    /// </para>
+    /// <para>
+    /// Read as an obligation to play a set of numbers that cannot be extended: if the whole
+    /// throw can be played, it must be, and nothing less than a maximal set is ever
+    /// permissible, because a smaller set is precisely one that could be extended. That
+    /// settles doublets — a line playing three of the four numbers strictly contains one
+    /// playing two, so the three-number line is compelled — and it settles a throw where only
+    /// one die can ever be played.
+    /// </para>
+    /// <para>
+    /// What it does not settle is the map's recorded ambiguity: where either die alone can be
+    /// played but not both, the two candidate plays are incomparable, neither can be extended,
+    /// and the text gives no rule for choosing. The entry's fate is <c>unresolved</c>, so this
+    /// returns <see cref="UnresolvedReason.RequiresInterpretation"/> rather than silently
+    /// adopting the modern convention of compelling the higher die.
+    /// </para>
+    /// </remarks>
+    /// <param name="position">The position before the throw is played.</param>
+    /// <param name="player">The player to move.</param>
+    /// <param name="entitlement">The numbers the throw entitles, from <see cref="Movement.Entitlement"/>.</param>
+    /// <returns>
+    /// The plays, in a fixed enumeration order, never empty: a throw with nothing playable
+    /// yields exactly one play, which moves no man.
+    /// </returns>
+    public static Resolution<ImmutableArray<Play>> For(
+        Position position, Player player, ImmutableArray<int> entitlement)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        if (entitlement.IsDefaultOrEmpty)
+        {
+            throw new ArgumentException("a throw entitles at least one number.", nameof(entitlement));
+        }
+
+        var values = entitlement.Distinct().OrderDescending().ToImmutableArray();
+        var available = new int[values.Length];
+        foreach (int pip in entitlement)
+        {
+            available[values.IndexOf(pip)]++;
+        }
+
+        var terminals = new List<Terminal>();
+        var seen = new HashSet<Node>();
+        Explore(position, player, values, available, new int[values.Length], [], terminals, seen);
+
+        var maximal = terminals
+            .Select(t => t.Used)
+            .Distinct(UsedComparer.Instance)
+            .Where(used => !terminals.Any(other => StrictlyContains(other.Used, used)))
+            .ToList();
+
+        if (maximal.Count > 1)
+        {
+            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
+                UnresolvedReason.RequiresInterpretation,
+                "choose between plays that use incomparable parts of a throw that cannot be "
+                + "played whole",
+                MapEntries.MustPlayWholeThrow.Locator));
+        }
+
+        var compelled = maximal[0];
+        var plays = terminals
+            .Where(t => UsedComparer.Instance.Equals(t.Used, compelled))
+            .Select(t => new Play(t.Moves, t.Position))
+            .ToImmutableArray();
+
+        return Resolution<ImmutableArray<Play>>.FromValue(plays);
+    }
+
+    private static bool StrictlyContains(int[] candidate, int[] used)
+    {
+        bool strictly = false;
+        for (int i = 0; i < used.Length; i++)
+        {
+            if (candidate[i] < used[i])
+            {
+                return false;
+            }
+
+            strictly |= candidate[i] > used[i];
+        }
+
+        return strictly;
+    }
+
+    private static void Explore(
+        Position position,
+        Player player,
+        ImmutableArray<int> values,
+        int[] remaining,
+        int[] used,
+        ImmutableArray<Move> moves,
+        List<Terminal> terminals,
+        HashSet<Node> seen)
+    {
+        if (!seen.Add(new Node(position, (int[])used.Clone())))
+        {
+            return;
+        }
+
+        bool extended = false;
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (remaining[i] == 0)
+            {
+                continue;
+            }
+
+            foreach (var move in Movement.MovesForDie(position, player, values[i]))
+            {
+                extended = true;
+                remaining[i]--;
+                used[i]++;
+                Explore(
+                    position.Apply(player, move.From, move.To),
+                    player,
+                    values,
+                    remaining,
+                    used,
+                    moves.Add(move),
+                    terminals,
+                    seen);
+                used[i]--;
+                remaining[i]++;
+            }
+        }
+
+        if (!extended)
+        {
+            terminals.Add(new Terminal((int[])used.Clone(), moves, position));
+        }
+    }
+
+    private sealed record Terminal(int[] Used, ImmutableArray<Move> Moves, Position Position);
+
+    private sealed record Node(Position Position, int[] Used)
+    {
+        public bool Equals(Node? other) =>
+            other is not null
+            && Position.Equals(other.Position)
+            && Used.AsSpan().SequenceEqual(other.Used.AsSpan());
+
+        public override int GetHashCode()
+        {
+            var hash = default(HashCode);
+            hash.Add(Position);
+            foreach (int u in Used)
+            {
+                hash.Add(u);
+            }
+
+            return hash.ToHashCode();
+        }
+    }
+
+    private sealed class UsedComparer : IEqualityComparer<int[]>
+    {
+        public static readonly UsedComparer Instance = new();
+
+        public bool Equals(int[]? x, int[]? y) =>
+            x is not null && y is not null && x.AsSpan().SequenceEqual(y.AsSpan());
+
+        public int GetHashCode(int[] obj)
+        {
+            var hash = default(HashCode);
+            foreach (int value in obj)
+            {
+                hash.Add(value);
+            }
+
+            return hash.ToHashCode();
+        }
+    }
+}

@@ -1,0 +1,22 @@
+namespace HoyleBackgammon;
+
+/// <summary>One of the two players. "Backgammon is played by two persons."</summary>
+public enum Player
+{
+    /// <summary>White.</summary>
+    White,
+
+    /// <summary>Black — "fifteen white and fifteen black (or red)".</summary>
+    Black,
+}
+
+/// <summary>Helpers over <see cref="Player"/>.</summary>
+public static class Players
+{
+    /// <summary>Both players, White first. The order is the engine's, not the corpus's.</summary>
+    public static readonly IReadOnlyList<Player> Both = [Player.White, Player.Black];
+
+    /// <summary>The other player.</summary>
+    public static Player Adversary(this Player player) =>
+        player == Player.White ? Player.Black : Player.White;
+}

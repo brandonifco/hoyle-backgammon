@@ -1,0 +1,101 @@
+using Xunit;
+
+namespace HoyleBackgammon.Tests;
+
+public class OpeningRollTests
+{
+    [Fact]
+    public void The_higher_single_die_gives_the_right_to_begin()
+    {
+        var source = ScriptedSource.Faces(5, 2);
+
+        var roll = Opening.RollForTheRight(source);
+
+        Assert.Equal(Player.White, roll.Opener);
+        Assert.Single(roll.Attempts);
+        Assert.Equal(2, source.Drawn);
+    }
+
+    [Fact]
+    public void The_other_player_begins_when_his_is_the_higher()
+    {
+        var roll = Opening.RollForTheRight(ScriptedSource.Faces(2, 5));
+
+        Assert.Equal(Player.Black, roll.Opener);
+    }
+
+    [Fact]
+    public void In_the_event_of_a_tie_the_players_throw_again()
+    {
+        var source = ScriptedSource.Faces(3, 3, 6, 6, 1, 4);
+
+        var roll = Opening.RollForTheRight(source);
+
+        Assert.Equal(3, roll.Attempts.Length);
+        Assert.Equal(Player.Black, roll.Opener);
+        Assert.Equal(6, source.Drawn);
+    }
+
+    [Fact]
+    public void The_deciding_pair_can_never_be_doublets()
+    {
+        // Because a tie throws again. This is why the opener's adopted first throw is never
+        // played twice over.
+        var roll = Opening.RollForTheRight(ScriptedSource.Faces(4, 4, 6, 1));
+
+        Assert.False(roll.Deciding.IsDoublets);
+        Assert.Equal(6, roll.Deciding.First);
+        Assert.Equal(1, roll.Deciding.Second);
+    }
+}
+
+public class OpeningThrowerOptionTests
+{
+    [Fact]
+    public void He_may_adopt_the_points_shown_by_the_two_dice()
+    {
+        var source = ScriptedSource.Faces(6, 2);
+        var roll = Opening.RollForTheRight(source);
+
+        var thrown = Opening.OpeningThrow(roll, adopt: true, source);
+
+        Assert.Equal(roll.Deciding, thrown);
+        Assert.Equal(2, source.Drawn);
+    }
+
+    [Fact]
+    public void Or_he_may_throw_again_with_both_dice()
+    {
+        var source = ScriptedSource.Faces(6, 2, 5, 5);
+        var roll = Opening.RollForTheRight(source);
+
+        var thrown = Opening.OpeningThrow(roll, adopt: false, source);
+
+        Assert.Equal(5, thrown.First);
+        Assert.Equal(5, thrown.Second);
+        Assert.True(thrown.IsDoublets);
+        Assert.Equal(4, source.Drawn);
+    }
+
+    [Fact]
+    public void An_adopted_opening_throw_entitles_two_numbers_and_a_re_thrown_doublet_four()
+    {
+        var source = ScriptedSource.Faces(6, 2, 5, 5);
+        var roll = Opening.RollForTheRight(source);
+
+        Assert.Equal(2, Movement.Entitlement(Opening.OpeningThrow(roll, true, source)).Length);
+        Assert.Equal(4, Movement.Entitlement(Opening.OpeningThrow(roll, false, source)).Length);
+    }
+
+    [Fact]
+    public void Every_subsequent_throw_is_with_both_dice()
+    {
+        var source = ScriptedSource.Faces(4, 1);
+
+        var thrown = Opening.Throw(source);
+
+        Assert.Equal(4, thrown.First);
+        Assert.Equal(1, thrown.Second);
+        Assert.Equal(2, source.Drawn);
+    }
+}
