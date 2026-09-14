@@ -3,7 +3,7 @@ using RulesKernel.Resolution;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The two entries the map records as <c>scope: out</c>, reachable rather than absent.
+/// The three entries the map records as <c>scope: out</c>, reachable rather than absent.
 /// </summary>
 /// <remarks>
 /// A caller who asks this engine to double, or to tell them how to open, gets an answer that
@@ -24,6 +24,20 @@ public static class OutOfScope
             UnresolvedReason.OutsideCurrentScope,
             "double the stake",
             MapEntries.DoublingCube.Locator));
+
+    /// <summary>
+    /// Calling a throw aloud, the higher number first. <see cref="MapEntries.CallingTheThrow"/>,
+    /// <c>scope: out</c>: the corpus states it and it is normative, but it is spoken by one
+    /// player to the other, moves no man, and the corpus attaches no consequence to it. The move
+    /// is made in accordance with the throw, not the call, so an engine handed the dice has
+    /// nothing to do with it.
+    /// </summary>
+    /// <returns>Always <see cref="UnresolvedReason.OutsideCurrentScope"/>.</returns>
+    public static Resolution<string> CallTheThrow() =>
+        Resolution<string>.FromUnresolved(new UnresolvedResult(
+            UnresolvedReason.OutsideCurrentScope,
+            "call a throw aloud, the higher number first",
+            MapEntries.CallingTheThrow.Locator));
 
     /// <summary>
     /// How to play a given opening throw well. <see cref="MapEntries.StrategyAdvice"/>,

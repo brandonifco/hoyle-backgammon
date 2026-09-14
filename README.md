@@ -6,7 +6,7 @@ A deterministic backgammon engine built from a corpus map, on
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
-every validation run. The specification is `corpus-map.json`, thirty entries covering
+every validation run. The specification is `corpus-map.json`, thirty-two entries covering
 that chapter, hashed on every run too.
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909
@@ -18,7 +18,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 |---|---|
 | `src/Tabletop.Dice` | Dice vocabulary over the kernel's `UniformInt`. Ruleset-agnostic, and its own project so that claim is checkable — [decision 0001](docs/decisions/0001-the-dice-pack-is-its-own-project.md). |
 | `src/HoyleBackgammon` | The engine. Board, movement, the bar, bearing off, game value. |
-| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy of the factory's map at `7d13c27`: 26 entries carry `status: implemented` and `implementedIn`, where the factory's copy has them `mapped`. Nothing else differs at all -- the two engine-authored notes are gone, because decision 0005 decoupled `status` from `ambiguity.fate` and left no shortfall for them to apologise for — every correction this build found is in `MAP-FINDINGS.md`, not applied here. The divergence is spelled out in `corpus-manifest.json`, which also pins this copy by SHA-256, because the map is the oracle the gate validates the code against and the engine writes into it. |
+| `corpus-map.json` | The specification, and the only thing the code cites. This is the engine's copy of the factory's map at `7900af2`: 27 entries carry `status: implemented`, `implementedIn`, and `tests` -- the tests that prove each one, with the mutation that turned each test red (rules-factory#2) -- where the factory's copy has them `mapped`. `player-count` stays `mapped`: the engine plays two players, but no test fails under any sensible mutation of that rule. Nothing else differs at all — every correction this build found is in `MAP-FINDINGS.md`, not applied here. The divergence is spelled out in `corpus-manifest.json`, which also pins this copy by SHA-256, because the map is the oracle the gate validates the code against and the engine writes into it. |
 | `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; ten have since been accepted, in two rounds. |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`. |
 
@@ -53,6 +53,7 @@ the page cited. That last one is what the retracted map got wrong.
 |---|---|---|
 | Say which side of a board is the inner table | `MissingRulesData` | `inner-table-handedness` |
 | Double the stake | `OutsideCurrentScope` | `doubling-cube` |
+| Call a throw aloud | `OutsideCurrentScope` | `calling-the-throw` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
 | Play a throw where either die alone goes but not both | `RequiresInterpretation` | `must-play-whole-throw` |
 | Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |

@@ -4,7 +4,7 @@ using RulesKernel.Provenance;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The thirty entries of <c>corpus-map.json</c>, one static per entry, with the
+/// The thirty-two entries of <c>corpus-map.json</c>, one static per entry, with the
 /// citations copied verbatim from the map.
 /// </summary>
 /// <remarks>
@@ -25,6 +25,13 @@ namespace HoyleBackgammon;
 /// <c>agreed-backgammon-multiple</c> was split out of <c>stake-multiplier</c>. The same
 /// migration recorded the conflict <c>rules-factory/docs/decisions/0006</c> settles, on
 /// <c>legal-destination</c>, <c>enter-from-bar</c> and <c>full-table-suspension</c>.
+/// </para>
+/// <para>
+/// Two more came with factory commit <c>7900af2</c>. <c>calling-the-throw</c> is a stated
+/// rule the map had no verdict on, now read and declined (<c>rules-factory#42</c>).
+/// <c>hit-pays-single-stake</c> is a fact no sentence states, split out of
+/// <c>stake-multiplier</c> under <c>rules-factory/docs/decisions/0012</c>; it is a
+/// <see cref="DerivedMapEntry"/> and carries no citation.
 /// </para>
 /// </remarks>
 public static class MapEntries
@@ -58,6 +65,9 @@ public static class MapEntries
 
     private static MapEntry Entry(string id, string name, string citation) =>
         new(id, name, new SourceLocator(SourceId, citation));
+
+    private static DerivedMapEntry Derived(string id, string name, params MapEntry[] derivedFrom) =>
+        new(id, name, [.. derivedFrom]);
 
     /// <summary>Backgammon is played by two persons.</summary>
     public static MapEntry PlayerCount { get; } =
@@ -99,6 +109,16 @@ public static class MapEntries
     /// <summary>The opening thrower may keep the throw or throw again.</summary>
     public static MapEntry OpeningThrowerOption { get; } =
         Entry("opening-thrower-option", "The opening thrower may keep the throw or throw again", Playing273);
+
+    /// <summary>
+    /// The thrower calls his throw, the higher number first. Declined: out of scope, table
+    /// protocol that moves no man. See <see cref="OutOfScope.CallTheThrow"/>.
+    /// </summary>
+    public static MapEntry CallingTheThrow { get; } =
+        Entry(
+            "calling-the-throw",
+            "The thrower calls his throw, the higher number first",
+            Playing273);
 
     /// <summary>All subsequent throws use both dice.</summary>
     public static MapEntry ThrowTwoDice { get; } =
@@ -180,9 +200,21 @@ public static class MapEntries
             "The multiple the players agreed a backgammon pays",
             BearingOff277);
 
-    /// <summary>What each result pays. Clear: the delegated figure is its own entry.</summary>
+    /// <summary>
+    /// What a gammon and a backgammon pay. Clear: the delegated figure is its own entry, and
+    /// what a hit pays is not stated here -- see <see cref="HitPaysSingleStake"/>.
+    /// </summary>
     public static MapEntry StakeMultiplier { get; } =
-        Entry("stake-multiplier", "What each result pays", BearingOff276);
+        Entry("stake-multiplier", "What a gammon and a backgammon pay", BearingOff276);
+
+    /// <summary>
+    /// What a hit pays: the single stake. No sentence says so. It is derived from
+    /// <see cref="StakeMultiplier"/> and <see cref="AgreedBackgammonMultiple"/>, which give the
+    /// other two results as multiples of that stake (<c>rules-factory/docs/decisions/0012</c>),
+    /// and so it cites no page of its own.
+    /// </summary>
+    public static DerivedMapEntry HitPaysSingleStake { get; } =
+        Derived("hit-pays-single-stake", "What a hit pays", StakeMultiplier, AgreedBackgammonMultiple);
 
     /// <summary>Who throws first in the following game.</summary>
     public static MapEntry NextGameOpening { get; } =

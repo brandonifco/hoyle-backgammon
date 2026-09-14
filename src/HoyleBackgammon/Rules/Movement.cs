@@ -61,7 +61,7 @@ public static class Movement
     /// from the inner table of the adversary. Nor can such man again start on its journey
     /// until its owner is fortunate enough to make a throw corresponding with a vacant point
     /// or blot in such table. Until he does this, the play of his other men is suspended."
-    /// This is the <c>gatedBy</c> relation the map records on <c>move-by-pip</c>,
+    /// This is the <c>suspendedBy</c> relation the map records on <c>move-by-pip</c>,
     /// <c>doublets</c> and <c>must-play-whole-throw</c>.
     /// </remarks>
     public static bool MustEnterFromBar(Position position, Player player)
