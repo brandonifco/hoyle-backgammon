@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using RulesKernel.Randomness;
 using RulesKernel.Resolution;
 using Tabletop.Dice;
 using Xunit;
@@ -99,5 +101,119 @@ public class WholeThrowTests
         Assert.All(plays, play => Assert.Equal(6, play.PipsUsed));
         var single = Assert.Single(plays);
         Assert.Equal(1, single.Result.Men(Player.White, 2));
+    }
+
+    [Fact]
+    public void The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both()
+    {
+        // A derived consequence of reading the rule as "nothing less than a maximal set": two
+        // plays can be incomparable only when the throw has two different numbers, each can
+        // be played alone, and neither can be followed by the other. Doublets never decline
+        // -- their plays differ only in how many of one number they use, and those counts are
+        // totally ordered -- and a throw with one playable die, or none, has a single maximal
+        // play. So "unresolved" and that shape must coincide exactly.
+        //
+        // Checked both ways over every one of the twenty-one throws, in the constructed
+        // position above and in every position a set of seeded random games passes through.
+        var positions = new List<(Position Position, Player Player)>
+        {
+            (OneMobileMan(blockTheTroisLanding: false), Player.White),
+            (OneMobileMan(blockTheTroisLanding: true), Player.White),
+
+            // The same shape from the bar, which random play rarely reaches: White's last man
+            // is up, both entry points for six-trois are open, and Black holds the one point
+            // (White's 16) either entry would need to finish the throw.
+            (Board.Of(Board.Men().At(Geometry.BarPip, 1).RestBorneOff(), Board.Men().At(9, 2).RestAt(12)), Player.White),
+        };
+        foreach (ulong seed in new ulong[] { 1, 2, 3, 4, 5, 6, 7, 8 })
+        {
+            positions.AddRange(PositionsPassedThrough(seed));
+        }
+
+        int declined = 0;
+        foreach (var (position, player) in positions)
+        {
+            foreach (var thrown in TheTwentyOneThrows())
+            {
+                bool shape = EitherDieAlonePlayableButNotBoth(position, player, thrown);
+                bool unresolved = LegalPlays.For(position, player, Movement.Entitlement(thrown))
+                    is Resolution<ImmutableArray<Play>>.Unresolved;
+
+                Assert.True(
+                    shape == unresolved,
+                    $"{thrown} for {player} in\n{position}\nshape={shape} unresolved={unresolved}");
+                declined += unresolved ? 1 : 0;
+            }
+        }
+
+        // The constructed position declines 6-3 at least; without a decline the check above
+        // would hold vacuously for the "unresolved implies the shape" direction.
+        Assert.True(declined > 0);
+    }
+
+    private static IEnumerable<DiceThrow> TheTwentyOneThrows()
+    {
+        for (int higher = 1; higher <= 6; higher++)
+        {
+            for (int lower = 1; lower <= higher; lower++)
+            {
+                yield return new DiceThrow(higher, lower);
+            }
+        }
+    }
+
+    /// <summary>The shape, computed from single-die moves alone, without LegalPlays.</summary>
+    private static bool EitherDieAlonePlayableButNotBoth(Position position, Player player, DiceThrow thrown)
+    {
+        if (thrown.IsDoublets)
+        {
+            return false;
+        }
+
+        var higher = Movement.MovesForDie(position, player, thrown.Higher);
+        var lower = Movement.MovesForDie(position, player, thrown.Lower);
+        if (higher.IsEmpty || lower.IsEmpty)
+        {
+            return false;
+        }
+
+        bool both =
+            higher.Any(m => !Movement.MovesForDie(position.Apply(player, m.From, m.To), player, thrown.Lower).IsEmpty)
+            || lower.Any(m => !Movement.MovesForDie(position.Apply(player, m.From, m.To), player, thrown.Higher).IsEmpty);
+        return !both;
+    }
+
+    /// <summary>
+    /// Every position a random game passes through, with the player to move. Where the corpus
+    /// does not settle a throw the walk simply throws again, so a decline does not end it.
+    /// </summary>
+    private static IEnumerable<(Position Position, Player Player)> PositionsPassedThrough(ulong seed)
+    {
+        var source = Pcg32.FromSeed(seed, stream: 3);
+        var position = Corpus.StartingPosition.Position;
+        var player = Player.White;
+        for (int turn = 0; turn < 2_000 && Outcome.Winner(position) is null; turn++)
+        {
+            if (Movement.IsWhollySuspended(position, player))
+            {
+                player = player.Adversary();
+                continue;
+            }
+
+            yield return (position, player);
+
+            while (true)
+            {
+                var legal = LegalPlays.For(position, player, Movement.Entitlement(Opening.Throw(source)));
+                if (legal is Resolution<ImmutableArray<Play>>.Resolved resolved)
+                {
+                    var plays = resolved.Value;
+                    position = plays[(int)(source.NextUInt32() % (uint)plays.Length)].Result;
+                    break;
+                }
+            }
+
+            player = player.Adversary();
+        }
     }
 }

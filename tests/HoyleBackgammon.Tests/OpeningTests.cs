@@ -47,6 +47,43 @@ public class OpeningRollTests
         Assert.Equal(6, roll.Deciding.First);
         Assert.Equal(1, roll.Deciding.Second);
     }
+
+    [Fact]
+    public void An_adopted_opening_throw_is_never_doublets_so_it_never_entitles_four_numbers()
+    {
+        // The derived consequence, for every way the dice can fall rather than one scripted
+        // case: whatever pair is thrown first -- all thirty-six, ties included -- followed if
+        // need be by every non-tie that could settle it, the throw the opener adopts is never
+        // a pair, and so the doublets branch of Movement.Entitlement is unreachable through
+        // it. If the opening rule ever stops re-throwing ties, this goes red.
+        int checkedRolls = 0;
+        for (int first = 1; first <= 6; first++)
+        {
+            for (int second = 1; second <= 6; second++)
+            {
+                for (int settleHigh = 1; settleHigh <= 6; settleHigh++)
+                {
+                    for (int settleLow = 1; settleLow <= 6; settleLow++)
+                    {
+                        if (settleHigh == settleLow)
+                        {
+                            continue;
+                        }
+
+                        var source = ScriptedSource.Faces(first, second, settleHigh, settleLow);
+                        var roll = Opening.RollForTheRight(source);
+                        var adopted = Opening.OpeningThrow(roll, adopt: true, source);
+
+                        Assert.False(adopted.IsDoublets, $"adopted {adopted} after {first}-{second}");
+                        Assert.Equal(2, Movement.Entitlement(adopted).Length);
+                        checkedRolls++;
+                    }
+                }
+            }
+        }
+
+        Assert.Equal(36 * 30, checkedRolls);
+    }
 }
 
 public class OpeningThrowerOptionTests
