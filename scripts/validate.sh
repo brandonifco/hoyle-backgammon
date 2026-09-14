@@ -5,12 +5,15 @@
 # no packable output and no python tooling, so it drops those steps, and it adds the ones an
 # engine built from a corpus needs and a kernel does not --
 #
-#   * the pinned corpus still hashes to the baseline the engine cites;
+#   * the pinned corpus still hashes to the baseline the engine cites, verified under the
+#     posture the manifest declares for it, and reported NOT VERIFIED -- never ok -- where
+#     that posture leaves the bytes out of reach;
 #   * the map does too, because it is the oracle the next two steps judge the code against and
 #     the engine writes into it;
 #   * the code and the map name the same entries and spell the same citations;
 #   * and those citations resolve in the corpus: the page exists, it falls in the section
-#     named, and a quoted sentence is on the page it is attributed to.
+#     named, and a quoted sentence is on the page it is attributed to;
+#   * and every test the map names as proving an implemented entry exists and actually ran.
 #
 #   ./scripts/validate.sh full   merge-equivalent gate (default)
 #   ./scripts/validate.sh fast   Debug only; for the inner loop
@@ -112,19 +115,85 @@ print(f"{total} test(s) across {len(trx_files)} result file(s) actually ran")
 PY
 }
 
+# rules-factory#2: an `implemented` entry names the tests that prove it, each with the mutation
+# that turned it red. The map alone cannot show that a named test exists or ran -- a renamed or
+# deleted test leaves a map that still validates, claiming proof by a test nobody has. So this
+# reads the same TRX files as assert_tests_ran and requires every named test to have a result
+# that actually executed (Passed or Failed; a failure is the suite's to report) in every target
+# framework. Names are `Class.Method`, as the map writes them; a short class name that resolves
+# to two classes is refused rather than guessed. The mutations are recorded, not re-run.
+assert_named_tests_ran() {
+  local results_dir="$1" frameworks="$2"
+  python3 - "$results_dir" "$frameworks" <<'PYNAMED'
+import glob
+import json
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+results_dir, frameworks = sys.argv[1], int(sys.argv[2])
+NS = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
+EXECUTED = {"Passed", "Failed"}
+
+ran = {}           # "Class.Method" -> number of result files in which it executed
+classes = {}       # short class name -> fully qualified class names seen
+for f in sorted(glob.glob(results_dir + "/**/*.trx", recursive=True)):
+    root = ET.parse(f).getroot()
+    names = {}
+    for unit in root.iterfind(".//t:UnitTest", NS):
+        method = unit.find("t:TestMethod", NS)
+        full = method.get("className")
+        short = full.rsplit(".", 1)[-1]
+        classes.setdefault(short, set()).add(full)
+        names[unit.get("id")] = f"{short}.{method.get('name')}"
+    executed_here = {names[r.get("testId")] for r in root.iterfind(".//t:UnitTestResult", NS)
+                     if r.get("outcome") in EXECUTED and r.get("testId") in names}
+    for name in executed_here:
+        ran[name] = ran.get(name, 0) + 1
+
+mapped = json.loads(pathlib.Path("corpus-map.json").read_text(encoding="utf-8"))
+problems, named = [], 0
+for entry in mapped["entries"]:
+    tests = entry.get("tests") or []
+    if entry.get("status") == "implemented" and not tests:
+        problems.append(f"{entry['id']}: implemented, and names no test")
+    for item in tests:
+        named += 1
+        test = item.get("test", "")
+        short = test.rsplit(".", 1)[0] if "." in test else ""
+        if len(classes.get(short, ())) > 1:
+            problems.append(f"{entry['id']}: {test!r} is ambiguous; class {short} is "
+                            f"{sorted(classes[short])}")
+        elif ran.get(test, 0) == 0:
+            problems.append(f"{entry['id']}: names {test!r}, which no result file shows running -- "
+                            "renamed, deleted, skipped, or never a test")
+        elif ran[test] != frameworks:
+            problems.append(f"{entry['id']}: {test!r} ran in {ran[test]} result file(s), expected "
+                            f"one per target framework ({frameworks})")
+
+for p in problems:
+    print(f"error: {p}", file=sys.stderr)
+if problems:
+    sys.exit(1)
+print(f"     {named} test(s) named by {sum(1 for e in mapped['entries'] if e.get('tests'))} entries, "
+      f"every one found and executed in all {frameworks} target framework(s)")
+PYNAMED
+}
+
 EXPECTED_RESULT_FILES="$(expected_result_files)"
+TARGET_FRAMEWORKS="$(python3 -c 'import re;m=re.search(r"<TargetFrameworks>([^<]+)</TargetFrameworks>",open("Directory.Build.props").read());print(len(m.group(1).split(";")) if m else 1)')"
+RESULTS_DIRS=()
+cleanup_results() { if [[ "${#RESULTS_DIRS[@]}" -gt 0 ]]; then rm -rf "${RESULTS_DIRS[@]}"; fi; }
+trap cleanup_results EXIT
 
 test_pass() {
-  local config="$1"; shift
-  local results_dir status
-  results_dir="$(mktemp -d)"
-  status=0
+  local config="$1" results_dir="$2"; shift 2
+  local status=0
   env "$@" dotnet test "$SOLUTION" -c "$config" --no-build --nologo \
     --logger "trx" --results-directory "$results_dir" || status=$?
   if ! assert_tests_ran "$results_dir" "$EXPECTED_RESULT_FILES"; then
     status=1
   fi
-  rm -rf "$results_dir"
   return "$status"
 }
 
@@ -143,37 +212,117 @@ else
   printf '%sok%s   SDK %s (rollForward=%s)\n' "$GREEN" "$OFF" "$actual" "$roll"
 fi
 
-# The engine's SourceBaselineId claims a digest for a named derivation. The corpus is
-# committed here under pin-in-repo, so that claim is checkable without a network, and a
-# corpus that drifted from the hash the engine cites would otherwise be invisible: every
-# citation in the code would silently point into different bytes.
-step "Corpus baseline"
-run "corpus/hoyle.txt matches the pinned baseline hash" python3 - <<'PY'
+# The engine's SourceBaselineId claims a digest for a named derivation, and whether anyone can
+# check that claim is a property of the corpus, not of this script (rules-factory decision
+# 0013). Each corpus in corpus-manifest.json declares its verification posture:
+#
+#   committed-copy  the bytes are at committedPath; this step hashes them, here and in CI.
+#   local-copy      the bytes are not in the repository. A holder of a legal copy points the
+#                   corpus's envVar at it and this step hashes that. Everyone else -- every CI
+#                   run included -- is told NOT VERIFIED, with the reason. Never ok.
+#
+# NOT VERIFIED is its own outcome, neither ok nor FAIL: a never-commit corpus cannot be verified
+# in CI, and failing every run for it would teach people to ignore the gate. It does not pass
+# silently either -- the final line names it. This corpus is pin-in-repo and committed, so it
+# verifies; the step is written for the posture it does not have, and has been run under it.
+step "Corpus verification posture"
+NOT_VERIFIED=()
+posture_status=0
+python3 - <<'PY' || posture_status=$?
 import hashlib
 import json
+import os
 import pathlib
 import re
 import sys
 
-digest = hashlib.sha256(pathlib.Path("corpus/hoyle.txt").read_bytes()).hexdigest()
+# The derivations this step knows how to recompute. A declared derivation it does not know is a
+# failure rather than a pass: a digest nobody can re-derive has not been checked.
+DERIVATIONS = {
+    "gutenberg-plain-text-including-boilerplate": lambda b: hashlib.sha256(b).hexdigest(),
+}
+
+manifest = json.loads(pathlib.Path("corpus-manifest.json").read_text(encoding="utf-8"))
 mapped = json.loads(pathlib.Path("corpus-map.json").read_text(encoding="utf-8"))
-expected = mapped["baseline"]["contentHash"]
 source = pathlib.Path("src/HoyleBackgammon/MapEntries.cs").read_text(encoding="utf-8")
 cited = re.search(r'contentHash: "([0-9a-f]{64})"', source).group(1)
 
-problems = []
-if digest != expected:
-    problems.append(f"corpus/hoyle.txt hashes to {digest}, map says {expected}")
-if cited != expected:
-    problems.append(f"MapEntries.Baseline cites {cited}, map says {expected}")
+problems, verified, unverified = [], [], []
+corpora = manifest.get("corpora") or []
+if not corpora:
+    problems.append("corpus-manifest.json declares no corpora, so nothing was verified")
+
+for corpus in corpora:
+    sid = corpus.get("sourceId", "?")
+    posture = corpus.get("verification")
+    boundary = corpus.get("boundaryPolicy")
+    expected = corpus.get("contentHash")
+    derive = DERIVATIONS.get(corpus.get("hashDerivation"))
+
+    if sid == mapped.get("corpus"):
+        if mapped["baseline"]["contentHash"] != expected:
+            problems.append(f"{sid}: the map's baseline is {mapped['baseline']['contentHash']}, "
+                            f"the manifest's is {expected}")
+        if cited != expected:
+            problems.append(f"{sid}: MapEntries.Baseline cites {cited}, the manifest says {expected}")
+
+    if posture not in ("committed-copy", "local-copy"):
+        problems.append(f"{sid}: verification is {posture!r}; it must be declared committed-copy or "
+                        "local-copy, and missing is not a default")
+        continue
+    if boundary == "never-commit" and posture == "committed-copy":
+        problems.append(f"{sid}: a never-commit corpus cannot be committed-copy")
+        continue
+    if derive is None:
+        problems.append(f"{sid}: this step cannot recompute hashDerivation "
+                        f"{corpus.get('hashDerivation')!r}, so the baseline is unchecked")
+        continue
+
+    if posture == "committed-copy":
+        path = corpus.get("committedPath")
+        if not path or not pathlib.Path(path).is_file():
+            problems.append(f"{sid}: committed-copy names committedPath {path!r}, which is not a file")
+            continue
+        where = f"committed at {path}"
+    else:
+        var = corpus.get("envVar")
+        if not var:
+            problems.append(f"{sid}: local-copy names no envVar")
+            continue
+        path = os.environ.get(var)
+        if not path:
+            unverified.append(f"{sid} (local-copy, {boundary}): ${var} is not set, so the corpus "
+                              "bytes are not here to hash. Set it to a legal copy to verify.")
+            continue
+        if not pathlib.Path(path).is_file():
+            problems.append(f"{sid}: ${var} is set to {path!r}, which is not a file")
+            continue
+        where = f"local copy at ${var}"
+
+    digest = derive(pathlib.Path(path).read_bytes())
+    if digest != expected:
+        problems.append(f"{sid}: the {where} hashes to {digest}, the manifest pins {expected}")
+    else:
+        verified.append(f"{sid} ({posture}, {boundary}): {where} hashes to the pinned baseline")
+
 for p in problems:
     print(f"error: {p}", file=sys.stderr)
-sys.exit(1 if problems else 0)
+for v in verified:
+    print(f"     verified: {v}")
+for u in unverified:
+    print(f"     NOT VERIFIED: {u}")
+sys.exit(1 if problems else 3 if unverified else 0)
 PY
+case "$posture_status" in
+  0) printf '%sok%s   every corpus verified under its declared posture\n' "$GREEN" "$OFF" ;;
+  3) printf '%sNOT VERIFIED%s a corpus could not be verified under its declared posture (not ok, not FAIL)\n' "$YEL" "$OFF"
+     NOT_VERIFIED+=("corpus verification posture") ;;
+  *) fail "every corpus verified under its declared posture" ;;
+esac
 
 # The map is the oracle the two steps below validate against, and until now only one of the
 # two files they read was pinned. The corpus was; the map was not -- and this engine writes
-# into the map, stamping status and implementedIn on the entries it implements. An oracle
+# into the map, stamping status, implementedIn and tests on the entries it implements. An oracle
 # that the thing under test edits, and that nothing re-derives, is not an oracle. So the map
 # is hashed the same way the corpus is, in corpus-manifest.json, which is the one file in the
 # repository nothing edits in the course of building the engine.
@@ -218,7 +367,11 @@ citations = dict(re.findall(r'private const string (\w+) = "([^"]+)";', source))
 # Tolerant of how the declaration is wrapped: a long name pushes the arguments onto their
 # own lines, and a formatting choice must not be able to hide an entry from this check.
 declared = re.findall(
-    r'Entry\(\s*"([^"]+)",\s*"([^"]+)",\s*(\w+|"[^"]+")\s*\)', source)
+    r'\bEntry\(\s*"([^"]+)",\s*"([^"]+)",\s*(\w+|"[^"]+")\s*\)', source)
+# A derived entry (rules-factory decision 0012) cites nothing, so what code and map must agree
+# on is the entries it is derived from. The code names them as MapEntries properties.
+properties = dict(re.findall(r'public static MapEntry (\w+) \{ get; \} =\s*Entry\(\s*"([^"]+)"', source))
+derived = re.findall(r'\bDerived\(\s*"([^"]+)",\s*"([^"]+)",\s*([\w\s,]+?)\s*\)', source)
 
 problems = []
 for entry_id, name, citation in declared:
@@ -229,12 +382,26 @@ for entry_id, name, citation in declared:
         continue
     if entry["name"] != name:
         problems.append(f"{entry_id}: code names it '{name}', map names it '{entry['name']}'")
-    if entry["locator"]["citation"] != citation:
+    if "locator" not in entry:
+        problems.append(f"{entry_id}: code cites '{citation}', and the map entry has no locator")
+    elif entry["locator"]["citation"] != citation:
         problems.append(
             f"{entry_id}: code cites '{citation}', map cites "
             f"'{entry['locator']['citation']}'")
 
-missing = sorted(set(by_id) - {e[0] for e in declared})
+for entry_id, name, sources in derived:
+    entry = by_id.get(entry_id)
+    if entry is None:
+        problems.append(f"code declares derived '{entry_id}', which the map does not carry")
+        continue
+    if entry["name"] != name:
+        problems.append(f"{entry_id}: code names it '{name}', map names it '{entry['name']}'")
+    code_sources = [properties.get(s.strip(), f"<unknown {s.strip()}>") for s in sources.split(",")]
+    if code_sources != entry.get("derivedFrom"):
+        problems.append(
+            f"{entry_id}: code derives it from {code_sources}, map from {entry.get('derivedFrom')}")
+
+missing = sorted(set(by_id) - {e[0] for e in declared} - {e[0] for e in derived})
 if missing:
     problems.append(f"the map carries entries the code never names: {', '.join(missing)}")
 
@@ -411,6 +578,19 @@ for path, reason, prop in sites:
 
 # --- map -> code: every reason the map predicts, against the engine -----------------------
 
+# Row 2 says a `mapped` entry returns UnsupportedRule. Since rules-factory#2, `mapped` also
+# covers an entry the engine HAS built but no test proves -- "code without them is mapped,
+# whatever the repository contains" -- and for such an entry no decline path exists, because
+# the code answers. The two readings cannot be told apart from the map, so the exception is a
+# list, not a rule: each id is named here with its reason, the check fails for any other
+# row-2 entry with no UnsupportedRule path, and fails for a listed id that is no longer
+# row 2 (a stale exception is how a list like this rots).
+UNTESTED_BUT_BUILT = {
+    "player-count": "Player has two values and every rule is player-relative, but no test goes "
+                    "red under any sensible mutation of 'two persons'; demoted under rules-factory#2",
+}
+untested_seen = []
+
 verified_map, rows_seen = [], set()
 for entry in mapped["entries"]:
     row, predicted, why = first_matching_row(entry, by_id)
@@ -437,6 +617,9 @@ for entry in mapped["entries"]:
             f"{entry['id']}: ambiguity.unresolvedReason is {named!r}, but the entry matches "
             f"row {row} ({why}), which predicts {predicted}")
 
+    if row == 2 and entry["id"] in UNTESTED_BUT_BUILT and not cited:
+        untested_seen.append(entry["id"])
+        continue
     if predicted not in cited:
         problems.append(
             f"{entry['id']}: matches row {row} ({why}), so the engine must be able to return "
@@ -447,6 +630,11 @@ for entry in mapped["entries"]:
         problems.append(
             f"{entry['id']}: matches row {row} ({why}), which predicts {predicted}, but the "
             f"code also returns {other} citing it")
+
+for stale in sorted(set(UNTESTED_BUT_BUILT) - set(untested_seen)):
+    problems.append(
+        f"{stale}: listed in UNTESTED_BUT_BUILT but it is no longer a row-2 entry with no decline "
+        "path; remove it from the list")
 
 for p in problems:
     print(f"error: {p}", file=sys.stderr)
@@ -462,6 +650,9 @@ print(
     f"other entry predicts no unresolved reason and no code path declines citing it.\n"
     f"     NOT VERIFIED: {ROW7}. {len(partial)} site(s) so checked: "
     f"{'; '.join(partial) or 'none'}.\n"
+    f"     NOT VERIFIED: row 2 predicts UnsupportedRule for {len(untested_seen)} entry(ies) the "
+    f"engine built but no test proves, and no code path returns it: "
+    f"{'; '.join(f'{i} ({UNTESTED_BUT_BUILT[i]})' for i in untested_seen) or 'none'}.\n"
     f"     NOT EXERCISED: no entry in this map reaches row(s) "
     f"{', '.join(str(r) for r in unexercised) or '(none)'}. Those rows are transcribed above "
     f"and this map proves nothing about them.")
@@ -607,13 +798,15 @@ def locate(quotation):
 
 CITATION = re.compile(r"^BACKGAMMON / (.+) / p\. (\d+)$")
 
-quoted, summarised = [], []
+quoted, summarised, derived = [], [], []
 for entry in mapped["entries"]:
-    citation = entry["locator"]["citation"]
-    if citation == "(absent)":
-        # doubling-cube cites nothing because the corpus says nothing. Checking that the
-        # corpus does not mention doubling is a different check and this one does not make it.
+    if "derivedFrom" in entry:
+        # A derived entry (rules-factory decision 0012) has no locator and no evidence: no
+        # passage states it, and its sources' spans are checked on their own entries. Named in
+        # the summary, so the count below does not read as though it had been located.
+        derived.append(entry["id"])
         continue
+    citation = entry["locator"]["citation"]
 
     match = CITATION.match(citation)
     if not match:
@@ -666,7 +859,8 @@ if problems:
     sys.exit(1)
 
 print(
-    f"{len(mapped['entries'])} citations resolve to a page inside the section they name. "
+    f"{len(mapped['entries']) - len(derived)} citations resolve to a page inside the section they name; "
+    f"{len(derived)} derived entry(ies) cite nothing and were not located: {', '.join(derived) or 'none'}. "
     f"{len(quoted)} quote the corpus and were checked against the bytes of the page cited: "
     f"{', '.join(quoted)}. {len(summarised)} summarise their evidence instead of quoting it, "
     f"so nothing below the page was checked for them: {', '.join(summarised)}.")
@@ -680,18 +874,26 @@ run "dotnet format --verify-no-changes" \
     dotnet format "$SOLUTION" --verify-no-changes --no-restore || true
 
 step "Build + test (Debug)"
+DEBUG_RESULTS="$(mktemp -d)"; RESULTS_DIRS+=("$DEBUG_RESULTS")
 if run "build Debug (0 warnings)" dotnet build "$SOLUTION" -c Debug --no-restore -warnaserror; then
-  run "test Debug" test_pass Debug || true
+  run "test Debug" test_pass Debug "$DEBUG_RESULTS" || true
+  run "every test corpus-map.json names exists and ran (Debug)" \
+      assert_named_tests_ran "$DEBUG_RESULTS" "$TARGET_FRAMEWORKS" || true
 else
   skipped "test Debug"
+  skipped "every test corpus-map.json names exists and ran (Debug)"
 fi
 
 if [[ "$MODE" != "fast" ]]; then
   step "Build + test (Release, CI=true)"
+  RELEASE_RESULTS="$(mktemp -d)"; RESULTS_DIRS+=("$RELEASE_RESULTS")
   if run "build Release w/ CI=true (0 warnings)" env CI=true dotnet build "$SOLUTION" -c Release --no-restore -warnaserror; then
-    run "test Release w/ CI=true" test_pass Release CI=true || true
+    run "test Release w/ CI=true" test_pass Release "$RELEASE_RESULTS" CI=true || true
+    run "every test corpus-map.json names exists and ran (Release)" \
+        assert_named_tests_ran "$RELEASE_RESULTS" "$TARGET_FRAMEWORKS" || true
   else
     skipped "test Release w/ CI=true"
+    skipped "every test corpus-map.json names exists and ran (Release)"
   fi
 fi
 
@@ -701,7 +903,10 @@ step "Whitespace (uncommitted working-tree changes only)"
 run "git diff --check" git diff --check || true
 
 echo
-if [[ "$FAILED" -eq 0 ]]; then
+if [[ "$FAILED" -eq 0 && "${#NOT_VERIFIED[@]}" -gt 0 ]]; then
+  printf '%s%svalidate.sh %s: PASS, and NOT VERIFIED: %s%s\n' \
+    "$BOLD" "$YEL" "$MODE" "$(IFS=,; echo "${NOT_VERIFIED[*]}")" "$OFF"
+elif [[ "$FAILED" -eq 0 ]]; then
   printf '%s%svalidate.sh %s: PASS%s\n' "$BOLD" "$GREEN" "$MODE" "$OFF"
 else
   printf '%s%svalidate.sh %s: FAIL%s\n' "$BOLD" "$RED" "$MODE" "$OFF"

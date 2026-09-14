@@ -4,14 +4,18 @@ using Xunit;
 namespace HoyleBackgammon.Tests;
 
 /// <summary>
-/// The three entries the map records as <c>declined</c>, reached as unresolved results rather
+/// The four entries the map records as <c>declined</c>, reached as unresolved results rather
 /// than found missing from the engine.
 /// </summary>
 /// <remarks>
-/// The three are not what they were. <c>starting-position</c> used to be one of them, on a map
+/// <c>calling-the-throw</c> is the newest: a stated rule the map had no verdict on until the
+/// blind mapping trial flagged it (<c>rules-factory#42</c>).
+/// <para>
+/// The other three are not what they were. <c>starting-position</c> used to be one of them, on a map
 /// version since retracted; the corrected map declines <c>inner-table-handedness</c> instead —
 /// a fact stated only in Fig. 1, and the only one in this corpus genuinely beyond a plain-text
 /// adapter. See <c>docs/decisions/0003</c>.
+/// </para>
 /// </remarks>
 public class DeclineTests
 {
@@ -34,6 +38,16 @@ public class DeclineTests
         Assert.Equal(UnresolvedReason.OutsideCurrentScope, result.Result.Reason);
         Assert.Equal(MapEntries.DoublingCube.Locator, result.Result.Locator);
         Assert.Equal("BACKGAMMON / The Board and Men / p. 272", result.Result.Locator.Citation);
+    }
+
+    [Fact]
+    public void Calling_the_throw_declines_as_outside_current_scope()
+    {
+        var result = Assert.IsType<Resolution<string>.Unresolved>(OutOfScope.CallTheThrow());
+
+        Assert.Equal(UnresolvedReason.OutsideCurrentScope, result.Result.Reason);
+        Assert.Equal(MapEntries.CallingTheThrow.Locator, result.Result.Locator);
+        Assert.Equal("BACKGAMMON / Playing / p. 273", result.Result.Locator.Citation);
     }
 
     [Fact]

@@ -153,9 +153,10 @@ public static class Outcome
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see cref="MapEntries.StakeMultiplier"/> states all three figures: a hit is the single
-    /// stake, a gammon "double the agreed stake", and a backgammon "either thrice or four
-    /// times (as may have been agreed) the amount of the single stake". Only the last is
+    /// <see cref="MapEntries.StakeMultiplier"/> states two figures: a gammon "double the agreed
+    /// stake", and a backgammon "either thrice or four times (as may have been agreed) the
+    /// amount of the single stake". That a hit pays the single stake is stated nowhere; it is
+    /// <see cref="MapEntries.HitPaysSingleStake"/>, derived from those two. Only the last is
     /// delegated, and the corpus names the decider, so it is not a gap. It is
     /// <see cref="MapEntries.AgreedBackgammonMultiple"/>, an assertion of its own, and this
     /// rule depends on it — which is why the parameter is required rather than optional and
