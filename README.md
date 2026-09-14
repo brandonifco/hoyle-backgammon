@@ -6,7 +6,7 @@ A deterministic backgammon engine built from a corpus map, on
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
-every validation run. The specification is `corpus-map.json`, twenty-nine entries covering
+every validation run. The specification is `corpus-map.json`, thirty entries covering
 that chapter, hashed on every run too.
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909

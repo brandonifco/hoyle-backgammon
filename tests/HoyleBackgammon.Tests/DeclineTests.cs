@@ -32,7 +32,8 @@ public class DeclineTests
         var result = Assert.IsType<Resolution<int>.Unresolved>(OutOfScope.Double());
 
         Assert.Equal(UnresolvedReason.OutsideCurrentScope, result.Result.Reason);
-        Assert.Equal("(absent)", result.Result.Locator.Citation);
+        Assert.Equal(MapEntries.DoublingCube.Locator, result.Result.Locator);
+        Assert.Equal("BACKGAMMON / The Board and Men / p. 272", result.Result.Locator.Citation);
     }
 
     [Fact]

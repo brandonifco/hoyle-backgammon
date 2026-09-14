@@ -18,12 +18,12 @@
     {
       "path": "corpus-map.json",
       "sourceId": "hoyle-1909",
-      "contentHash": "787aa20efe4a47194144f366b6938efa25578029bd8a64cb41528328d285b7fc",
+      "contentHash": "a07347e235a4cdfa21354549860d6794b02e1915b77403a70b2baccac4a38138",
       "hashDerivation": "file-bytes-as-committed",
       "upstream": {
         "repository": "rules-factory",
         "path": "examples/hoyle-backgammon/corpus-map.json",
-        "commit": "7d13c27"
+        "commit": "2cf056b1935ca306881768cfefe625d4af02576e"
       },
       "divergesFromUpstream": "This copy is the upstream map with exactly two engine-authored fields, and nothing else: status, raised from 'mapped' to 'implemented' on every entry the engine implements, and implementedIn, naming the ruleset and version that implements it. Those are build facts, which only the engine can know; issue #17 in rules-factory names them as the legitimate divergence. Everything else matches the upstream bytes field for field -- locator, kind, scope, clarity, dependsOn, gatedBy, evidence, ambiguity, beyondAdapter and note -- and the two engine-authored notes that used to sit on must-play-whole-throw and stake-multiplier are gone: decision 0005 decoupled status from ambiguity.fate, so there is no longer a shortfall for a note to apologise for, and both entries' notes now say the same thing in both copies. Corrections this build found are recorded in MAP-FINDINGS.md and accepted upstream, never applied here alone.",
       "whyPinned": "The map is the oracle scripts/validate.sh validates the code against, and the engine writes into it. Unpinned, an edit to the oracle would look the same as an edit to the code passing."
