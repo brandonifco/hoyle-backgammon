@@ -179,7 +179,7 @@ public static class Outcome
     /// stake", and a backgammon "either thrice or four times (as may have been agreed) the
     /// amount of the single stake". That a hit pays the single stake is stated nowhere; it is
     /// <see cref="MapEntries.HitPaysSingleStake"/>, derived from those two. Only the last is
-    /// delegated, and the corpus names the decider, so it is not a gap. It is
+    /// delegated, to an agreement, so it is not a gap. It is
     /// <see cref="MapEntries.AgreedBackgammonMultiple"/>, an assertion of its own, and this
     /// rule depends on it — which is why the parameter is required rather than optional and
     /// why there is no overload that does without it. An engine that returned
@@ -197,7 +197,7 @@ public static class Outcome
     /// </para>
     /// </remarks>
     /// <param name="value">The kind of win.</param>
-    /// <param name="agreed">The players' agreement. Demanded, never inferred.</param>
+    /// <param name="agreed">The agreement, attributed to whoever the caller names (the map's <c>assertedBy</c> is <c>caller</c>). Demanded, never inferred.</param>
     /// <exception cref="ArgumentNullException">If <paramref name="agreed"/> is null.</exception>
     public static StakeDue Pays(GameValue value, AgreedBackgammonMultiple agreed)
     {

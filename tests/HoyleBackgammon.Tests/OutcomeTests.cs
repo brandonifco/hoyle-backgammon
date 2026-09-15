@@ -215,6 +215,16 @@ public class StakeTests
     }
 
     [Fact]
+    public void The_map_leaves_who_agreed_to_the_caller()
+    {
+        // "(as may have been agreed)" names nobody, so map 5.0.0's assertedBy is caller
+        // (rules-factory decision 0025), and the engine takes whatever party the caller names.
+        Assert.Equal(new[] { "caller" }, MapEntries.AgreedBackgammonMultiple.AssertedBy.AsEnumerable());
+        Assert.Equal(new[] { "caller" }, Registry.Entry("agreed-backgammon-multiple").AssertedBy.AsEnumerable());
+        Assert.Equal("a club's standing terms", new AgreedBackgammonMultiple(3, "a club's standing terms").AgreedBy);
+    }
+
+    [Fact]
     public void An_agreement_nobody_is_answerable_for_is_refused()
     {
         Assert.Throws<ArgumentNullException>(() => new AgreedBackgammonMultiple(3, null!));
