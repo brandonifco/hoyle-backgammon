@@ -33,7 +33,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 | `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 29 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate merges it onto the restored package and fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
 | `provenance.json` | What the engine was produced from: factory version and commit, the map package and the SHA-256 of its bytes, the corpus baseline, the kernel, every factory recipe file, and the hash of every generated file and build input. Embedded in the assembly. |
 | `scripts/`, `.github/workflows/validate.yml`, `RulesFactory.Packages.g.props`, `backlog/` | The gate, its CI workflow, the kernel and map pins, and the (empty) backlog. Generated. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings, all accepted upstream, the last (18) in 6.0.0: whether a play is the position it reaches or its moves in order, and whether bearing off begins within a throw ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)). |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings, all accepted upstream, the last (18) in 6.0.0: whether a play is the position it reaches or its moves in order, and whether bearing off begins within a throw ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)). The map leaves both open; the engine applies its owner's rulings on them, which are not findings ([decision 0009](docs/decisions/0009-owner-rulings-are-ruleset-version-five.md)). |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`, copied in by `factory produce` after it hashed it. |
 
 ## Every rule cites its entry and its page
@@ -71,9 +71,7 @@ own checks, so it is a test now.)
 | Call a throw aloud | `OutsideCurrentScope` | `calling-the-throw` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
 | Play a throw where either die alone goes but not both | `RequiresInterpretation` | `must-play-whole-throw` |
-| Play a throw two of whose orders reach the same position under different rules (last man on the 8, deuce-ace: 8/6 6/5 or 8/7 7/5) | `RequiresInterpretation` | `must-play-whole-throw` |
 | Play on after a man hit mid-bear-off has re-entered, with men still at home | `RequiresInterpretation` | `bearing-off-eligible` |
-| Play a number left after the move that brings the last man home (last man on the 9, six-trois) | `RequiresInterpretation` | `bearing-off-eligible` |
 | Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |
 | Value a win against a loser who has borne off nothing and has a man up or in the winner's home table, a gammon and a backgammon both | `RequiresInterpretation` | `game-value` |
 | Score a rubber other than the two sequences p. 278 settles | `RequiresInterpretation` | `rubber-scoring` |
@@ -138,6 +136,37 @@ man home with a number left is common near the end of a game, so most games play
 decline there. That changes what a replayed game returns, so the ruleset is version 4
 ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)).
 
+## Owner's rulings, not Hoyle
+
+Two of the questions the map leaves open are answered in this engine by its owner, not by the
+corpus. On 2026-09-15 Brandon ruled on the **second part** of each
+([decision 0009](docs/decisions/0009-owner-rulings-are-ruleset-version-five.md)):
+
+| Ruling | Entry and question part | What it says |
+|---|---|---|
+| `bearing-off-eligible/2` | `bearing-off-eligible`, second part | Once a player's first number brings his last man home, the number left bears off: last man on the 9, six-trois, 9/3 then off with the trois (and 9/6 then off with the six, the same play). |
+| `must-play-whole-throw/2` | `must-play-whole-throw`, second part | A play is the position it reaches: orders of the same numbers reaching the same position are offered once, credited with the rules of the first order found (8/6 6/5 stands for 8/7 7/5). |
+
+The corpus does not settle either, and the map still records both as `fate: unresolved`. The
+rulings are not findings against the map, and they are not readings of the text. Wherever an
+answer relies on one, the answer says so:
+
+- `Play.Rulings` lists the `OwnerRuling`s a play relies on: the id, the entry, the question part,
+  who ruled, when, and the decision record. It is empty for a play Hoyle's rules give unaided.
+- Each turn of `GameRecord.ToCanonicalJson()` carries the same list as `rulings` (replay schema 3).
+- `Move.Authority` is still the map entry whose rule permits the move once the ruling is applied.
+
+The **first parts** of both questions are not ruled on and still decline (the table above): either
+die alone playable but not both, and a man hit mid-bear-off who has re-entered.
+
+The rulings bring back what the engine did before 6.0.0, so the ruleset is version 5 and games finish
+as they did under version 3. Over the hundred seeds from 20260900, 67 finish with the first play
+always taken, and 33 with the middle play taken (version 4: 8 and 3).
+
+The factory has no field for a ruling the engine holds while the map says `unresolved`. The
+map's `fate: decision` would claim that the passage means what the ruling says. Nothing in `factory
+verify` or the gate refuses the engine either, because both entries still decline their first parts.
+
 **What the engine stopped declining.** "Say what a backgammon pays" used to be on this list.
 The corpus does not fail to say: it says thrice or four times, as may have been agreed. That is
 a delegated standard, `agreed-backgammon-multiple`, and the engine now demands the figure,
@@ -163,9 +192,10 @@ var start = new AssertedPosition(
     AssertedBy: "me",
     Justification: MapEntries.StartingPosition.Locator);
 
-// A seed whose game finishes under ruleset 4. Most games reach a throw the map leaves open near
-// the end, and Game.Play returns that decline instead of a record (decision 0008).
-var record = Game.Play(start, Pcg32.FromSeed(20260905, stream: 1), new FirstOptionDecider());
+// A seed whose game finishes under ruleset 5. Some games reach a throw the corpus leaves open and
+// nobody has ruled on, and Game.Play returns that decline instead of a record. A turn whose play
+// relies on an owner's ruling names it in turn.Play.Rulings (decision 0009).
+var record = Game.Play(start, Pcg32.FromSeed(20260913, stream: 1), new FirstOptionDecider());
 ```
 
 A point is named by how many pips a man on it still has to travel, for the player whose man
@@ -175,7 +205,9 @@ a representation; what the corpus fixes about it is in `Geometry`'s remarks.
 
 ## Determinism
 
-The replay identity is ruleset `hoyle-1909-backgammon` version 4 since map 6.0.0
+The replay identity is ruleset `hoyle-1909-backgammon` version 5 since Brandon's rulings of 2026-09-15
+([decision 0009](docs/decisions/0009-owner-rulings-are-ruleset-version-five.md)), which play the two
+throws version 4 declined, and name the ruling on the play. Version 4 began with map 6.0.0
 ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)), which made a game decline
 where version 3 finished it: a throw whose orders reach the same position under different rules, or
 that brings the last man home with a number left. Version 3 began with map 4.0.0
@@ -185,8 +217,9 @@ map 3.0.0, whose corrections made some games decline where version 1 finished th
 
 Every `GameRecord` carries that identity and the map package it was played under (`Identity`,
 `Map`, the map read from the embedded provenance), and `GameRecord.ToCanonicalJson()` is the
-record as bytes: RFC 8785 canonical JSON, replay schema 2
-([decision 0006](docs/decisions/0006-a-game-record-carries-its-identity-and-serialises-itself.md)).
+record as bytes: RFC 8785 canonical JSON, replay schema 3
+([decision 0006](docs/decisions/0006-a-game-record-carries-its-identity-and-serialises-itself.md); schema 3 adds
+each turn's owner's rulings, [decision 0009](docs/decisions/0009-owner-rulings-are-ruleset-version-five.md)).
 A replay hashes those bytes, not a rendering of its own.
 
 Same seed, same ordered decisions, same game. The draws are accounted for exactly: two per
@@ -207,6 +240,7 @@ var resolution = EntryPoints.MustPlayWholeThrow.Resolve(new MustPlayWholeThrowRe
     Thrown = new DiceThrow(6, 3),
 });
 // resolution's value is an AssertedAnswer<ImmutableArray<Play>>: the plays, and the assertion.
+// Each Play lists in Play.Rulings any owner's ruling it relies on (decision 0009); here, none.
 ```
 
 A request that asks about a position takes an `AssertedPosition`, never a bare `Position`, and its

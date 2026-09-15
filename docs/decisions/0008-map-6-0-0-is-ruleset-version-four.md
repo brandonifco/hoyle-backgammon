@@ -1,6 +1,6 @@
 # 0008: Map 6.0.0 is ruleset version four
 
-**Status:** accepted. Supersedes [decision 0007](0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md).
+**Status:** accepted. Supersedes [decision 0007](0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md). Superseded in part by [decision 0009](0009-owner-rulings-are-ruleset-version-five.md): Brandon ruled on 2026-09-15 on the second parts of both questions below, and the engine no longer declines them (ruleset 5). The first parts still decline.
 
 ## Context
 

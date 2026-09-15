@@ -7,15 +7,14 @@ namespace HoyleBackgammon.Tests;
 public class DeterminismTests
 {
     /// <summary>
-    /// A seed whose game from the corpus's start, taking the first play offered, finishes. It was
-    /// 20260913 until ruleset version 4 (map 6.0.0, rules-factory#125, docs/decisions/0008): that game
-    /// now declines, <see cref="A_game_that_finished_under_ruleset_three_declines_citing_page_275"/>.
-    /// 20260905 is the first from 20260900 that finishes.
+    /// A seed whose game from the corpus's start, taking the first play offered, finishes. Ruleset version 4
+    /// (docs/decisions/0008) declined this game and moved to 20260905; version 5 plays it through again under
+    /// the owner's rulings (docs/decisions/0009), <see cref="A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on"/>.
     /// </summary>
-    internal const ulong FinishingSeed = 20260905UL;
+    internal const ulong FinishingSeed = 20260913UL;
 
-    /// <summary>A second finishing seed, for the test that different seeds give different games. It was 1.</summary>
-    private const ulong OtherFinishingSeed = 20260921UL;
+    /// <summary>A second finishing seed, for the test that different seeds give different games. Version 4 used 20260921.</summary>
+    private const ulong OtherFinishingSeed = 1UL;
 
     private static GameRecord PlayOut(ulong seed, IDecider decider, out int drawn)
     {
@@ -129,17 +128,21 @@ public class DeterminismTests
     }
 
     [Fact]
-    public void A_game_that_finished_under_ruleset_three_declines_citing_page_275()
+    public void A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on()
     {
-        // Seed 20260913 with the first play offered was this class's game until ruleset version 4: a
-        // gammon for White. Under map 6.0.0 (rules-factory#125) a throw in it plays a man home in two
-        // orders under different rules, which must-play-whole-throw leaves open, so the game stops
-        // there with the entry's citation rather than finishing (docs/decisions/0008).
-        var result = Game.Play(Corpus.StartingPosition, Pcg32.FromSeed(20260913UL, 1UL), new FirstOptionDecider());
+        // Seed 20260913 with the first play offered declined under ruleset version 4: its fifteenth turn,
+        // White's double deuces, brings his last man home and plays on under bearing off, and one order of
+        // it reaches the same position with the last deuce played before the man is home, which
+        // must-play-whole-throw's open question left undecided (docs/decisions/0008). Under version 5 the
+        // owner's rulings play it (docs/decisions/0009), and the play names both, so the game finishes
+        // without passing either off as Hoyle's.
+        var record = PlayOut(20260913UL, new FirstOptionDecider(), out _);
 
-        var unresolved = Assert.IsType<Resolution<GameRecord>.Unresolved>(result).Result;
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal(MapEntries.MustPlayWholeThrow.Locator, unresolved.Locator);
+        var ruled = Assert.Single(record.Turns, t => t.Play is { Rulings.IsEmpty: false });
+        Assert.Equal(Player.White, ruled.Player);
+        Assert.Equal("8/6(2) 8/6(2) 8/6(2) 6/4(2)", ruled.Play!.ToString());
+        Assert.Equal([OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow], ruled.Play.Rulings.ToArray());
+        Assert.Equal(GameValue.Hit, record.Value);
     }
 
     [Fact]

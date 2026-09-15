@@ -19,8 +19,9 @@ internal static class Legal
 
     /// <summary>
     /// Whether a decline is must-play-whole-throw's first question, either die alone playable but not
-    /// both. The entry's second question (map 6.0.0, rules-factory#125) cites the same locator, so the
-    /// two are told apart by what the engine attempted.
+    /// both, told apart by what the engine attempted. Under ruleset version 4 the entry's second question
+    /// declined citing the same locator; since version 5 it is the owner's ruling and declines nothing
+    /// (docs/decisions/0009), and the check is kept so a decline reintroduced there is not counted here.
     /// </summary>
     public static bool IsEitherDieAloneDecline(UnresolvedResult result) =>
         result.Locator.Equals(MapEntries.MustPlayWholeThrow.Locator)

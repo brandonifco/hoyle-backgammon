@@ -21,25 +21,27 @@ namespace HoyleBackgammon.Tests;
 public class IdentityTests
 {
     [Fact]
-    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_four()
+    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_five()
     {
-        // Version 4 since map 6.0.0: a throw whose orders reach the same position under different
-        // rules, or which brings the last man home with a number left, declines where version 3
-        // offered a play (docs/decisions/0008; finding 18, rules-factory#125). Version 3 since map
-        // 4.0.0: a win against a loser with nothing off and a man in the winner's home table declines
-        // where version 2 valued it a backgammon (docs/decisions/0005; finding 17, rules-factory#102). Version 2 began with map 3.0.0 (docs/decisions/0004).
+        // Version 5 since Brandon's rulings of 2026-09-15 on the second parts of two questions map 6.0.0
+        // leaves open: a throw version 4 declined because its orders reach the same position under
+        // different rules, or because it brings the last man home with a number left, is played and names
+        // the ruling (docs/decisions/0009). Version 4 since map 6.0.0 declined both (docs/decisions/0008;
+        // finding 18, rules-factory#125). Version 3 since map 4.0.0: a win against a loser with nothing off
+        // and a man in the winner's home table declines where version 2 valued it a backgammon
+        // (docs/decisions/0005; finding 17, rules-factory#102). Version 2 began with map 3.0.0 (docs/decisions/0004).
         Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
-        Assert.Equal(4, Game.Identity.Ruleset.Version);
+        Assert.Equal(5, Game.Identity.Ruleset.Version);
     }
 
     [Fact]
-    public void The_replay_schema_is_version_two()
+    public void The_replay_schema_is_version_three()
     {
-        // The shape of a GameRecord: which fields a replay carries and what they mean. Version 2
-        // since the record carries its identity and map and has a canonical serialisation of its
-        // own (docs/decisions/0006). A recorded game from schema 1 cannot be read against another
-        // number.
-        Assert.Equal(2, Game.Identity.ReplaySchema.Version);
+        // The shape of a GameRecord: which fields a replay carries and what they mean. Version 3 since each
+        // turn names the owner's rulings its play relies on (docs/decisions/0009). Version 2 since the record
+        // carries its identity and map and has a canonical serialisation of its own (docs/decisions/0006).
+        // A recorded game from another schema cannot be read against this number.
+        Assert.Equal(3, Game.Identity.ReplaySchema.Version);
     }
 
     [Fact]
