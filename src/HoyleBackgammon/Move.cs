@@ -76,6 +76,24 @@ public readonly record struct Move(int From, int To, int Die, MoveKind Kind, boo
 /// <param name="Result">The position after all of them.</param>
 public sealed record Play(ImmutableArray<Move> Moves, Position Result)
 {
+    /// <summary>
+    /// The owner's rulings this play relies on, in <see cref="OwnerRulings.All"/>'s order; empty when it
+    /// relies on none. A ruling answers part of a question the corpus leaves open, so a play that lists
+    /// one is offered on its owner's authority and not Hoyle's (<c>docs/decisions/0009</c>):
+    /// <list type="bullet">
+    /// <item><see cref="OwnerRulings.APlayIsThePositionItReaches"/> where another order of the same
+    /// numbers reaches the same position under different rules, and this play, the first order found,
+    /// stands for both;</item>
+    /// <item><see cref="OwnerRulings.BearingOffBeginsWithinTheThrow"/> where a move of this play bears
+    /// off, or moves within the home table under bearing off, in a throw that began before every man
+    /// was home.</item>
+    /// </list>
+    /// Each move's <see cref="Move.Authority"/> is still the map entry that permits it once the ruling
+    /// is applied.
+    /// </summary>
+    public ImmutableArray<OwnerRuling> Rulings { get; init; } = [];
+
+
     /// <summary>The total number of pips this play consumed from the throw.</summary>
     public int PipsUsed
     {

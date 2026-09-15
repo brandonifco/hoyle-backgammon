@@ -44,10 +44,11 @@ public sealed record GameRecord(
     NextOpening Next)
 {
     /// <summary>
-    /// The record in its canonical serialisation, replay schema 2: RFC 8785 canonical JSON, UTF-8
-    /// without a byte-order mark, every field of the record including <see cref="Identity"/> and
-    /// <see cref="Map"/>. The same game gives the same bytes on every run, framework and platform
-    /// (<c>docs/decisions/0006</c> defines the shape).
+    /// The record in its canonical serialisation, replay schema 3: RFC 8785 canonical JSON, UTF-8
+    /// without a byte-order mark, every field of the record including <see cref="Identity"/>,
+    /// <see cref="Map"/> and, on each turn played, the owner's rulings its play relies on
+    /// (<see cref="Play.Rulings"/>), each with who ruled and when. The same game gives the same bytes on every run, framework and platform
+    /// (<c>docs/decisions/0006</c> defines the shape; <c>docs/decisions/0009</c> adds <c>rulings</c>).
     /// </summary>
     /// <returns>The bytes.</returns>
     public byte[] ToCanonicalJson() => GameRecordJson.Serialise(this);
@@ -64,13 +65,15 @@ public static class Game
     /// <see cref="GameRecord"/> carries it.
     /// </summary>
     /// <remarks>
-    /// The replay schema is version 2 since <see cref="GameRecord"/> carried its identity and map and
-    /// gained a canonical serialisation; no rule's answer changed, so the ruleset did not move
-    /// (<c>docs/decisions/0006</c>).
-    /// The ruleset is version 4 from <c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0 on, which leaves
-    /// open whether two orders of a throw reaching the same position under different rules are one
-    /// play, and whether bearing off begins within the throw that brings the last man home; a throw
-    /// that reaches either case declines where version 3 offered a play (<c>docs/decisions/0008</c>).
+    /// The replay schema is version 3 since each turn of a <see cref="GameRecord"/> names the owner's
+    /// rulings its play relies on (<c>docs/decisions/0009</c>); version 2 gave the record its identity,
+    /// its map and a canonical serialisation of its own (<c>docs/decisions/0006</c>).
+    /// The ruleset is version 5 from Brandon's rulings of 2026-09-15 on, which answer the second parts of
+    /// two questions <c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0 leaves open, and not from the corpus:
+    /// orders of a throw reaching the same position are one play, and bearing off begins within the throw
+    /// that brings the last man home. A throw version 4 declined for either is played, and the play names
+    /// the ruling (<c>docs/decisions/0009</c>). Version 4 began with map 6.0.0 and declined both
+    /// (<c>docs/decisions/0008</c>).
     /// Version 3 began with <c>RulesFactory.Maps.HoyleBackgammon</c> 4.0.0, which
     /// makes a win against a loser with nothing off and a man in the winner's home table decline
     /// where version 2 valued it a backgammon (<c>docs/decisions/0005</c>). Version 2 began with
@@ -78,8 +81,8 @@ public static class Game
     /// (<c>docs/decisions/0004</c>).
     /// </remarks>
     public static ReplayCompatibilityIdentity Identity { get; } = new(
-        ruleset: new RulesetVersion("hoyle-1909-backgammon", 4),
-        replaySchema: new ReplaySchemaVersion(2),
+        ruleset: new RulesetVersion("hoyle-1909-backgammon", 5),
+        replaySchema: new ReplaySchemaVersion(3),
         sourceBaselines: [MapEntries.Baseline],
         randomAlgorithm: RandomAlgorithmId.Pcg32SetSeq64XshRr32);
 

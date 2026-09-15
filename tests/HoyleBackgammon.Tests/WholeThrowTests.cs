@@ -190,12 +190,11 @@ public class WholeThrowTests
             {
                 var legal = LegalPlays.For(position, player, Movement.Entitlement(thrown));
 
-                // bearing-off-eligible's declines (map 3.0.0, blind-mapping resolution rows 12 and
-                // 13; and since map 6.0.0, rules-factory#125, a number left after the last man comes
-                // home) and must-play-whole-throw's second question (6.0.0: orders reaching the same
-                // position under different rules) are decided before this shape is consulted, so a
-                // throw they decline says nothing about it either way. Only the first question's
-                // decline counts.
+                // bearing-off-eligible's decline (map 3.0.0, blind-mapping resolution rows 12 and 13:
+                // a man hit mid-bear-off who re-enters) is decided before this shape is consulted, so a
+                // throw it declines says nothing about it either way. Only must-play-whole-throw's first
+                // question's decline counts. The second parts of both questions are the owner's rulings
+                // since ruleset version 5 and decline nothing (docs/decisions/0009).
                 if (legal is Resolution<ImmutableArray<Play>>.Unresolved { Result: var other }
                     && !Legal.IsEitherDieAloneDecline(other))
                 {

@@ -39,8 +39,8 @@ public sealed record MapPackage(string PackageId, string Version)
 }
 
 /// <summary>
-/// The canonical serialisation of a <see cref="GameRecord"/>: replay schema 2, the format
-/// <c>docs/decisions/0006</c> defines.
+/// The canonical serialisation of a <see cref="GameRecord"/>: replay schema 3, the format
+/// <c>docs/decisions/0006</c> defines with each turn's owner's rulings added (<c>docs/decisions/0009</c>).
 /// </summary>
 /// <remarks>
 /// JSON in the canonical form of RFC 8785 (JCS), restricted to what a record holds: objects,
@@ -145,6 +145,17 @@ internal static class GameRecordJson
             }).ToList()
             : null,
         ["position"] = Of(turn.Position),
+        ["rulings"] = turn.Play is { } ruled
+            ? ruled.Rulings.Select(r => (object?)new Obj
+            {
+                ["id"] = r.Id,
+                ["entry"] = r.Entry.Id,
+                ["questionPart"] = r.QuestionPart,
+                ["ruledBy"] = r.RuledBy,
+                ["ruledOn"] = r.RuledOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                ["record"] = r.Record,
+            }).ToList()
+            : null,
     };
 
     private static string Name<T>(T value)

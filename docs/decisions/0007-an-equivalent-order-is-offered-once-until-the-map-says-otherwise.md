@@ -1,6 +1,6 @@
 # 0007: An equivalent order is offered once, until the map says otherwise
 
-**Status:** superseded by [decision 0008](0008-map-6-0-0-is-ruleset-version-four.md). Map 6.0.0 records both questions below as unresolved, and the engine now declines both cases. This recorded a gap in the map (finding 18). It did not settle a reading.
+**Status:** superseded by [decision 0008](0008-map-6-0-0-is-ruleset-version-four.md). Map 6.0.0 records both questions below as unresolved, and the engine now declines both cases. This recorded a gap in the map (finding 18). It did not settle a reading. Its behaviour returned in ruleset 5 as the owner's rulings of [decision 0009](0009-owner-rulings-are-ruleset-version-five.md), named on every play that relies on them.
 
 ## Context
 

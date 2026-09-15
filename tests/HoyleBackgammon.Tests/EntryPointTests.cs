@@ -46,8 +46,8 @@ public class MustPlayWholeThrowEntryPointTests
         // not open to him: every compelled play enters and then plays the other number, and no
         // other play is offered. Entering with the trois and running that man on six reaches the
         // same position with the same numbers as bar/19 19/16, and the engine offers that play once:
-        // both orders are an entry and a move-by-pip, so no rule differs between them, which is
-        // not must-play-whole-throw's open question (map 6.0.0, rules-factory#125; docs/decisions/0008).
+        // both orders are an entry and a move-by-pip, so no rule differs between them, and the play
+        // needs no owner's ruling on must-play-whole-throw's open question (docs/decisions/0009).
         var position = Asserted(
             Board.Men().At(Geometry.BarPip, 1).At(8, 6).RestAt(6),
             Board.Men().RestAt(13));
@@ -65,6 +65,7 @@ public class MustPlayWholeThrowEntryPointTests
             Assert.Equal(9, play.PipsUsed);
             Assert.Equal(MapEntries.EnterFromBar, play.Moves[0].Authority);
             Assert.Equal(MapEntries.MoveByPip, play.Moves[1].Authority);
+            Assert.Empty(play.Rulings);
         });
     }
 
@@ -86,24 +87,20 @@ public class MustPlayWholeThrowEntryPointTests
     }
 
     [Fact]
-    public void Two_orders_reaching_the_same_position_under_different_rules_decline_citing_page_275()
+    public void Two_orders_reaching_the_same_position_under_different_rules_are_one_play_naming_the_owners_ruling()
     {
         // White's last man outside stands on the eight point; he throws deuce ace. 8/6 then 6/5 and
         // 8/7 then 7/5 leave the same men on the same points with the same numbers used, but not
-        // under the same rules: after 8/6 every man is home, so the ace is played after bearing off
-        // has begun, and in the other order the man is still outside, on the seven point, when the
-        // deuce is played. Whether two such orders are one play or two is must-play-whole-throw's
-        // question since RulesFactory.Maps.HoyleBackgammon 6.0.0 (rules-factory#125, fate
-        // unresolved, the map's own example). Until map 6.0.0 the engine offered 8/6 6/5 once
-        // (docs/decisions/0007); now it declines, citing the entry (docs/decisions/0008).
+        // under the same rules: after 8/6 every man is home, so the ace is played under bearing off,
+        // and in the other order the man is still outside, on the seven point, when the deuce is
+        // played. Whether two such orders are one play or two is must-play-whole-throw's question's
+        // second part (RulesFactory.Maps.HoyleBackgammon 6.0.0, fate unresolved, the map's own
+        // example), and the corpus does not settle it. Ruleset 4 declined (docs/decisions/0008). Brandon
+        // ruled on 2026-09-15 that a play is the position it reaches: offered once, crediting the rules
+        // of the first order found, and the play names the ruling so it is not passed off as Hoyle's
+        // (docs/decisions/0009).
         var position = Asserted(Board.Men().At(8, 1).RestAt(6), Board.Men().RestAt(13));
-
-        var unresolved = Assert.IsType<Resolution<object>.Unresolved>(
-            Resolve(position, Player.White, new DiceThrow(2, 1))).Result;
-
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal("BACKGAMMON / Playing / p. 275", unresolved.Locator.Citation);
-        Assert.Equal(EntryPoints.MustPlayWholeThrow.Registered.Locator, unresolved.Locator);
+        var plays = Compelled(Resolve(position, Player.White, new DiceThrow(2, 1)), position);
 
         // Both orders are open move by move, through the single-die entry point, and reach the same
         // position under different rules: 8/6 then 6/5 under bearing-off-move-or-remove, and 8/7 then
@@ -117,33 +114,82 @@ public class MustPlayWholeThrowEntryPointTests
         var between = Then(position, ace);
         var deuceAfter = Assert.Single(MovesByPip(between, 2), m => m.From == 7);
         Assert.Equal([MapEntries.MoveByPip, MapEntries.MoveByPip], new[] { ace.Authority, deuceAfter.Authority });
-        Assert.Equal(Then(homed, aceAfter).Position, Then(between, deuceAfter).Position);
+        var reached = Then(homed, aceAfter).Position;
+        Assert.Equal(reached, Then(between, deuceAfter).Position);
+
+        // One play reaches that position: the first order found, with its own authorities.
+        var play = Assert.Single(plays, p => p.Result.Equals(reached));
+        Assert.Equal("8/6(2) 6/5(1)", play.ToString());
+        Assert.Equal([MapEntries.MoveByPip, MapEntries.BearingOffMoveOrRemove], play.Moves.Select(m => m.Authority));
+
+        // It names both rulings it relies on: this one, and bearing-off-eligible's, since its ace is played
+        // under bearing off in a throw that began with a man outside.
+        Assert.Equal([OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow], play.Rulings.ToArray());
+        var ruling = play.Rulings[0];
+        Assert.Equal("must-play-whole-throw/2", ruling.Id);
+        Assert.Equal(EntryPoints.MustPlayWholeThrow.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(2, ruling.QuestionPart);
+        Assert.Equal("Brandon", ruling.RuledBy);
+        Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
+
+        // A play that leaves the eight point alone reaches its position by one order's rules only, and names
+        // no ruling.
+        var untouched = Assert.Single(plays, p => p.ToString() == "6/4(2) 6/5(1)");
+        Assert.Empty(untouched.Rulings);
+
+        // Orders can meet partway through a throw and go on together. With men on the eight and seven points,
+        // the rest on the ace point, double trois plays only 8/5 7/4 5/2 4/1: the last two under bearing off.
+        // 8/5 5/2 7/4 then 4/1 reaches the same position with only the last trois under bearing off, and
+        // meets the offered order after three numbers, not four. The play still names the ruling.
+        var met = Asserted(Board.Men().At(8, 1).At(7, 1).RestAt(1), Board.Men().RestAt(13));
+        var metPlay = Assert.Single(Compelled(Resolve(met, Player.White, new DiceThrow(3, 3)), met));
+        Assert.Equal("8/5(3) 7/4(3) 5/2(3) 4/1(3)", metPlay.ToString());
+        Assert.Equal([OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow], metPlay.Rulings.ToArray());
     }
 
     [Fact]
-    public void A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible()
+    public void A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling()
     {
-        // bearing-off-eligible's example since RulesFactory.Maps.HoyleBackgammon 6.0.0
-        // (rules-factory#125, fate unresolved): White's last man outside is on the nine point, the
-        // other fourteen on his ace point, where no number moves them before bearing off begins, and
-        // he throws six-trois. 9/3 then off with the trois, and 9/6 then off with the six, are legal
-        // if the stage begins partway through the throw and neither is if it does not. Both orders
-        // are an ordinary move and a removal, so this is not must-play-whole-throw's question; it is
-        // only whether bearing off begins within the throw (docs/decisions/0008).
+        // bearing-off-eligible's question's second part since RulesFactory.Maps.HoyleBackgammon 6.0.0
+        // (fate unresolved, the map's own example): White's last man outside is on the nine point, the
+        // other fourteen on his ace point, where no number moves them before bearing off begins, and he
+        // throws six-trois. The corpus does not say whether the number left after 9/3 is played under
+        // bearing off. Ruleset 4 declined (docs/decisions/0008). Brandon ruled on 2026-09-15 that it is
+        // (docs/decisions/0009): 9/3 then off with the trois is legal, and so is 9/6 then off with the six.
         var position = Asserted(Board.Men().At(9, 1).RestAt(1), Board.Men().RestAt(13));
 
-        var unresolved = Assert.IsType<Resolution<object>.Unresolved>(
-            Resolve(position, Player.White, new DiceThrow(6, 3))).Result;
+        var play = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(6, 3)), position));
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal("BACKGAMMON / Bearing off the Men / p. 275", unresolved.Locator.Citation);
-        Assert.Equal(EntryPoints.BearingOffEligible.Registered.Locator, unresolved.Locator);
+        // The two orders reach the same position under the same rules, a move-by-pip and a removal, so they
+        // are one play whichever way must-play-whole-throw's question went, and only this ruling is named.
+        Assert.Equal("9/3(6) 3/off(3)", play.ToString());
+        Assert.Equal([MapEntries.MoveByPip, MapEntries.BearingOffMoveOrRemove], play.Moves.Select(m => m.Authority));
+        Assert.Equal(1, play.Result.BorneOff(Player.White));
+        var ruling = Assert.Single(play.Rulings);
+        Assert.Same(OwnerRulings.BearingOffBeginsWithinTheThrow, ruling);
+        Assert.Equal("bearing-off-eligible/2", ruling.Id);
+        Assert.Equal(EntryPoints.BearingOffEligible.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(2, ruling.QuestionPart);
+        Assert.Equal("Brandon", ruling.RuledBy);
+        Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
 
-        // The decline is the throw's, not the position's: a throw whose last number brings the man
-        // home leaves no number to ask about, and resolves (9/7 7/6, the one play of deuce-ace).
-        var play = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(2, 1)), position));
-        Assert.Equal("9/7(2) 7/6(1)", play.ToString());
-        Assert.All(play.Moves, m => Assert.Equal(MapEntries.MoveByPip, m.Authority));
+        // The other order is legal move by move: 9/6 with the trois, then off with the six.
+        var trois = Assert.Single(MovesByPip(position, 3), m => m.From == 9);
+        var off = Assert.Single(MovesByPip(Then(position, trois), 6));
+        Assert.Equal((6, Geometry.BorneOffPip, MapEntries.BearingOffMoveOrRemove), (off.From, off.To, off.Authority));
+
+        // A throw whose last number brings the man home leaves no number under bearing off, and names no
+        // ruling (9/7 7/6, the one play of deuce-ace).
+        var homeOnly = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(2, 1)), position));
+        Assert.Equal("9/7(2) 7/6(1)", homeOnly.ToString());
+        Assert.All(homeOnly.Moves, m => Assert.Equal(MapEntries.MoveByPip, m.Authority));
+        Assert.Empty(homeOnly.Rulings);
+
+        // Bearing off in a throw that began with every man home is Hoyle's own case, and names no ruling.
+        var alreadyHome = Asserted(Board.Men().At(6, 1).RestAt(1), Board.Men().RestAt(13));
+        var bearing = Compelled(Resolve(alreadyHome, Player.White, new DiceThrow(6, 3)), alreadyHome);
+        Assert.Contains(bearing, p => p.ToString() == "6/off(6) 1/off(3)");
+        Assert.All(bearing, p => Assert.Empty(p.Rulings));
     }
 
     private static AssertedPosition Then(AssertedPosition position, Move move) =>
@@ -342,7 +388,7 @@ public class AssertedPositionEntryPointTests
 /// </summary>
 public class SeededGameReplayTests
 {
-    private const ulong Seed = 20260965UL;
+    private const ulong Seed = 20260914UL;
 
     /// <summary>
     /// The SHA-256 of the recorded game's canonical serialisation, <see cref="GameRecord.ToCanonicalJson"/>.
@@ -357,13 +403,18 @@ public class SeededGameReplayTests
     /// gammon for White. Only the bytes did, so the ruleset stays at version 3.
     /// <para>
     /// Re-pinned again, with a new seed, for ruleset version 4 (map 6.0.0, rules-factory#125,
-    /// <c>docs/decisions/0008</c>). Seed 20260914 no longer finishes: its game reaches a throw that brings
-    /// White's last man home with a number left, which bearing-off-eligible now leaves open, and declines.
-    /// Seed 20260965 is the first from 20260900 whose game under these decisions finishes: 72 turns and a
-    /// hit for Black. Previous pin <c>878936f1...0604da3d</c>.
+    /// <c>docs/decisions/0008</c>): seed 20260914's game declined there, and seed 20260965 was the first from
+    /// 20260900 to finish. Previous pin <c>878936f1...0604da3d</c>, then <c>5b2745a7...3d45af8b</c>.
+    /// </para>
+    /// <para>
+    /// Re-pinned again, back on seed 20260914, for ruleset version 5 and replay schema 3
+    /// (<c>docs/decisions/0009</c>). Brandon's rulings of 2026-09-15 play the throws version 4 declined, so
+    /// this game finishes again as it did under version 3, 65 turns and a gammon for White; and each turn now
+    /// names the owner's rulings its play relies on. One does: White's 11/8 8/5 3/off 3/off, which bears off
+    /// after the trois that brings his last man home (<c>bearing-off-eligible/2</c>).
     /// </para>
     /// </remarks>
-    private const string RecordedReplaySha256 = "5b2745a7bf0d50781db73bc169c9248da41f3ea51c768acd6dc5592a3d45af8b";
+    private const string RecordedReplaySha256 = "b02846a92005cdc751ad7337de015583cad6600bdf410c94a74552396bb316a2";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -390,25 +441,34 @@ public class SeededGameReplayTests
         Assert.Equal(RecordedReplaySha256, Convert.ToHexString(SHA256.HashData(recorded)).ToLowerInvariant());
 
         // Two runs are comparable only under the same identity, and the record carries it: ruleset
-        // hoyle-1909-backgammon version 4 (map 6.0.0, rules-factory#125), replay schema 2, from map 6.0.0. The map is the one the
-        // embedded provenance names, not a constant of the engine's.
+        // hoyle-1909-backgammon version 5 (Brandon's rulings of 2026-09-15 on map 6.0.0's open questions,
+        // docs/decisions/0009), replay schema 3, from map 6.0.0. The map is the one the embedded provenance
+        // names, not a constant of the engine's.
         Assert.Equal(Game.Identity, first.Identity);
         Assert.Equal("hoyle-1909-backgammon", first.Identity.Ruleset.Id);
-        Assert.Equal(4, first.Identity.Ruleset.Version);
-        Assert.Equal(2, first.Identity.ReplaySchema.Version);
+        Assert.Equal(5, first.Identity.Ruleset.Version);
+        Assert.Equal(3, first.Identity.ReplaySchema.Version);
         Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "6.0.0"), first.Map);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
         var map = provenance.RootElement.GetProperty("map");
         Assert.Equal(map.GetProperty("packageId").GetString(), first.Map.PackageId);
         Assert.Equal(map.GetProperty("version").GetString(), first.Map.Version);
         Assert.StartsWith(
-            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":4},",
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":3,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":5},",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
         Assert.Contains(
             "\"map\":{\"packageId\":\"RulesFactory.Maps.HoyleBackgammon\",\"version\":\"6.0.0\"}",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
+
+        // Where a turn's play relies on an owner's ruling the record says so, with who ruled and when, so a
+        // replayed game never passes the ruling off as the corpus's (docs/decisions/0009).
+        var ruled = first.Turns.Where(t => t.Play is { Rulings.IsEmpty: false }).ToList();
+        Assert.NotEmpty(ruled);
+        Assert.Equal(
+            ruled.Sum(t => t.Play!.Rulings.Length),
+            Encoding.UTF8.GetString(recorded).Split("\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"").Length - 1);
     }
 
     [Fact]
@@ -417,7 +477,8 @@ public class SeededGameReplayTests
         // A record built by hand, so every field and every escape is on the page: members sorted by
         // name, no whitespace, a suspended turn (no throw, moves null) beside a turn with nothing
         // playable (moves empty) and one with a hit, the justification null, and an asserter whose
-        // name needs a quote, a backslash, a newline, a unit separator and a non-ASCII letter.
+        // name needs a quote, a backslash, a newline, a unit separator and a non-ASCII letter; and a turn
+        // whose play names both owner's rulings (docs/decisions/0009), rulings null where moves are.
         var position = Setup.StartingPositionFromCorpus();
         var record = new GameRecord(
             Game.Identity,
@@ -429,6 +490,10 @@ public class SeededGameReplayTests
                 new Turn(Player.Black, null, null, position),
                 new Turn(Player.White, new DiceThrow(6, 6), new Play([], position), position),
                 new Turn(Player.Black, new DiceThrow(5, 3), new Play([new Move(8, 3, 5, MoveKind.Ordinary, TakesUpBlot: true)], position), position),
+                new Turn(Player.White, new DiceThrow(2, 1), new Play([new Move(1, 0, 1, MoveKind.BearingOffRemove, TakesUpBlot: false)], position)
+                {
+                    Rulings = [OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow],
+                }, position),
             ],
             Player.White,
             GameValue.Gammon,
@@ -437,8 +502,8 @@ public class SeededGameReplayTests
         string men = "[0,0,0,0,0,0,5,0,3,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,2,0]";
         string board = $"{{\"Black\":{men},\"White\":{men}}}";
         string expected =
-            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,"
-            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":4},"
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":3,"
+            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":5},"
             + "\"sourceBaselines\":[{\"asOf\":null,\"contentHash\":\"5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e\","
             + "\"hashDerivation\":\"gutenberg-plain-text-including-boilerplate\",\"sourceId\":\"hoyle-1909\"}]},"
             + "\"map\":{\"packageId\":\"Some.Map\",\"version\":\"1.2.3\"},"
@@ -447,10 +512,18 @@ public class SeededGameReplayTests
             + "\"openingThrowAdopted\":true,"
             + $"\"start\":{{\"assertedBy\":\"Ann \\\"A\\\\B\\\"\\n\\u001fé\",\"justification\":null,\"position\":{board}}},"
             + "\"turns\":["
-            + $"{{\"moves\":null,\"player\":\"Black\",\"position\":{board},\"thrown\":null}},"
-            + $"{{\"moves\":[],\"player\":\"White\",\"position\":{board},\"thrown\":[6,6]}},"
+            + $"{{\"moves\":null,\"player\":\"Black\",\"position\":{board},\"rulings\":null,\"thrown\":null}},"
+            + $"{{\"moves\":[],\"player\":\"White\",\"position\":{board},\"rulings\":[],\"thrown\":[6,6]}},"
             + "{\"moves\":[{\"authority\":\"move-by-pip\",\"die\":5,\"from\":8,\"kind\":\"Ordinary\",\"takesUpBlot\":true,\"to\":3}],"
-            + $"\"player\":\"Black\",\"position\":{board},\"thrown\":[5,3]}}"
+            + $"\"player\":\"Black\",\"position\":{board},\"rulings\":[],\"thrown\":[5,3]}},"
+            + "{\"moves\":[{\"authority\":\"bearing-off-move-or-remove\",\"die\":1,\"from\":1,\"kind\":\"BearingOffRemove\",\"takesUpBlot\":false,\"to\":0}],"
+            + $"\"player\":\"White\",\"position\":{board},"
+            + "\"rulings\":["
+            + "{\"entry\":\"must-play-whole-throw\",\"id\":\"must-play-whole-throw/2\",\"questionPart\":2,"
+            + "\"record\":\"docs/decisions/0009-owner-rulings-are-ruleset-version-five.md\",\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"},"
+            + "{\"entry\":\"bearing-off-eligible\",\"id\":\"bearing-off-eligible/2\",\"questionPart\":2,"
+            + "\"record\":\"docs/decisions/0009-owner-rulings-are-ruleset-version-five.md\",\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"}"
+            + $"],\"thrown\":[2,1]}}"
             + "],"
             + "\"value\":\"Gammon\",\"winner\":\"White\"}";
 

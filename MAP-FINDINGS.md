@@ -54,6 +54,19 @@ number left after the last man comes home is played under bearing off. Each is `
 The engine now declines both cases, which changes what a game returns, so the ruleset is version 4
 ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)). No finding is open.
 
+**Not a finding: the owner's rulings.** On 2026-09-15 Brandon, the engine's owner, ruled on the second
+part of each of those questions: the number left after the last man comes home bears off, and a play
+is the position it reaches. The engine applies both, names the ruling on every play that relies on one,
+and is ruleset version 5
+([decision 0009](docs/decisions/0009-owner-rulings-are-ruleset-version-five.md)). The map is not wrong
+about either question, because the corpus still does not settle them, so nothing goes upstream and
+both entries stay `fate: unresolved`. The first parts, either die alone playable but not both and a
+man hit mid-bear-off who re-enters, are not ruled on and still decline. One thing the build did find,
+about the method rather than the map: the factory has no carrier for an owner's ruling held by an
+engine against an unresolved question. `fate: decision` would record the ruling as the passage's
+meaning. Nothing checks that an engine declines every case a question names, only that it declines
+one, so the engine is not refused either.
+
 ---
 
 ## 1. `starting-position` is not beyond the adapter. It is stated in prose. — **map at fault**
