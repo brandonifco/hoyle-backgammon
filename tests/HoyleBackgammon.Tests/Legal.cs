@@ -16,4 +16,13 @@ internal static class Legal
     public static UnresolvedResult Unresolved(Position position, Player player, DiceThrow thrown) =>
         Assert.IsType<Resolution<ImmutableArray<Play>>.Unresolved>(
             LegalPlays.For(position, player, Movement.Entitlement(thrown))).Result;
+
+    /// <summary>
+    /// Whether a decline is must-play-whole-throw's first question, either die alone playable but not
+    /// both. The entry's second question (map 6.0.0, rules-factory#125) cites the same locator, so the
+    /// two are told apart by what the engine attempted.
+    /// </summary>
+    public static bool IsEitherDieAloneDecline(UnresolvedResult result) =>
+        result.Locator.Equals(MapEntries.MustPlayWholeThrow.Locator)
+        && result.Attempted.StartsWith("choose between plays that use incomparable parts", StringComparison.Ordinal);
 }

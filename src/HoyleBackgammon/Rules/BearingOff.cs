@@ -31,6 +31,12 @@ public static class BearingOff
     /// <c>enter-from-bar</c> suspends every bearing-off rule (rows 11, 14 and 17), and
     /// <see cref="MovesForDie"/> refuses on that ground first.
     /// </para>
+    /// <para>
+    /// Nor does it decide the question's second part, since <c>RulesFactory.Maps.HoyleBackgammon</c>
+    /// 6.0.0 (rules-factory#125): whether a number left after the move that brings the last man home
+    /// is played under this stage. That is a question about a throw, not a position, so this
+    /// predicate cannot raise it; <see cref="LegalPlays.For"/> declines the throw where it arises.
+    /// </para>
     /// </remarks>
     public static bool IsEligible(Position position, Player player)
     {

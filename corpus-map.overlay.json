@@ -3,12 +3,12 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
         "test": "PlayerCountTests.A_game_is_played_by_exactly_two_persons_turn_and_turn_about",
-        "mutation": "Players.Adversary returned the player himself (`player` for `player == Player.White ? Player.Black : Player.White`), so one person plays alone; this test went red. It went red too with Players.Both reduced to White alone, and with a third value, Red, added to Player."
+        "mutation": "Players.Adversary returned the player himself (`player` for `player == Player.White ? Player.Black : Player.White`), so one person plays alone; this test went red. It went red too with Players.Both reduced to White alone, and with a third value, Red, added to Player. Re-observed (Adversary returning the player) after the game moved from seed 20260913 to 20260905, which still finishes under ruleset version 4 (map 6.0.0, rules-factory#125); still red."
       }
     ]
   },
@@ -16,7 +16,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -33,7 +33,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -50,7 +50,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -63,7 +63,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -76,7 +76,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -97,7 +97,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -114,7 +114,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -123,11 +123,11 @@
       },
       {
         "test": "SeededGameReplayTests.A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions",
-        "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id."
+        "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id. Re-pinned for ruleset version 4 (map 6.0.0, rules-factory#125; docs/decisions/0008) with seed 20260965, since seed 20260914's game now declines; the dice-swap mutation re-observed on the new game (72 turns), still red, and so was Game.Identity's ruleset at version 3."
       },
       {
         "test": "SeededGameReplayTests.The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record",
-        "mutation": "Named beside the seeded replay whose bytes it defines (docs/decisions/0006). GameRecordJson wrote C0 controls other than the five named escapes as themselves (the `case < ' '` arm removed); this test went red and the seeded replay did not. It went red too with object members in reverse order, with the identity left out, with the replay schema at 1, with Game.Identity's ruleset at version 2, and with a move's authority written as its MoveKind."
+        "mutation": "Named beside the seeded replay whose bytes it defines (docs/decisions/0006). GameRecordJson wrote C0 controls other than the five named escapes as themselves (the `case < ' '` arm removed); this test went red and the seeded replay did not. It went red too with object members in reverse order, with the identity left out, with the replay schema at 1, with Game.Identity's ruleset at version 2, and with a move's authority written as its MoveKind. Its ruleset literal moved to 4 (map 6.0.0, rules-factory#125); Game.Identity's ruleset at version 3 turned it red."
       },
       {
         "test": "IdentityTests.The_replay_schema_is_version_two",
@@ -139,7 +139,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -156,7 +156,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -173,7 +173,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -186,7 +186,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -199,7 +199,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -216,7 +216,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -233,7 +233,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -262,7 +262,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -279,7 +279,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -296,7 +296,7 @@
       },
       {
         "test": "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
-        "mutation": "The same mutation, the incomparable case resolved silently; this test went red. Re-observed after bearing-off-eligible's declines were excluded from the comparison (map 3.0.0, rows 12 and 13); still red."
+        "mutation": "The same mutation, the incomparable case resolved silently; this test went red. Re-observed after bearing-off-eligible's declines were excluded from the comparison (map 3.0.0, rows 12 and 13); still red. Re-observed after map 6.0.0's declines (rules-factory#125), both of the throw's order and of bearing off within it, were excluded by what the engine attempted (Legal.IsEitherDieAloneDecline); still red."
       },
       {
         "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
@@ -315,8 +315,12 @@
         "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`). Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
-        "test": "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ",
-        "mutation": "Pins behaviour the corpus does not settle (finding 18, docs/decisions/0007). LegalPlays.For's memo never pruned (`!seen.Add(...) && false`), so 8/7 7/5 was offered beside 8/6 6/5; this test went red, with the six-trois test beside it. It went red too with BearingOff.MovesForDie recording a forward move within the home table as MoveKind.Ordinary (authority move-by-pip), and with the entitlement enumerated lowest number first (`Order()` for `OrderDescending()`), which offers 8/7 7/5 in place of 8/6 6/5."
+        "test": "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_decline_citing_page_275",
+        "mutation": "Replaces Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ, which pinned decision 0007's behaviour: map 6.0.0's question asks whether such orders are one play or two (rules-factory#125, fate unresolved; docs/decisions/0008). LegalPlays.For never declined for orders reaching the same state under different authorities (`if (search.ReachedEquivalentOrdersUnderDifferentRules && false)`); this test went red, the throw declining for bearing-off-eligible instead, and so did DeterminismTests.A_game_that_finished_under_ruleset_three_declines_citing_page_275. Both went red too with the memo's comparison of authorities removed (`|= false` for `|= first != authorities`). MustPlayWholeThrowEntryPointTests.A_six_trois_with_a_man_up_resolves_to_the_plays_of_the_whole_throw_each_move_citing_its_entry stayed green under both mutations; it went red when the memo compared each number's authority instead of the multiset (`m.Authority.Id + m.Die`), which declined bar/19 19/16 against bar/22 22/16, so it holds that orders under the same rules are still offered once."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible",
+        "mutation": "Named here because it resolves through EntryPoints.MustPlayWholeThrow; the question is bearing-off-eligible's (map 6.0.0, rules-factory#125; docs/decisions/0008), and it is named there too. LegalPlays.For never declined for a line bringing the last man home with a number left (`if (search.ReachedEligibilityMidThrow && false)`); this test went red, and no other test in the class did. It went red too when the decline did not require a number left (`numberLeft &&` dropped), where its deuce-ace, whose last number brings the man home, declined."
       },
       {
         "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275",
@@ -333,6 +337,10 @@
       {
         "test": "AssertedPositionEntryPointTests.A_request_without_a_position_is_the_callers_error_not_an_answer",
         "mutation": "Handlers.Missing dropped the parameter name from its ArgumentException; this test went red. It went red too when the game-value handler defaulted a missing position to the corpus start asserted by \"the engine\" instead of demanding one (the rule then threw for the winner, not the position)."
+      },
+      {
+        "test": "DeterminismTests.A_game_that_finished_under_ruleset_three_declines_citing_page_275",
+        "mutation": "Seed 20260913 with the first play offered, which finished under ruleset 3 (map 6.0.0, rules-factory#125; docs/decisions/0008). Both new declines in LegalPlays.For removed (each `&& false`); this test went red. With only bearing-off-eligible's removed it stayed green: this game's first open throw is must-play-whole-throw's."
       }
     ]
   },
@@ -340,7 +348,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -354,6 +362,10 @@
       {
         "test": "BearingOffEligibilityTests.The_decline_is_only_where_the_question_arises",
         "mutation": "BearingOff.HasReEnteredMidBearOff held without a man borne off (the `BorneOff(player) == 0` arm dropped), so a player not yet home at all declined; this test went red. It went red too with the man-at-home arm dropped (`return outside;` for `return home && outside;`)."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible",
+        "mutation": "This entry's second question since map 6.0.0 (rules-factory#125, fate unresolved; docs/decisions/0008), resolved through EntryPoints.MustPlayWholeThrow because it is a question about a throw. LegalPlays.For never declined for a line bringing the last man home with a number left (`if (search.ReachedEligibilityMidThrow && false)`); this test went red. It went red too with `numberLeft &&` dropped from the condition."
       }
     ]
   },
@@ -361,7 +373,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -382,7 +394,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -403,7 +415,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -424,7 +436,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -433,7 +445,7 @@
       },
       {
         "test": "DeterminismTests.A_finished_game_ends_with_the_winner_bearing_off_his_last_man",
-        "mutation": "BearingOff.HasWon held once any man was off; this test went red. The_last_man_off_wins_the_game stayed green under it."
+        "mutation": "BearingOff.HasWon held once any man was off; this test went red. The_last_man_off_wins_the_game stayed green under it. Re-observed after the class's game moved from seed 20260913 to 20260905, which still finishes under ruleset version 4 (map 6.0.0, rules-factory#125); still red."
       }
     ]
   },
@@ -441,7 +453,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -478,7 +490,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -495,7 +507,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -512,7 +524,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -529,7 +541,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -550,7 +562,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {
@@ -563,7 +575,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 3
+      "version": 4
     },
     "tests": [
       {

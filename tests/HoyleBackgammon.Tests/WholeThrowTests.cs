@@ -190,11 +190,14 @@ public class WholeThrowTests
             {
                 var legal = LegalPlays.For(position, player, Movement.Entitlement(thrown));
 
-                // bearing-off-eligible's decline (map 3.0.0, blind-mapping resolution rows 12 and
-                // 13) is decided before this rule is consulted, so a throw it declines says
-                // nothing about this rule's shape either way. Only this rule's declines count.
+                // bearing-off-eligible's declines (map 3.0.0, blind-mapping resolution rows 12 and
+                // 13; and since map 6.0.0, rules-factory#125, a number left after the last man comes
+                // home) and must-play-whole-throw's second question (6.0.0: orders reaching the same
+                // position under different rules) are decided before this shape is consulted, so a
+                // throw they decline says nothing about it either way. Only the first question's
+                // decline counts.
                 if (legal is Resolution<ImmutableArray<Play>>.Unresolved { Result: var other }
-                    && other.Locator.Equals(MapEntries.BearingOffEligible.Locator))
+                    && !Legal.IsEitherDieAloneDecline(other))
                 {
                     continue;
                 }
@@ -284,10 +287,12 @@ public class WholeThrowTests
                     break;
                 }
 
-                if (((Resolution<ImmutableArray<Play>>.Unresolved)legal).Result.Locator
-                    .Equals(MapEntries.BearingOffEligible.Locator))
+                if (!Legal.IsEitherDieAloneDecline(((Resolution<ImmutableArray<Play>>.Unresolved)legal).Result))
                 {
-                    // Entering the hit man this throw reached the same case (rows 12 and 13).
+                    // Entering the hit man this throw reached the same case (rows 12 and 13), or,
+                    // since map 6.0.0 (rules-factory#125), the throw brings the last man home with a
+                    // number left. Near the end of bearing in that is every throw, so throwing again
+                    // need not end either; the walk stops.
                     yield break;
                 }
             }

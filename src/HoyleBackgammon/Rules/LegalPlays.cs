@@ -10,8 +10,7 @@ public static class LegalPlays
 {
     /// <summary>
     /// Every play <paramref name="player"/> may make with <paramref name="entitlement"/>, or an
-    /// unresolved result where the corpus does not settle which of two incomparable plays is
-    /// compelled.
+    /// unresolved result where the corpus does not settle what the throw allows.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -70,18 +69,37 @@ public static class LegalPlays
     /// <item>A memo on (position reached, how many of each number used) prunes any line that
     /// reaches a state an earlier line already reached. Of several orderings of moves that
     /// arrive at the same state, <em>only the first enumerated survives</em>; this is what
-    /// fixes the length, and it is why rules 1–3 decide which moves are written down.</item>
+    /// fixes the length, and it is why rules 1–3 decide which moves are written down. It prunes
+    /// only orders whose moves are permitted by the same rules; where they are not, the throw
+    /// declines (below).</item>
     /// <item>Lines not using the compelled numbers are then removed, keeping the order of the
     /// rest.</item>
     /// </list>
     /// <para>
-    /// <b>What rule 4 hides.</b> The orders it prunes can carry different authorities. With the last
-    /// man outside on the eight point and deuce ace thrown, 8/6 6/5 plays the ace under
-    /// <see cref="MapEntries.BearingOffMoveOrRemove"/>, and the pruned 8/7 7/5 plays both numbers under
-    /// <see cref="MapEntries.MoveByPip"/>. The corpus does not say whether a play is the position it
-    /// reaches or its moves in order, nor whether bearing off begins partway through the throw that
-    /// brings the last man home. That is finding 18 in <c>MAP-FINDINGS.md</c>, so the behaviour stays
-    /// as it is until the map answers it (<c>docs/decisions/0007</c>).
+    /// <b>Two more declines, since <c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0 (rules-factory#125,
+    /// this engine's finding 18).</b> Rule 4 keeps one order of several that reach the same state, and
+    /// the orders it prunes can carry different authorities: with the last man outside on the eight
+    /// point and deuce ace thrown, 8/6 6/5 plays the ace after every man is home, and 8/7 7/5 does
+    /// not. The map now records two questions the corpus does not settle, each
+    /// <c>fate: unresolved</c>, and the throw returns <see cref="UnresolvedReason.RequiresInterpretation"/>
+    /// rather than picking a reading by enumeration:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><see cref="MapEntries.MustPlayWholeThrow"/>'s second part: whether two orders that use the
+    /// same numbers and reach the same position are one play or two. Where any line reaches a state an
+    /// earlier line reached with a different multiset of authorities, the throw declines citing that
+    /// entry. Orders whose authorities agree (bar/22 22/16 and bar/19 19/16, each an entry and a
+    /// move-by-pip) are still offered once: nothing a rule permits differs between them.</item>
+    /// <item><see cref="MapEntries.BearingOffEligible"/>'s second part: whether a number left after the
+    /// move that brings the last man home is played under bearing off. Where the player was not
+    /// eligible at the start of the throw and any line makes him eligible with a number still to
+    /// play, the throw declines citing that entry (six-trois with the last man on the nine point).</item>
+    /// </list>
+    /// <para>
+    /// Where both arise, as in the deuce-ace example, the first is reported: the orders' authorities
+    /// differ only because the second question is open, and the play's identity is the question the
+    /// list itself turns on. Both are decided after the re-entry decline and before any question of
+    /// which plays are compelled.
     /// </para>
     /// <para>
     /// No hash-set or dictionary iteration order reaches the list. <c>PlayEnumerationTests</c>
@@ -112,8 +130,8 @@ public static class LegalPlays
         }
 
         var terminals = new List<Terminal>();
-        var seen = new HashSet<Node>();
-        var search = new Search();
+        var seen = new Dictionary<Node, string>();
+        var search = new Search { EligibleAtStart = BearingOff.IsEligible(position, player) };
         Explore(position, player, values, available, new int[values.Length], [], terminals, seen, search);
 
         if (search.ReachedReEntryMidBearOff)
@@ -122,6 +140,24 @@ public static class LegalPlays
                 UnresolvedReason.RequiresInterpretation,
                 "play a number for a player who had begun to bear off and whose man, hit, has "
                 + "re-entered: whether he may go on bearing off the men still at home",
+                MapEntries.BearingOffEligible.Locator));
+        }
+
+        if (search.ReachedEquivalentOrdersUnderDifferentRules)
+        {
+            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
+                UnresolvedReason.RequiresInterpretation,
+                "choose between orders of a throw that use the same numbers and reach the same "
+                + "position under different rules: whether they are one play or two",
+                MapEntries.MustPlayWholeThrow.Locator));
+        }
+
+        if (search.ReachedEligibilityMidThrow)
+        {
+            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
+                UnresolvedReason.RequiresInterpretation,
+                "play a number left after the move that brought the last man home: whether bearing "
+                + "off begins within that throw",
                 MapEntries.BearingOffEligible.Locator));
         }
 
@@ -173,18 +209,40 @@ public static class LegalPlays
         int[] used,
         ImmutableArray<Move> moves,
         List<Terminal> terminals,
-        HashSet<Node> seen,
+        Dictionary<Node, string> seen,
         Search search)
     {
-        if (search.ReachedReEntryMidBearOff || !seen.Add(new Node(position, (int[])used.Clone())))
+        if (search.ReachedReEntryMidBearOff)
         {
             return;
         }
 
-        if (remaining.Any(r => r > 0) && BearingOff.HasReEnteredMidBearOff(position, player))
+        // Rule 4's memo. An order reaching a state already reached is pruned; where the rules that
+        // permitted its moves differ from the first order's, that is must-play-whole-throw's open
+        // question (map 6.0.0), recorded here and declined in For.
+        var node = new Node(position, (int[])used.Clone());
+        string authorities = string.Join(' ', moves.Select(m => m.Authority.Id).Order(StringComparer.Ordinal));
+        if (seen.TryGetValue(node, out string? first))
+        {
+            search.ReachedEquivalentOrdersUnderDifferentRules |= first != authorities;
+            return;
+        }
+
+        seen.Add(node, authorities);
+
+        bool numberLeft = remaining.Any(r => r > 0);
+        if (numberLeft && BearingOff.HasReEnteredMidBearOff(position, player))
         {
             search.ReachedReEntryMidBearOff = true;
             return;
+        }
+
+        // bearing-off-eligible's open question (map 6.0.0): the last man came home partway through
+        // the throw with a number still to play. Recorded, and the line explored on, so an order
+        // reaching the same state under different rules is still seen.
+        if (numberLeft && !search.EligibleAtStart && BearingOff.IsEligible(position, player))
+        {
+            search.ReachedEligibilityMidThrow = true;
         }
 
         bool extended = false;
@@ -224,6 +282,12 @@ public static class LegalPlays
     private sealed class Search
     {
         public bool ReachedReEntryMidBearOff { get; set; }
+
+        public bool EligibleAtStart { get; init; }
+
+        public bool ReachedEligibilityMidThrow { get; set; }
+
+        public bool ReachedEquivalentOrdersUnderDifferentRules { get; set; }
     }
 
     private sealed record Terminal(int[] Used, ImmutableArray<Move> Moves, Position Position);

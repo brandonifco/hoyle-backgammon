@@ -9,7 +9,7 @@ The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Proje
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
 every validation run. The specification is the map in the package
 [`RulesFactory.Maps.HoyleBackgammon`](https://www.nuget.org/packages/RulesFactory.Maps.HoyleBackgammon)
-5.0.0, thirty-three entries covering that chapter. It is referenced, never copied, and the engine
+6.0.0, thirty-three entries covering that chapter. It is referenced, never copied, and the engine
 adds only its own build facts on top
 ([rules-factory decision 0015](https://github.com/brandonifco/rules-factory/blob/main/docs/decisions/0015-a-map-is-published-as-a-versioned-package.md)).
 
@@ -33,7 +33,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 | `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 29 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate merges it onto the restored package and fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
 | `provenance.json` | What the engine was produced from: factory version and commit, the map package and the SHA-256 of its bytes, the corpus baseline, the kernel, every factory recipe file, and the hash of every generated file and build input. Embedded in the assembly. |
 | `scripts/`, `.github/workflows/validate.yml`, `RulesFactory.Packages.g.props`, `backlog/` | The gate, its CI workflow, the kernel and map pins, and the (empty) backlog. Generated. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings. Seventeen are accepted upstream, the last of those (17) in 4.0.0. Finding 18 is open: whether a play is the position it reaches or its moves in order ([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)). |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings, all accepted upstream, the last (18) in 6.0.0: whether a play is the position it reaches or its moves in order, and whether bearing off begins within a throw ([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)). |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`, copied in by `factory produce` after it hashed it. |
 
 ## Every rule cites its entry and its page
@@ -71,7 +71,9 @@ own checks, so it is a test now.)
 | Call a throw aloud | `OutsideCurrentScope` | `calling-the-throw` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
 | Play a throw where either die alone goes but not both | `RequiresInterpretation` | `must-play-whole-throw` |
+| Play a throw two of whose orders reach the same position under different rules (last man on the 8, deuce-ace: 8/6 6/5 or 8/7 7/5) | `RequiresInterpretation` | `must-play-whole-throw` |
 | Play on after a man hit mid-bear-off has re-entered, with men still at home | `RequiresInterpretation` | `bearing-off-eligible` |
+| Play a number left after the move that brings the last man home (last man on the 9, six-trois) | `RequiresInterpretation` | `bearing-off-eligible` |
 | Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |
 | Value a win against a loser who has borne off nothing and has a man up or in the winner's home table, a gammon and a backgammon both | `RequiresInterpretation` | `game-value` |
 | Score a rubber other than the two sequences p. 278 settles | `RequiresInterpretation` | `rubber-scoring` |
@@ -125,6 +127,17 @@ declare their `draws`, one die per player per attempt and two dice per throw, wh
 engine already drew. The manifest declares its pointer phrases (decision 0026). The seeded replay
 renders byte for byte as before apart from the map version in its first line.
 
+**What 6.0.0 added.** Finding 18, accepted and not settled (rules-factory#125). `must-play-whole-throw`'s
+question now also asks whether two orders of a throw that use the same numbers and reach the same
+position are one play or two, and `bearing-off-eligible`'s whether a number left after the move that
+brings the last man home is played under bearing off. The engine used to offer such orders once and
+open bearing off mid-throw ([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)).
+It declines both now, each citing its entry (p. 275). Orders whose moves are permitted by the same
+rules, such as bar/22 22/16 and bar/19 19/16, are still offered once. A throw that brings the last
+man home with a number left is common near the end of a game, so most games played through now
+decline there. That changes what a replayed game returns, so the ruleset is version 4
+([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)).
+
 **What the engine stopped declining.** "Say what a backgammon pays" used to be on this list.
 The corpus does not fail to say: it says thrice or four times, as may have been agreed. That is
 a delegated standard, `agreed-backgammon-multiple`, and the engine now demands the figure,
@@ -150,7 +163,9 @@ var start = new AssertedPosition(
     AssertedBy: "me",
     Justification: MapEntries.StartingPosition.Locator);
 
-var record = Game.Play(start, Pcg32.FromSeed(20260913, stream: 1), new FirstOptionDecider());
+// A seed whose game finishes under ruleset 4. Most games reach a throw the map leaves open near
+// the end, and Game.Play returns that decline instead of a record (decision 0008).
+var record = Game.Play(start, Pcg32.FromSeed(20260905, stream: 1), new FirstOptionDecider());
 ```
 
 A point is named by how many pips a man on it still has to travel, for the player whose man
@@ -160,7 +175,10 @@ a representation; what the corpus fixes about it is in `Geometry`'s remarks.
 
 ## Determinism
 
-The replay identity is ruleset `hoyle-1909-backgammon` version 3 since map 4.0.0
+The replay identity is ruleset `hoyle-1909-backgammon` version 4 since map 6.0.0
+([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)), which made a game decline
+where version 3 finished it: a throw whose orders reach the same position under different rules, or
+that brings the last man home with a number left. Version 3 began with map 4.0.0
 ([decision 0005](docs/decisions/0005-map-4-0-0-is-ruleset-version-three.md)). Version 2 began with
 map 3.0.0, whose corrections made some games decline where version 1 finished them
 ([decision 0004](docs/decisions/0004-map-3-0-0-is-ruleset-version-two.md)).
@@ -218,7 +236,7 @@ Everything else is hand-written and the factory never touches it: `src/Tabletop.
 in `src/HoyleBackgammon`, the handlers, the hand-written tests, the docs.
 
 **Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.4.1
-(tag `factory/v0.4.1`, commit `02ea62a`, clean) from `RulesFactory.Maps.HoyleBackgammon` 5.0.0.
+(tag `factory/v0.4.1`, commit `02ea62a`, clean) from `RulesFactory.Maps.HoyleBackgammon` 6.0.0.
 The generated `ProvenanceTests` assert the copy embedded in the assembly is the file. To check the
 record against the tree, from a rules-factory checkout at that tag:
 

@@ -21,13 +21,15 @@ namespace HoyleBackgammon.Tests;
 public class IdentityTests
 {
     [Fact]
-    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_three()
+    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_four()
     {
-        // Version 3 since map 4.0.0: a win against a loser with nothing off and a man in the
-        // winner's home table declines where version 2 valued it a backgammon (docs/decisions/0005;
-        // finding 17, rules-factory#102). Version 2 began with map 3.0.0 (docs/decisions/0004).
+        // Version 4 since map 6.0.0: a throw whose orders reach the same position under different
+        // rules, or which brings the last man home with a number left, declines where version 3
+        // offered a play (docs/decisions/0008; finding 18, rules-factory#125). Version 3 since map
+        // 4.0.0: a win against a loser with nothing off and a man in the winner's home table declines
+        // where version 2 valued it a backgammon (docs/decisions/0005; finding 17, rules-factory#102). Version 2 began with map 3.0.0 (docs/decisions/0004).
         Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
-        Assert.Equal(3, Game.Identity.Ruleset.Version);
+        Assert.Equal(4, Game.Identity.Ruleset.Version);
     }
 
     [Fact]

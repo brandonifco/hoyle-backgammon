@@ -23,9 +23,10 @@ public class PlayerCountTests
         }
 
         // And a game played through is played by both of them, alternately: no third person
-        // takes a turn, neither sits the game out, and no one moves twice running.
+        // takes a turn, neither sits the game out, and no one moves twice running. A seed whose game
+        // finishes under ruleset version 4 (map 6.0.0, rules-factory#125); it was 20260913.
         var record = Assert.IsType<Resolution<GameRecord>.Resolved>(
-            Game.Play(Corpus.StartingPosition, Pcg32.FromSeed(20260913UL, 1UL), new FirstOptionDecider())).Value;
+            Game.Play(Corpus.StartingPosition, Pcg32.FromSeed(DeterminismTests.FinishingSeed, 1UL), new FirstOptionDecider())).Value;
 
         Assert.Equal(
             players.OrderBy(p => p),

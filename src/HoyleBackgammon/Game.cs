@@ -67,14 +67,18 @@ public static class Game
     /// The replay schema is version 2 since <see cref="GameRecord"/> carried its identity and map and
     /// gained a canonical serialisation; no rule's answer changed, so the ruleset did not move
     /// (<c>docs/decisions/0006</c>).
-    /// The ruleset is version 3 from <c>RulesFactory.Maps.HoyleBackgammon</c> 4.0.0 on, which
+    /// The ruleset is version 4 from <c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0 on, which leaves
+    /// open whether two orders of a throw reaching the same position under different rules are one
+    /// play, and whether bearing off begins within the throw that brings the last man home; a throw
+    /// that reaches either case declines where version 3 offered a play (<c>docs/decisions/0008</c>).
+    /// Version 3 began with <c>RulesFactory.Maps.HoyleBackgammon</c> 4.0.0, which
     /// makes a win against a loser with nothing off and a man in the winner's home table decline
     /// where version 2 valued it a backgammon (<c>docs/decisions/0005</c>). Version 2 began with
     /// map 3.0.0, whose corrections made some games decline where version 1 finished them
     /// (<c>docs/decisions/0004</c>).
     /// </remarks>
     public static ReplayCompatibilityIdentity Identity { get; } = new(
-        ruleset: new RulesetVersion("hoyle-1909-backgammon", 3),
+        ruleset: new RulesetVersion("hoyle-1909-backgammon", 4),
         replaySchema: new ReplaySchemaVersion(2),
         sourceBaselines: [MapEntries.Baseline],
         randomAlgorithm: RandomAlgorithmId.Pcg32SetSeq64XshRr32);
