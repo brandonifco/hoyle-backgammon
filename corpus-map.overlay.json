@@ -315,6 +315,10 @@
         "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`). Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
+        "test": "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ",
+        "mutation": "Pins behaviour the corpus does not settle (finding 18, docs/decisions/0007). LegalPlays.For's memo never pruned (`!seen.Add(...) && false`), so 8/7 7/5 was offered beside 8/6 6/5; this test went red, with the six-trois test beside it. It went red too with BearingOff.MovesForDie recording a forward move within the home table as MoveKind.Ordinary (authority move-by-pip), and with the entitlement enumerated lowest number first (`Order()` for `OrderDescending()`), which offers 8/7 7/5 in place of 8/6 6/5."
+      },
+      {
         "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275",
         "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red, and no other test in the class did."
       },

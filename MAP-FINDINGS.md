@@ -41,6 +41,12 @@ question now names both overlap cases. That leaves no finding open. 4.0.0 is als
 this engine was *produced* from, by rules-factory 0.2.1 (see README.md); nothing in producing it
 changed a finding.
 
+**Finding 18 is open.** It came from the end-to-end tests (PR #11): two orders of the same moves can
+reach the same position under different authorities, and the corpus does not say whether a play
+is the position or the ordered moves. That makes 18 findings, 13 of them where the map is at
+fault. The engine keeps its behaviour until a map version answers it
+([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)).
+
 ---
 
 ## 1. `starting-position` is not beyond the adapter. It is stated in prose. — **map at fault**
@@ -530,3 +536,66 @@ finding, added the second case. The engine's decline widened with it:
 is the decline's test, named in the overlay. `GameValueTests.A_man_in_the_winners_home_table_makes_it_a_backgammon`
 now uses a loser with two men off, who is a backgammon and nothing else. A game that ended the
 old way now declines, so the ruleset is version 3 (`docs/decisions/0005`).
+
+---
+
+## 18. Whether a play is the position it reaches or the moves in their order — **map at fault, missing ambiguity**
+
+**What the map says.** `must-play-whole-throw` (p. 275) is `ambiguous`, and its question is only
+the case where either die alone is playable but not both. `move-by-pip` (pp. 273-274) and
+`enter-from-bar` (p. 274) are about one move each and say nothing about a throw's moves taken
+together. `bearing-off-eligible` (p. 275) asks only whether the stage *lasts* once a man is hit and
+re-enters.
+
+**What implementing it revealed.** `LegalPlays.For` offers two orders of moves once when they
+reach the same position with the same numbers used; the one enumerated first survives (its
+enumeration contract, rule 4). PR #11 found this with bar/22 22/16 against bar/19 19/16. In that
+example both orders are `enter-from-bar` then `move-by-pip`, so nothing is lost. It is not true in
+general. White's last man outside is on his eight point and he throws deuce ace. **8/6 6/5** makes
+every man home before the ace is played, so the engine records the ace under
+`bearing-off-move-or-remove`. **8/7 7/5** reaches the same position with both moves under
+`move-by-pip`. Only the first is offered, so the second order's provenance is not visible.
+`MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ`
+shows both.
+
+The corpus does not settle which one a play is:
+
+- BACKGAMMON / Playing / pp. 273-274 describes a throw as moves in order: "he is entitled to move
+  one man six points onward, and then the same or another man three points onward". That is a
+  worked example of what each number entitles. It does not say that order is required, or that
+  a different order is a different play. The engine already lets the lower number go first.
+- p. 274, `enter-from-bar`: "Until he does this, the play of his other men is suspended". This
+  makes one move's authority depend on the moves before it in the same throw. It says nothing
+  about two sequences that end in the same place.
+- p. 275, `must-play-whole-throw`: "every player is compelled to play the whole of his throw if it
+  is possible to do so". The compulsion is about the *parts* of the throw, the numbers, and is
+  indifferent to order.
+- BACKGAMMON / Bearing off the Men / pp. 275-276: "When the game has reached this stage, **each
+  throw** entitles the player either to move forward a man or men ... or to remove men". The worked
+  example treats "the quatre" and "the trois" each against the same distribution of men (Fig. 2),
+  never one after the other. So the chapter never shows a throw whose regime changes partway
+  through. It also leaves open the question underneath the authority: whether a stage reached by
+  the first number of a throw governs the second at all, or waits for the next throw. Under the
+  second reading, 8/6 6/5 is two `move-by-pip` moves. So is 9/3 3/off, and that one would not be
+  legal at all.
+
+So there are two questions, and the map records neither. First, is a "play" the arrangement it
+leaves or the ordered moves with their authorities? That decides whether equivalent orders are one
+choice or several, and so what a recorded decision index means. Second, does bearing off begin
+within the throw that brings the last man home? That decides the authority, and sometimes the
+legality, of the moves after it.
+
+**What the engine does.** Keeps its behaviour and documents it
+([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)).
+Equivalent orders are offered once, in the first enumerated order, with that order's authorities.
+Bearing off begins as soon as every man is home, including partway through a throw. Offering both
+orders, or recording that another order exists, would each be a reading the corpus does not make.
+The first would also change what every recorded decision index means.
+
+**What the map should say.** `must-play-whole-throw` (or a new entry for a throw's moves taken
+together) should carry the first question, and `bearing-off-eligible`'s question should name the
+second: whether a player whose last man comes home with one number of a throw bears off with the
+rest. Each needs a `fate`. Once one is recorded, the engine follows it: offer both orders or record
+the equivalent one, and decline or allow bearing off within the throw. If that changes what a rule
+returns, it is a ruleset change.
+

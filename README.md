@@ -33,7 +33,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 | `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 29 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate merges it onto the restored package and fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
 | `provenance.json` | What the engine was produced from: factory version and commit, the map package and the SHA-256 of its bytes, the corpus baseline, the kernel, every factory recipe file, and the hash of every generated file and build input. Embedded in the assembly. |
 | `scripts/`, `.github/workflows/validate.yml`, `RulesFactory.Packages.g.props`, `backlog/` | The gate, its CI workflow, the kernel and map pins, and the (empty) backlog. Generated. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Seventeen findings, all accepted upstream, the last (17) in 4.0.0. |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings. Seventeen are accepted upstream, the last of those (17) in 4.0.0. Finding 18 is open: whether a play is the position it reaches or its moves in order ([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)). |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`, copied in by `factory produce` after it hashed it. |
 
 ## Every rule cites its entry and its page

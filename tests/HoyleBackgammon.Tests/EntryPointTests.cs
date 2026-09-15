@@ -45,7 +45,8 @@ public class MustPlayWholeThrowEntryPointTests
         // either number enters and the other can always follow. Entering and stopping short is
         // not open to him: every compelled play enters and then plays the other number, and no
         // other play is offered. Entering with the trois and running that man on six reaches the
-        // same position with the same numbers as bar/19 19/16, and the engine offers that play once.
+        // same position with the same numbers as bar/19 19/16, and the engine offers that play once
+        // (both orders enter-from-bar then move-by-pip; docs/decisions/0007).
         var position = Asserted(
             Board.Men().At(Geometry.BarPip, 1).At(8, 6).RestAt(6),
             Board.Men().RestAt(13));
@@ -82,6 +83,41 @@ public class MustPlayWholeThrowEntryPointTests
         Assert.All(play.Moves, move => Assert.Equal(MapEntries.MoveByPip, move.Authority));
         Assert.Equal(1, play.Result.Men(Player.White, 2));
     }
+
+    [Fact]
+    public void Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ()
+    {
+        // White's last man outside stands on the eight point; he throws deuce ace. 8/6 then 6/5 and
+        // 8/7 then 7/5 leave the same men on the same points with the same numbers used, and the
+        // engine offers that play once, in the order it enumerates first. The two orders are not the
+        // same provenance: after 8/6 every man is home, so the ace is bearing-off-move-or-remove's;
+        // in the other order the man is still outside, on the seven point, when the deuce is played, so both
+        // moves are move-by-pip's. The corpus does not say whether a play is the position it reaches
+        // or the moves in their order (docs/decisions/0007, MAP-FINDINGS.md finding 18), so this
+        // pins the engine's behaviour rather than a reading.
+        var position = Asserted(Board.Men().At(8, 1).RestAt(6), Board.Men().RestAt(13));
+
+        var plays = Compelled(Resolve(position, Player.White, new DiceThrow(2, 1)), position);
+
+        var offered = Assert.Single(plays, p => p.Result.Men(Player.White, 5) == 1 && p.Result.Men(Player.White, 8) == 0);
+        Assert.Equal("8/6(2) 6/5(1)", offered.ToString());
+        Assert.Equal(
+            [MapEntries.MoveByPip, MapEntries.BearingOffMoveOrRemove],
+            offered.Moves.Select(m => m.Authority));
+
+        // The other order is open move by move, through move-by-pip's own entry point, and reaches
+        // the same position under different authorities.
+        var ace = Assert.Single(MovesByPip(position, 1), m => m.From == 8);
+        Assert.Equal(MapEntries.MoveByPip, ace.Authority);
+        var between = new AssertedPosition(position.Position.Apply(Player.White, ace.From, ace.To), AssertedBy: nameof(MustPlayWholeThrowEntryPointTests));
+        var deuce = Assert.Single(MovesByPip(between, 2), m => m.From == 7);
+        Assert.Equal(MapEntries.MoveByPip, deuce.Authority);
+        Assert.Equal(offered.Result, between.Position.Apply(Player.White, deuce.From, deuce.To));
+    }
+
+    private static ImmutableArray<Move> MovesByPip(AssertedPosition position, int die) =>
+        Assert.IsType<AssertedAnswer<ImmutableArray<Move>>>(Assert.IsType<Resolution<object>.Resolved>(
+            EntryPoints.MoveByPip.Resolve(new MoveByPipRequest { Position = position, Player = Player.White, Die = die })).Value).Value;
 
     [Fact]
     public void Either_die_alone_playable_but_not_both_declines_citing_page_275()

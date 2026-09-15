@@ -75,6 +75,15 @@ public static class LegalPlays
     /// rest.</item>
     /// </list>
     /// <para>
+    /// <b>What rule 4 hides.</b> The orders it prunes can carry different authorities. With the last
+    /// man outside on the eight point and deuce ace thrown, 8/6 6/5 plays the ace under
+    /// <see cref="MapEntries.BearingOffMoveOrRemove"/>, and the pruned 8/7 7/5 plays both numbers under
+    /// <see cref="MapEntries.MoveByPip"/>. The corpus does not say whether a play is the position it
+    /// reaches or its moves in order, nor whether bearing off begins partway through the throw that
+    /// brings the last man home. That is finding 18 in <c>MAP-FINDINGS.md</c>, so the behaviour stays
+    /// as it is until the map answers it (<c>docs/decisions/0007</c>).
+    /// </para>
+    /// <para>
     /// No hash-set or dictionary iteration order reaches the list. <c>PlayEnumerationTests</c>
     /// pins the result for six-trois and double deuces from the starting position.
     /// </para>
