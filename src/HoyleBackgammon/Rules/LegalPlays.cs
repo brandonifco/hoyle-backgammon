@@ -35,6 +35,23 @@ public static class LegalPlays
     /// adopting the modern convention of compelling the higher die.
     /// </para>
     /// <para>
+    /// <b>A second decline, not this rule's.</b> Where a line of the throw reaches a position in
+    /// which <see cref="BearingOff.HasReEnteredMidBearOff"/> holds with a number still to play
+    /// -- from the start of the throw, or after entering the man that was hit -- which rules
+    /// govern that number turns on whether bearing off lasts once a man is hit and re-enters,
+    /// and the corpus does not say. That is <see cref="MapEntries.BearingOffEligible"/>'s
+    /// question (<c>fate: unresolved</c> since <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0,
+    /// blind-mapping resolution rows 12 and 13), so the throw returns
+    /// <see cref="UnresolvedReason.RequiresInterpretation"/> citing that entry, and is decided
+    /// before any question of which plays are compelled.
+    /// </para>
+    /// <para>
+    /// A man up does not lift the compulsion. The map records no <c>enter-from-bar</c>
+    /// suspension of <c>must-play-whole-throw</c> since 3.0.0 (row 66): the lines searched below
+    /// begin with entry whenever a man is up, because <see cref="Movement.MovesForDie"/> offers
+    /// nothing else, and are held to the same maximal filter as any other.
+    /// </para>
+    /// <para>
     /// <b>The enumeration contract.</b> <see cref="Game.Play"/> records a choice as an index
     /// into this list, so its length and order are part of replay as much as the dice are,
     /// and changing either changes what every recorded index means. They are fixed by, and
@@ -87,7 +104,17 @@ public static class LegalPlays
 
         var terminals = new List<Terminal>();
         var seen = new HashSet<Node>();
-        Explore(position, player, values, available, new int[values.Length], [], terminals, seen);
+        var search = new Search();
+        Explore(position, player, values, available, new int[values.Length], [], terminals, seen, search);
+
+        if (search.ReachedReEntryMidBearOff)
+        {
+            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
+                UnresolvedReason.RequiresInterpretation,
+                "play a number for a player who had begun to bear off and whose man, hit, has "
+                + "re-entered: whether he may go on bearing off the men still at home",
+                MapEntries.BearingOffEligible.Locator));
+        }
 
         var maximal = terminals
             .Select(t => t.Used)
@@ -137,10 +164,17 @@ public static class LegalPlays
         int[] used,
         ImmutableArray<Move> moves,
         List<Terminal> terminals,
-        HashSet<Node> seen)
+        HashSet<Node> seen,
+        Search search)
     {
-        if (!seen.Add(new Node(position, (int[])used.Clone())))
+        if (search.ReachedReEntryMidBearOff || !seen.Add(new Node(position, (int[])used.Clone())))
         {
+            return;
+        }
+
+        if (remaining.Any(r => r > 0) && BearingOff.HasReEnteredMidBearOff(position, player))
+        {
+            search.ReachedReEntryMidBearOff = true;
             return;
         }
 
@@ -165,7 +199,8 @@ public static class LegalPlays
                     used,
                     moves.Add(move),
                     terminals,
-                    seen);
+                    seen,
+                    search);
                 used[i]--;
                 remaining[i]++;
             }
@@ -175,6 +210,11 @@ public static class LegalPlays
         {
             terminals.Add(new Terminal((int[])used.Clone(), moves, position));
         }
+    }
+
+    private sealed class Search
+    {
+        public bool ReachedReEntryMidBearOff { get; set; }
     }
 
     private sealed record Terminal(int[] Used, ImmutableArray<Move> Moves, Position Position);

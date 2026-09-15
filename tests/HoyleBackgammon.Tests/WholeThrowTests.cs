@@ -13,12 +13,23 @@ namespace HoyleBackgammon.Tests;
 public class WholeThrowTests
 {
     /// <summary>
-    /// One mobile man on the eight point and one stuck on the far ace point, with thirteen
-    /// already off the board. Black holds White's 18 and 21, so the stuck man can play
+    /// One mobile man on the eight point and one stuck on the far ace point, with the other
+    /// thirteen on White's own ace point, where no number may move them: he is not bearing off,
+    /// so none may go off the board. Black holds White's 18 and 21, so the stuck man can play
     /// neither a six nor a trois.
     /// </summary>
+    /// <remarks>
+    /// The thirteen used to be borne off. That put every line of a throw into
+    /// <c>bearing-off-eligible</c>'s unresolved case the moment the mobile man reached home with
+    /// a number left -- a player who has begun to bear off with a man outside, whose bearing off
+    /// may or may not continue -- which the map declines since
+    /// <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0 (blind-mapping resolution rows 12 and 13).
+    /// Parking them on the ace point keeps the one-mobile-man shape this rule is about and takes
+    /// the other question out of it. <see cref="BearingOffEligibilityTests"/> keeps the old
+    /// fixture as that decline's own case.
+    /// </remarks>
     private static Position OneMobileMan(bool blockTheTroisLanding) => Board.Of(
-        Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
+        Board.Men().At(24, 1).At(8, 1).RestAt(1),
         blockTheTroisLanding
             ? Board.Men().At(7, 2).At(4, 2).At(20, 2).RestAt(12)
             : Board.Men().At(7, 2).At(4, 2).RestAt(12));
@@ -44,8 +55,12 @@ public class WholeThrowTests
         // all -- the higher or the lower -- and it must be: neither declining the throw
         // altogether nor preferring the higher number is open to him.
         int blockedWhitePip = playable == 6 ? 5 : 2;
+
+        // The other thirteen stand on White's ace point rather than off the board, as in
+        // OneMobileMan and for its reason: borne off, the man reaching home with a number left
+        // is bearing-off-eligible's unresolved case (map 3.0.0, resolution rows 12 and 13).
         var position = Board.Of(
-            Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
+            Board.Men().At(24, 1).At(8, 1).RestAt(1),
             Board.Men().At(7, 2).At(4, 2).At(Geometry.Mirror(blockedWhitePip), 2).RestAt(12));
 
         var play = Assert.Single(Legal.Plays(position, Player.White, new DiceThrow(6, 3)));
@@ -55,6 +70,29 @@ public class WholeThrowTests
         Assert.Equal(8, move.From);
         Assert.Equal(8 - playable, move.To);
         Assert.Equal(1, play.Result.Men(Player.White, 8 - playable));
+    }
+
+    [Fact]
+    public void A_man_up_is_still_compelled_to_play_the_whole_throw()
+    {
+        // must-play-whole-throw is no longer suspended by enter-from-bar in map 3.0.0
+        // (blind-mapping resolution row 66): "every player is compelled to play the whole of
+        // his throw if it is possible". White has one man up and Black's men are all on his own
+        // thirteen point, so either number enters, and after entering the other can always be
+        // played. Entering and stopping short is not open to him.
+        var position = Board.Of(
+            Board.Men().At(Geometry.BarPip, 1).At(8, 6).RestAt(6),
+            Board.Men().RestAt(13));
+
+        var plays = Legal.Plays(position, Player.White, new DiceThrow(6, 3));
+
+        Assert.NotEmpty(plays);
+        Assert.All(plays, play =>
+        {
+            Assert.Equal(9, play.PipsUsed);
+            Assert.Equal(MoveKind.Entry, play.Moves[0].Kind);
+            Assert.Equal(0, play.Result.OnBar(Player.White));
+        });
     }
 
     [Fact]
@@ -103,9 +141,12 @@ public class WholeThrowTests
     {
         // One mobile man on the eight point walking down by deuces: 8, 6, 4, 2, and then the
         // fourth deuce would take him off the board, which he may not do -- his other man is
-        // still on the far ace point. Three of the four numbers, and nothing less.
+        // still on the far ace point. Three of the four numbers, and nothing less. His other
+        // thirteen stand on his own ace point, where no deuce moves them; borne off, the walk
+        // down into his home table would be bearing-off-eligible's unresolved case (map 3.0.0,
+        // resolution rows 12 and 13).
         var position = Board.Of(
-            Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
+            Board.Men().At(24, 1).At(8, 1).RestAt(1),
             Board.Men().At(3, 2).RestAt(12));
 
         var plays = Legal.Plays(position, Player.White, new DiceThrow(2, 2));
@@ -147,9 +188,19 @@ public class WholeThrowTests
         {
             foreach (var thrown in TheTwentyOneThrows())
             {
+                var legal = LegalPlays.For(position, player, Movement.Entitlement(thrown));
+
+                // bearing-off-eligible's decline (map 3.0.0, blind-mapping resolution rows 12 and
+                // 13) is decided before this rule is consulted, so a throw it declines says
+                // nothing about this rule's shape either way. Only this rule's declines count.
+                if (legal is Resolution<ImmutableArray<Play>>.Unresolved { Result: var other }
+                    && other.Locator.Equals(MapEntries.BearingOffEligible.Locator))
+                {
+                    continue;
+                }
+
                 bool shape = EitherDieAlonePlayableButNotBoth(position, player, thrown);
-                bool unresolved = LegalPlays.For(position, player, Movement.Entitlement(thrown))
-                    is Resolution<ImmutableArray<Play>>.Unresolved;
+                bool unresolved = legal is Resolution<ImmutableArray<Play>>.Unresolved;
 
                 Assert.True(
                     shape == unresolved,
@@ -214,6 +265,15 @@ public class WholeThrowTests
 
             yield return (position, player);
 
+            // A player who had begun to bear off and whose hit man has re-entered is in
+            // bearing-off-eligible's unresolved case (map 3.0.0, blind-mapping resolution rows 12
+            // and 13): every throw declines there, so throwing again would never end. The walk
+            // stops instead; the positions it has yielded are still the evidence.
+            if (BearingOff.HasReEnteredMidBearOff(position, player))
+            {
+                yield break;
+            }
+
             while (true)
             {
                 var legal = LegalPlays.For(position, player, Movement.Entitlement(Opening.Throw(source)));
@@ -222,6 +282,13 @@ public class WholeThrowTests
                     var plays = resolved.Value;
                     position = plays[(int)(source.NextUInt32() % (uint)plays.Length)].Result;
                     break;
+                }
+
+                if (((Resolution<ImmutableArray<Play>>.Unresolved)legal).Result.Locator
+                    .Equals(MapEntries.BearingOffEligible.Locator))
+                {
+                    // Entering the hit man this throw reached the same case (rows 12 and 13).
+                    yield break;
                 }
             }
 

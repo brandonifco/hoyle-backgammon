@@ -6,10 +6,10 @@ A deterministic backgammon engine built from a corpus map, on
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
-every validation run. The specification is `corpus-map.json`, thirty-two entries covering
+every validation run. The specification is `corpus-map.json`, thirty-three entries covering
 that chapter. The map is not copied from the factory: it comes from the package
 [`RulesFactory.Maps.HoyleBackgammon`](https://www.nuget.org/packages/RulesFactory.Maps.HoyleBackgammon)
-2.0.0, and the engine adds only its own build facts on top
+3.0.0, and the engine adds only its own build facts on top
 ([rules-factory decision 0015](https://github.com/brandonifco/rules-factory/blob/main/docs/decisions/0015-a-map-is-published-as-a-versioned-package.md)).
 
 **This text predates the doubling cube.** An engine built from a 1909 corpus is a 1909
@@ -21,9 +21,9 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 |---|---|
 | `src/Tabletop.Dice` | Dice vocabulary over the kernel's `UniformInt`. Ruleset-agnostic, and its own project so that claim is checkable — [decision 0001](docs/decisions/0001-the-dice-pack-is-its-own-project.md). |
 | `src/HoyleBackgammon` | The engine. Board, movement, the bar, bearing off, game value. |
-| `corpus-map.json` | The specification, and the only thing the code cites. It is `merge(package, overlay)`: the map in `RulesFactory.Maps.HoyleBackgammon` 2.0.0, referenced at an exact version in `Directory.Packages.props` and pinned by content hash in `packages.lock.json`, with `corpus-map.overlay.json` applied. It is committed because the gate's other steps read it, and the gate fails if it is not exactly that merge. Do not edit it by hand: edit the overlay and regenerate with `scripts/map-overlay.py merge`. |
-| `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 28 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Sixteen findings; ten have since been accepted, in two rounds. |
+| `corpus-map.json` | The specification, and the only thing the code cites. It is `merge(package, overlay)`: the map in `RulesFactory.Maps.HoyleBackgammon` 3.0.0, referenced at an exact version in `Directory.Packages.props` and pinned by content hash in `packages.lock.json`, with `corpus-map.overlay.json` applied. It is committed because the gate's other steps read it, and the gate fails if it is not exactly that merge. Do not edit it by hand: edit the overlay and regenerate with `scripts/map-overlay.py merge`. |
+| `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 29 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Seventeen findings; ten have since been accepted, in two rounds, and 3.0.0 finished the rest of finding 4. Finding 17 is open. |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`. |
 
 ## Every rule cites its entry and its page
@@ -60,7 +60,10 @@ the page cited. That last one is what the retracted map got wrong.
 | Call a throw aloud | `OutsideCurrentScope` | `calling-the-throw` |
 | Play an opening well | `OutsideCurrentScope` | `strategy-advice` |
 | Play a throw where either die alone goes but not both | `RequiresInterpretation` | `must-play-whole-throw` |
+| Play on after a man hit mid-bear-off has re-entered, with men still at home | `RequiresInterpretation` | `bearing-off-eligible` |
 | Value a win the three named results do not cover | `RequiresInterpretation` | `game-value` |
+| Value a win against a loser with a man up who has borne off nothing, a gammon and a backgammon both | `RequiresInterpretation` | `game-value` |
+| Score a rubber other than the two sequences p. 278 settles | `RequiresInterpretation` | `rubber-scoring` |
 | Continue with both players wholly suspended | `UnsupportedInteraction` | `full-table-suspension` |
 
 **This table is now a fact rather than a claim.** The gate derives it from the map and checks
@@ -81,6 +84,19 @@ while this line declined; it is `ambiguous` with `fate: unresolved` now, and its
 names the finish exactly (finding 4). The double suspension has no entry and gets none: under
 `rules-factory/docs/decisions/0006` no sequence of play reaches it, so it is an answer about
 what a *caller may assert* rather than about what the rules generate (finding 11).
+
+**What 3.0.0 added.** The blind second mapping
+([rules-factory `examples/hoyle-backgammon/blind-mapping`](https://github.com/brandonifco/rules-factory/tree/main/examples/hoyle-backgammon/blind-mapping))
+corrected the map, and three rows above came with it. `bearing-off-eligible` is ambiguous
+(resolution rows 12-13): nothing says whether bearing off lasts once a man is hit and
+re-enters, so the engine declines exactly there, a player with a man off, a man outside and a
+man at home, and no man up. `game-value`'s question now names the overlap (row 52): a loser
+with a man up who has borne off nothing is a gammon and a backgammon by the corpus's words, and
+the engine no longer picks backgammon for him. `rubber-scoring` is a new entry (rows 114-115):
+the engine answers the two sequences the sentence states and declines every other rubber. Two
+gate changes needed no new behaviour, only tests. A man up now suspends the three
+bearing-off rules (rows 11, 14, 17), which the engine already enforced. It no longer suspends
+`must-play-whole-throw` (row 66), which the engine had never exempted.
 
 **What the engine stopped declining.** "Say what a backgammon pays" used to be on this list.
 The corpus does not fail to say: it says thrice or four times, as the players agreed. That is
@@ -116,6 +132,10 @@ two players' numberings mirror, so a point is `p` for one and `25 - p` for the o
 a representation; what the corpus fixes about it is in `Geometry`'s remarks.
 
 ## Determinism
+
+The replay identity is ruleset `hoyle-1909-backgammon` version 2 since map 3.0.0, whose
+corrections make some games decline where version 1 finished them
+([decision 0004](docs/decisions/0004-map-3-0-0-is-ruleset-version-two.md)).
 
 Same seed, same ordered decisions, same game. The draws are accounted for exactly: two per
 pair of dice thrown, none for a player whose play is wholly suspended (he does not throw),

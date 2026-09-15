@@ -62,7 +62,17 @@ public static class Movement
     /// until its owner is fortunate enough to make a throw corresponding with a vacant point
     /// or blot in such table. Until he does this, the play of his other men is suspended."
     /// This is the <c>suspendedBy</c> relation the map records on <c>move-by-pip</c>,
-    /// <c>doublets</c> and <c>must-play-whole-throw</c>.
+    /// <c>doublets</c>, <c>bearing-off-move-or-remove</c>, <c>bearing-off-highest</c> and
+    /// <c>bearing-off-doublets</c> -- the last three since <c>RulesFactory.Maps.HoyleBackgammon</c>
+    /// 3.0.0 (blind-mapping resolution rows 11, 14 and 17), which is why
+    /// <see cref="MovesForDie"/> tests it before bearing off.
+    /// <para>
+    /// It is <em>not</em> recorded on <c>must-play-whole-throw</c> any more (row 66): a man up
+    /// suspends "the play of his other men", not the throw, and "every player is compelled to
+    /// play the whole of his throw if it is possible". <see cref="LegalPlays.For"/> compels the
+    /// whole throw with a man up exactly as without one: entering with both numbers where both
+    /// enter, and playing on once entered.
+    /// </para>
     /// </remarks>
     public static bool MustEnterFromBar(Position position, Player player)
     {

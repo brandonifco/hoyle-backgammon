@@ -9,12 +9,13 @@ The map was worth having. Twenty-one in-scope entries went into code in the orde
 was really two, and no two entries were really one. Every finding below is about a field,
 not about the decomposition. That is a better result than the headline count suggests.
 
-Counts: **16 findings. 11 where the map is at fault, 3 where it is right and something about
+Counts: **17 findings. 12 where the map is at fault, 3 where it is right and something about
 it is still worth recording, 2 where the method has no field for what was found.** Of the 11:
 one is serious (`starting-position`, finding 1); two are entries the map does not have
 (2, 3); four are an incomplete `dependsOn` or `gatedBy` (5, 6, 7, 8); and the rest are one
 wrong `clarity` (4), one self-contradicting classification (9), one wrong `evidence` (10) and
-one uncovered interaction (11).
+one uncovered interaction (11). Finding 17, the twelfth, is a question that names half of the
+case it is about.
 
 **Four have since been accepted and the map corrected** (factory commit `de59930`): 1, 2, 3
 and 5. Each is marked below with what the corrected map says and what the engine now does.
@@ -29,6 +30,11 @@ build found is worth less if it is edited to agree with the outcome.
 Two of those — 11 and 14 — were findings where the map was *right*, and what the second round
 added is a record rather than a correction. Same convention: the finding stands as written,
 with what was accepted appended.
+
+**A third round came with `RulesFactory.Maps.HoyleBackgammon` 3.0.0**, the blind second mapping
+(`rules-factory/examples/hoyle-backgammon/blind-mapping/`, resolution row 52). It finished finding 4:
+the gammon/backgammon overlap that finding recorded as a silent ordering is now part of
+`game-value`'s question. Finding 17 is what the engine found consuming that version, and is open.
 
 ---
 
@@ -170,6 +176,16 @@ failed on. The declining case ships
 named. The second, smaller thing is recorded in the entry's `note` rather than in its
 `question`: the ordering is a choice the corpus makes plainly enough to bake in, so it is not
 what the entry declines.
+
+**Third round: the overlap is in the question too** (`RulesFactory.Maps.HoyleBackgammon` 3.0.0,
+blind-mapping resolution row 52). The blind mapping disagreed with the paragraph above, and the
+adjudication sided with it. "Plainly enough to bake in" was the implementer's reading, and a
+`clear` ledger does not record that a choice was made. `game-value`'s question now names a loser
+who has borne off nothing and has a man up, and `Outcome.ValueOf` declines him with
+`RequiresInterpretation` instead of testing backgammon first.
+`GameValueTests.A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon` holds the decline.
+`GameValueTests.A_man_up_makes_it_a_backgammon` now uses a loser with two men off, who is a
+backgammon and nothing else. The question names only a man *up*; see finding 17.
 
 ---
 
@@ -465,3 +481,36 @@ A policy that said only "pin-in-repo" left it open whether the second repository
 duplicate, reference, or trust. Duplicating is what makes the gate hermetic; it is not
 obviously right for a commercial corpus, where `never-commit` would put the check behind an
 environment variable and the engine could not verify itself at all.
+
+---
+
+## 17. `game-value`'s overlap names a man up, and the corpus's words reach a man in the winner's home table too — **map at fault, incomplete `question`**
+
+**What the map says** (3.0.0). `game-value`'s `ambiguity.question`: "Nor are they disjoint: a
+loser who has borne off nothing and has a man up answers both 'before his adversary has begun to
+do the same' (a gammon) and 'a man or men "up"' (a backgammon), and the corpus does not say
+which result he suffers." Resolution row 52 gives the same case.
+
+**What implementing it revealed.** The backgammon condition has two arms, and the question quotes
+one. BACKGAMMON / Bearing off the Men / p. 276: "If the winner has borne off all his men while the
+adversary has still a man or men "up" (_i.e._, on the bar) **or in his (the winner's) home
+table**, the game is a "backgammon"". The gammon condition on the same page is "before his
+adversary has begun to do the same". A loser who has borne off nothing and has a man in the
+winner's home table meets both, in exactly the way the question says a loser with a man up does.
+He is also the more common of the two at the end of a game: a man sent back that never got out.
+
+Row 52's reason covers him as well. It says the old note "admitted that 'an ordering had to be
+chosen, backgammon first', which is an implementer's reading chosen silently". That ordering
+decided this loser too. The corrected question takes it back for the man up and not for the man
+in the winner's home table.
+
+**What the engine does.** Follows the map as written, and no further. `Outcome.ValueOf` declines
+the loser the question names (nothing off, a man up). It still values the other loser (nothing
+off, a man in the winner's home table, none up) a backgammon, which is the ordering the question
+withdrew for the first case. `GameValueTests.A_man_in_the_winners_home_table_makes_it_a_backgammon`
+pins that behaviour. Widening the decline here would be the engine correcting its own map.
+
+**What the map should say.** Name both arms in the overlap: a loser who has borne off nothing
+and has a man up *or in the winner's home table*. If the map instead means the ordering to stand
+for the second arm, it should say why that arm differs from the first. Once a version names both,
+the engine's decline widens to match, and that theory becomes the decline's test.

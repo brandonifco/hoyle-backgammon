@@ -17,9 +17,19 @@ public static class BearingOff
     /// getting all his men into his home table, he proceeds to 'bear them off'."
     /// <para>
     /// Men already borne off are off the board, not outstanding, so the test is that nothing
-    /// of his stands on the bar or on any point above his six point. A man taken up mid-bear-off
-    /// puts him back on the bar and this goes false again, which is why no bearing-off rule
-    /// needs <c>enter-from-bar</c> as a separate gate.
+    /// of his stands on the bar or on any point above his six point: literally, all his men are
+    /// in his home table.
+    /// </para>
+    /// <para>
+    /// <b>What this does not decide.</b> The map records (since <c>RulesFactory.Maps.HoyleBackgammon</c>
+    /// 3.0.0, blind-mapping resolution rows 12 and 13) that the corpus never says whether the
+    /// stage <em>lasts</em>: a player hit after he has begun to bear off, whose man re-enters,
+    /// may go on bearing off the men still at home, or may have to bring every man home again.
+    /// This predicate is the literal test and nothing more. Where the question actually arises
+    /// -- <see cref="HasReEnteredMidBearOff"/> -- <see cref="LegalPlays.For"/> declines before
+    /// consulting it. While his man is still up the question does not arise at all:
+    /// <c>enter-from-bar</c> suspends every bearing-off rule (rows 11, 14 and 17), and
+    /// <see cref="MovesForDie"/> refuses on that ground first.
     /// </para>
     /// </remarks>
     public static bool IsEligible(Position position, Player player)
@@ -39,6 +49,50 @@ public static class BearingOff
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Whether <paramref name="player"/> is in the one position the corpus does not settle for
+    /// <see cref="MapEntries.BearingOffEligible"/>: he has begun to bear off, a man of his was
+    /// hit and has re-entered, and he still has men in his home table to bear off.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The map's question (<c>bearing-off-eligible</c>, <c>fate: unresolved</c>; blind-mapping
+    /// resolution rows 12 and 13): "If one of his men is hit after he has begun to bear off and
+    /// then re-enters, the text does not say whether he may go on bearing off the men still at
+    /// home or must first bring every man home again."
+    /// </para>
+    /// <para>
+    /// Written as a predicate on the position, and no wider than the question:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>"has begun to bear off" is at least one man borne off, the reading
+    /// <see cref="Outcome.ValueOf"/> already gives the same words in <c>game-value</c>;</item>
+    /// <item>"then re-enters" is no man of his on the bar (while one is up,
+    /// <c>enter-from-bar</c> suspends bearing off whichever reading holds);</item>
+    /// <item>"must first bring every man home again" needs a man outside his home table, or
+    /// both readings agree he is bearing off;</item>
+    /// <item>"the men still at home" needs a man in his home table, or there is nothing to go
+    /// on bearing off and both readings agree he is simply moving.</item>
+    /// </list>
+    /// </remarks>
+    public static bool HasReEnteredMidBearOff(Position position, Player player)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        if (position.BorneOff(player) == 0 || position.OnBar(player) > 0)
+        {
+            return false;
+        }
+
+        bool home = false, outside = false;
+        foreach (int pip in position.OccupiedPoints(player))
+        {
+            home |= pip <= Geometry.HomeTableHighestPip;
+            outside |= pip > Geometry.HomeTableHighestPip;
+        }
+
+        return home && outside;
     }
 
     /// <summary>
@@ -73,6 +127,16 @@ public static class BearingOff
     {
         ArgumentNullException.ThrowIfNull(position);
         ArgumentOutOfRangeException.ThrowIfLessThan(die, 1);
+
+        // enter-from-bar suspends this rule, bearing-off-highest and bearing-off-doublets: "Until
+        // he does this, the play of his other men is suspended", bearing off included
+        // (RulesFactory.Maps.HoyleBackgammon 3.0.0; blind-mapping resolution rows 11, 14, 17).
+        if (Movement.MustEnterFromBar(position, player))
+        {
+            throw new InvalidOperationException(
+                $"{player} has a man up; {MapEntries.EnterFromBar.Id} suspends bearing off until "
+                + $"he enters [{MapEntries.EnterFromBar.Locator}].");
+        }
 
         if (!IsEligible(position, player))
         {

@@ -21,10 +21,12 @@ namespace HoyleBackgammon.Tests;
 public class IdentityTests
 {
     [Fact]
-    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_one()
+    public void The_ruleset_is_the_1909_backgammon_of_this_corpus_at_version_two()
     {
+        // Version 2 since map 3.0.0: games that used to finish can now decline
+        // (docs/decisions/0004; blind-mapping resolution rows 12, 13, 52, 114 and 115).
         Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
-        Assert.Equal(1, Game.Identity.Ruleset.Version);
+        Assert.Equal(2, Game.Identity.Ruleset.Version);
     }
 
     [Fact]

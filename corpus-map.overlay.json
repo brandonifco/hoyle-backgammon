@@ -3,7 +3,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -16,7 +16,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -33,7 +33,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -50,7 +50,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -63,7 +63,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -76,7 +76,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -97,7 +97,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -114,7 +114,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -127,7 +127,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -144,7 +144,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -161,7 +161,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -174,7 +174,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -187,7 +187,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -204,7 +204,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -221,7 +221,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -250,7 +250,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -267,7 +267,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -276,19 +276,23 @@
       },
       {
         "test": "WholeThrowTests.Doublets_that_cannot_be_played_four_times_are_played_as_far_as_they_go",
-        "mutation": "The same mutation, partial plays offered; this test went red."
+        "mutation": "The same mutation, partial plays offered; this test went red. Re-observed after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red."
       },
       {
         "test": "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it",
-        "mutation": "LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red."
+        "mutation": "LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red. Re-observed after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, blind-mapping resolution rows 12 and 13); still red."
       },
       {
         "test": "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
-        "mutation": "The same mutation, the incomparable case resolved silently; this test went red."
+        "mutation": "The same mutation, the incomparable case resolved silently; this test went red. Re-observed after bearing-off-eligible's declines were excluded from the comparison (map 3.0.0, rows 12 and 13); still red."
       },
       {
         "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
-        "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing."
+        "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing. Re-observed (the trois case) after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red."
+      },
+      {
+        "test": "WholeThrowTests.A_man_up_is_still_compelled_to_play_the_whole_throw",
+        "mutation": "LegalPlays.For exempted a player with a man up from the compulsion -- every line, partial ones included, offered with no maximal filter -- which is the enter-from-bar suspension map 3.0.0 removed (blind-mapping resolution row 66); this test went red, and so did EnterFromBarTests.The_second_man_up_is_still_up_when_the_first_has_entered. It went red too under the partial-plays mutation above."
       }
     ]
   },
@@ -296,7 +300,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -304,8 +308,12 @@
         "mutation": "BearingOff.IsEligible ignored a man on pip 7 (the outer-table loop started at 8); this test went red."
       },
       {
-        "test": "BearingOffEligibilityTests.A_man_hit_back_out_mid_bear_off_stops_it",
-        "mutation": "BearingOff.IsEligible ignored a single man on the bar (`> 1` for `> 0`); this test went red."
+        "test": "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle",
+        "mutation": "LegalPlays.For never tested BearingOff.HasReEnteredMidBearOff, so the throw was played as though the man had to come home again (the reading map 3.0.0 leaves unresolved, blind-mapping resolution rows 12 and 13); this test went red. Replaces A_man_hit_back_out_mid_bear_off_stops_it, whose IsEligible assertion was a reading of that question and whose suspension assertion moved to BearingOffSuspensionTests."
+      },
+      {
+        "test": "BearingOffEligibilityTests.The_decline_is_only_where_the_question_arises",
+        "mutation": "BearingOff.HasReEnteredMidBearOff held without a man borne off (the `BorneOff(player) == 0` arm dropped), so a player not yet home at all declined; this test went red. It went red too with the man-at-home arm dropped (`return outside;` for `return home && outside;`)."
       }
     ]
   },
@@ -313,7 +321,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -323,6 +331,10 @@
       {
         "test": "BearingOffWorkedExampleTests.For_the_trois_he_has_no_man_on_that_point_and_must_play_forward",
         "mutation": "BearingOff.MovesForDie offered no forward move within the table; this test went red."
+      },
+      {
+        "test": "BearingOffSuspensionTests.A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters",
+        "mutation": "Movement.MovesForDie tested bearing off before the bar, BearingOff.IsEligible ignored the bar and BearingOff.MovesForDie dropped its enter-from-bar refusal, so a player bearing off with a man up bore off instead of entering; this test went red. The suspension is map 3.0.0's (blind-mapping resolution rows 11, 14 and 17)."
       }
     ]
   },
@@ -330,7 +342,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -340,6 +352,10 @@
       {
         "test": "BearingOffWorkedExampleTests.A_six_cannot_be_dealt_with_and_bears_off_from_the_cinque_point",
         "mutation": "BearingOff.MovesForDie bore off from the lowest occupied point instead of the highest; this test went red."
+      },
+      {
+        "test": "BearingOffSuspensionTests.A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters",
+        "mutation": "Movement.MovesForDie tested bearing off before the bar, BearingOff.IsEligible ignored the bar and BearingOff.MovesForDie dropped its enter-from-bar refusal, so a player bearing off with a man up bore off instead of entering; this test went red. The suspension is map 3.0.0's (blind-mapping resolution rows 11, 14 and 17)."
       }
     ]
   },
@@ -347,7 +363,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -357,6 +373,10 @@
       {
         "test": "BearingOffDetailTests.Doublets_may_be_played_wholly_by_bearing_off",
         "mutation": "LegalPlays refused any bearing off with doublets; this test went red. It stayed green under the no-mixing mutation above."
+      },
+      {
+        "test": "BearingOffSuspensionTests.A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters",
+        "mutation": "Movement.MovesForDie tested bearing off before the bar, BearingOff.IsEligible ignored the bar and BearingOff.MovesForDie dropped its enter-from-bar refusal, so a player bearing off with a man up bore off instead of entering; this test went red. The suspension is map 3.0.0's (blind-mapping resolution rows 11, 14 and 17)."
       }
     ]
   },
@@ -364,7 +384,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -381,7 +401,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -390,11 +410,15 @@
       },
       {
         "test": "GameValueTests.A_man_up_makes_it_a_backgammon",
-        "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red."
+        "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red. Re-observed after the loser was given two men borne off, so that he is not also a gammon (map 3.0.0, blind-mapping resolution row 52); under the mutation he now declines as the uncovered finish, and the test still went red."
       },
       {
         "test": "GameValueTests.The_three_named_results_do_not_cover_every_finish",
         "mutation": "Outcome.ValueOf called the uncovered finish a hit instead of declining; this test went red."
+      },
+      {
+        "test": "GameValueTests.A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon",
+        "mutation": "Outcome.ValueOf dropped the overlap decline and tested backgammon first, as it did before map 3.0.0 named the overlap in game-value's question (blind-mapping resolution row 52); this test went red."
       }
     ]
   },
@@ -402,7 +426,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -419,7 +443,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -436,7 +460,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -453,7 +477,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
@@ -474,12 +498,33 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 1
+      "version": 2
     },
     "tests": [
       {
         "test": "DieFacesTests.A_throw_shows_the_twenty_one_throws_the_corpus_names_and_no_other",
         "mutation": "Die.D6 constructed a five-faced die; this test went red."
+      }
+    ]
+  },
+  "rubber-scoring": {
+    "status": "implemented",
+    "implementedIn": {
+      "ruleset": "hoyle-1909-backgammon",
+      "version": 2
+    },
+    "tests": [
+      {
+        "test": "RubberScoringTests.Having_lost_the_first_hit_he_who_loses_the_next_game_has_lost_the_rubber",
+        "mutation": "Outcome.RubberWinner gave the rubber to the winner of both games only when the second was also a hit (`second.Winner == first && second.Value == GameValue.Hit`); this test went red for a backgammon. (A gammon still resolved, through the other stated case.)"
+      },
+      {
+        "test": "RubberScoringTests.Having_lost_the_first_hit_he_who_secures_a_gammon_wins_the_rubber",
+        "mutation": "Outcome.RubberWinner gave the rubber to the first game's winner after the other player's gammon; this test went red."
+      },
+      {
+        "test": "RubberScoringTests.Every_other_rubber_is_the_question_the_corpus_leaves_open",
+        "mutation": "Outcome.RubberWinner resolved a hit each to the second game's winner (`second.Value != GameValue.Backgammon` for `== GameValue.Gammon`); this test went red. It went red too when a rubber of three or more games was judged on its first two (`games.Count >= 2`), but only after the two-games-then-a-third row was added: the first three-game row declines on its first two anyway."
       }
     ]
   }

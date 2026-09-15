@@ -38,8 +38,31 @@ public class GameValueTests
     [Fact]
     public void A_man_up_makes_it_a_backgammon()
     {
-        // "while the adversary has still a man or men 'up' (i.e., on the bar)".
-        Assert.Equal(GameValue.Backgammon, ValueOf(Board.Men().At(Geometry.BarPip, 1).RestAt(13)));
+        // "while the adversary has still a man or men 'up' (i.e., on the bar)". The loser has
+        // borne off two, so he has begun to bear off and this is not also a gammon. It used to
+        // be a loser with nothing borne off, which answers the gammon condition as well; the
+        // map names that overlap as unresolved since 3.0.0 (blind-mapping resolution row 52),
+        // and A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon now holds it.
+        Assert.Equal(
+            GameValue.Backgammon,
+            ValueOf(Board.Men().At(Geometry.BarPip, 1).At(0, 2).RestAt(3)));
+    }
+
+    [Fact]
+    public void A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon()
+    {
+        // Nothing borne off: "before his adversary has begun to do the same" (a gammon). A man
+        // on the bar: "a man or men 'up'" (a backgammon). game-value's question names this
+        // loser since map 3.0.0 (blind-mapping resolution row 52), and the corpus does not say
+        // which result he suffers.
+        var position = WhiteHasWon(Board.Men().At(Geometry.BarPip, 1).RestAt(13));
+
+        var unresolved = Assert.IsType<Resolution<GameValue>.Unresolved>(
+            Outcome.ValueOf(position, Player.White));
+
+        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
+        Assert.Equal(MapEntries.GameValue.Locator, unresolved.Result.Locator);
+        Assert.Contains("gammon condition and the backgammon condition", unresolved.Result.Attempted, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -185,6 +208,77 @@ public class StakeTests
             "uncited",
             new AgreedBackgammonMultiple(3, "two players").ToString(),
             StringComparison.Ordinal);
+    }
+}
+
+/// <summary>
+/// rubber-scoring, new in map 3.0.0 (blind-mapping resolution rows 114 and 115): the two
+/// sequences the corpus's one sentence about a rubber settles, and a decline for the rest.
+/// </summary>
+public class RubberScoringTests
+{
+    private static Resolution<Player> Rubber(params GameResult[] games) => Outcome.RubberWinner(games);
+
+    [Theory]
+    [InlineData(GameValue.Hit)]
+    [InlineData(GameValue.Gammon)]
+    [InlineData(GameValue.Backgammon)]
+    public void Having_lost_the_first_hit_he_who_loses_the_next_game_has_lost_the_rubber(GameValue next)
+    {
+        // "if he loses the next game, he has lost the rubber also": however the next game is won.
+        var winner = Assert.IsType<Resolution<Player>.Resolved>(
+            Rubber(new(Player.White, GameValue.Hit), new(Player.White, next)));
+
+        Assert.Equal(Player.White, winner.Value);
+    }
+
+    [Fact]
+    public void Having_lost_the_first_hit_he_who_secures_a_gammon_wins_the_rubber()
+    {
+        // "but if he can secure a gammon (reckoning as a double game), he becomes the winner of
+        // the rubber."
+        var winner = Assert.IsType<Resolution<Player>.Resolved>(
+            Rubber(new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Gammon)));
+
+        Assert.Equal(Player.Black, winner.Value);
+    }
+
+    public static TheoryData<GameResult[]> Unsettled => new()
+    {
+        // A hit each: the rubber goes on, and nothing says for how long or to what total.
+        new GameResult[] { new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Hit) },
+
+        // "does not say how a backgammon reckons".
+        new GameResult[] { new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Backgammon) },
+
+        // A first game that was not a hit is not the case the sentence states.
+        new GameResult[] { new(Player.White, GameValue.Gammon), new(Player.Black, GameValue.Gammon) },
+
+        // One game, or none: whether the rubber is over turns on its length.
+        new GameResult[] { new(Player.White, GameValue.Hit) },
+        System.Array.Empty<GameResult>(),
+
+        // A third game: nothing says it belongs to this rubber rather than the next, even after
+        // two games the sentence would have settled.
+        new GameResult[]
+        {
+            new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Hit), new(Player.Black, GameValue.Hit),
+        },
+        new GameResult[]
+        {
+            new(Player.White, GameValue.Hit), new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Hit),
+        },
+    };
+
+    [Theory]
+    [MemberData(nameof(Unsettled))]
+    public void Every_other_rubber_is_the_question_the_corpus_leaves_open(GameResult[] games)
+    {
+        var unresolved = Assert.IsType<Resolution<Player>.Unresolved>(Rubber(games));
+
+        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
+        Assert.Equal(MapEntries.RubberScoring.Locator, unresolved.Result.Locator);
+        Assert.Equal("BACKGAMMON / Hints for Play / p. 278", unresolved.Result.Locator.Citation);
     }
 }
 

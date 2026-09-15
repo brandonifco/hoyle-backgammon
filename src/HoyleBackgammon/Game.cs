@@ -43,8 +43,13 @@ public static class Game
     /// The engine's replay identity: which ruleset, which replay schema, which pinned corpus
     /// and which generator. Two runs are comparable only if these agree.
     /// </summary>
+    /// <remarks>
+    /// The ruleset is version 2 from <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0 on, whose
+    /// corrections make some games decline where version 1 finished them
+    /// (<c>docs/decisions/0004</c>).
+    /// </remarks>
     public static ReplayCompatibilityIdentity Identity { get; } = new(
-        ruleset: new RulesetVersion("hoyle-1909-backgammon", 1),
+        ruleset: new RulesetVersion("hoyle-1909-backgammon", 2),
         replaySchema: new ReplaySchemaVersion(1),
         sourceBaselines: [MapEntries.Baseline],
         randomAlgorithm: RandomAlgorithmId.Pcg32SetSeq64XshRr32);
