@@ -4,8 +4,8 @@
     "name": "HoyleBackgammon"
   },
   "factory": {
-    "version": "0.4.0",
-    "commit": "f0da05fff2bb1dae0ea7031873276959ae4c481c",
+    "version": "0.4.1",
+    "commit": "02ea62af2cad24439a5bcdf14df30ad9e887997b",
     "dirty": false
   },
   "map": {
@@ -50,7 +50,7 @@
       },
       {
         "path": "tools/factory/__main__.py",
-        "sha256": "11b2c64cf1a425060d580765cbb9205c1c95d6f7eea194b5bc6ab000083c9b50"
+        "sha256": "f379e379b03afc74ccf511051342fba7c6237b6f2c027fab04ece9d86cb512d8"
       },
       {
         "path": "tools/factory/backlog.py",
@@ -106,11 +106,11 @@
       },
       {
         "path": "tools/factory/verify.py",
-        "sha256": "6a01a31212b3c9b059451ba87a7a7222a5dcd903bb444396846860ed7a7b0662"
+        "sha256": "48bcaf05b6d0628549af035c681900f713f175718e480014a43d3a876eb6260f"
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "efd548dfbfea9f9546883c2603583089a63918a50712c13a1f147e50e36ae5a8"
+    "digest": "0f0d1a9c528ad93758d654a6d054aa92d60246c23d3ff14e5b309d10d6334c0e"
   },
   "generated": [
     {
@@ -244,7 +244,7 @@
     },
     {
       "path": "corpus-map.overlay.json",
-      "sha256": "94276b497a48967c9f0114bdf66f485dee9ca28c018d77f13651d730d65af86a"
+      "sha256": "5884dc70c870f92ad82c75f8334f93245849e8fdc1333c8db690d01020120bae"
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",
