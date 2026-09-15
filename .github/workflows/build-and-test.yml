@@ -23,7 +23,7 @@ jobs:
     # before, and each jump silently changes the toolchain underneath a build whose central
     # claim is reproducibility.
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -42,10 +42,11 @@ jobs:
         with:
           dotnet-version: ${{ steps.sdk.outputs.version }}
 
-      # The gate restores the map package in locked mode, checks corpus-map.json is exactly the
-      # package plus the engine's overlay, re-derives the corpus hash, checks every MapEntries
-      # citation against the map and every map citation against the corpus's own page markers,
-      # and asserts that the tests actually ran rather than that dotnet exited 0.
+      # scripts/validate.sh is the gate rules-factory generates (every `factory produce`
+      # rewrites it), the same one .github/workflows/validate.yml runs. This workflow stays
+      # only while build-and-test is the required status check on main. The hand-built gate's
+      # map-correspondence and citation steps are xUnit tests now, so they run inside the
+      # gate's Debug and Release test runs.
       - name: Validate
         env:
           CI: "true"

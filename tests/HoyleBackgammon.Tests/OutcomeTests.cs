@@ -72,8 +72,34 @@ public class GameValueTests
     public void A_man_in_the_winners_home_table_makes_it_a_backgammon(int pip)
     {
         // The winner's home table is his own pips 1-6, which the loser counts 24 down to 19.
+        // The loser has borne off two, so he has begun to bear off and this is not also a gammon.
+        // It used to be a loser with nothing borne off, who answers the gammon condition as well;
+        // map 4.0.0 names that overlap in game-value's question (finding 17, rules-factory#102),
+        // and A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon
+        // now holds it.
         Assert.Equal(Quarter.AdversaryInner, Geometry.QuarterOf(pip));
-        Assert.Equal(GameValue.Backgammon, ValueOf(Board.Men().At(pip, 1).RestAt(13)));
+        Assert.Equal(GameValue.Backgammon, ValueOf(Board.Men().At(pip, 1).At(0, 2).RestAt(13)));
+    }
+
+    [Theory]
+    [InlineData(19)]
+    [InlineData(22)]
+    [InlineData(24)]
+    public void A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon(int pip)
+    {
+        // Nothing borne off: "before his adversary has begun to do the same" (a gammon). A man in
+        // the winner's home table: "or in his (the winner's) home table" (a backgammon). No man up,
+        // so this is the arm of the overlap map 3.0.0's question left out and 4.0.0 names
+        // (finding 17, rules-factory#102); the corpus does not say which result he suffers.
+        var position = WhiteHasWon(Board.Men().At(pip, 1).RestAt(13));
+
+        var unresolved = Assert.IsType<Resolution<GameValue>.Unresolved>(
+            Outcome.ValueOf(position, Player.White));
+
+        Assert.Equal(0, position.OnBar(Player.Black));
+        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
+        Assert.Equal(MapEntries.GameValue.Locator, unresolved.Result.Locator);
+        Assert.Contains("gammon condition and the backgammon condition", unresolved.Result.Attempted, StringComparison.Ordinal);
     }
 
     [Fact]
