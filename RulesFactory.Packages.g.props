@@ -7,11 +7,11 @@
 
   <ItemGroup>
     <!-- The kernel is referenced, never copied. -->
-    <PackageVersion Include="RulesKernel" Version="0.2.0" />
+    <PackageVersion Include="RulesKernel" Version="0.3.0" />
     <!-- The corpus declares randomness: seeded (rules-factory decision 0019), so the engine may
          reference RulesKernel.Randomness. It is pinned here, at the kernel's version, and the
          factory references it nowhere: whether and where to draw is the engine's code. -->
-    <PackageVersion Include="RulesKernel.Randomness" Version="0.2.0" />
+    <PackageVersion Include="RulesKernel.Randomness" Version="0.3.0" />
     <!-- The map is referenced, never copied (rules-factory decision 0015), at an exact
          version. The engine's own build facts live in corpus-map.overlay.json. -->
     <PackageVersion Include="RulesFactory.Maps.HoyleBackgammon" Version="[6.0.0]" />

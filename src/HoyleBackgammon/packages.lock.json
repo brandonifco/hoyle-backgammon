@@ -10,23 +10,23 @@
       },
       "RulesKernel": {
         "type": "Direct",
-        "requested": "[0.2.0, )",
-        "resolved": "0.2.0",
-        "contentHash": "rVF+Hib90mjqz/uhqg2xKa1RNtL7nK6UFNiCrWDBa+H+HgfBGmOUzXl2L4AZg4pp8azRR0OLDNZL9Cr5Ovlv6Q=="
+        "requested": "[0.3.0, )",
+        "resolved": "0.3.0",
+        "contentHash": "x52TbzXTrKKrq6dgQTqWayvO/NLsAEMMfPChdbaBeE4fP9hNVB4ILbIIwaBKQOKnA4FRODNJ2UIKSFFT8ByFGA=="
       },
       "RulesKernel.Randomness": {
         "type": "Direct",
-        "requested": "[0.2.0, )",
-        "resolved": "0.2.0",
-        "contentHash": "iOXJMPbZ2dDt1UAnL2G0xgVTwhwsRu7rySWk0QqB3utAjh9FVhpbGA+vPOUCLcvo2jv0yUouniLgCz4b//MV2A==",
+        "requested": "[0.3.0, )",
+        "resolved": "0.3.0",
+        "contentHash": "txm7VjBd07XHowLLGUv5+zU0/9m+Pfus8HfPbngsY5TYSNNznNOYJ/zhWrhS5W+IUknHpQ4eYDcqLmEqkyZ/Kw==",
         "dependencies": {
-          "RulesKernel": "0.2.0"
+          "RulesKernel": "0.3.0"
         }
       },
       "tabletop.dice": {
         "type": "Project",
         "dependencies": {
-          "RulesKernel.Randomness": "[0.2.0, )"
+          "RulesKernel.Randomness": "[0.3.0, )"
         }
       }
     },
@@ -39,23 +39,23 @@
       },
       "RulesKernel": {
         "type": "Direct",
-        "requested": "[0.2.0, )",
-        "resolved": "0.2.0",
-        "contentHash": "rVF+Hib90mjqz/uhqg2xKa1RNtL7nK6UFNiCrWDBa+H+HgfBGmOUzXl2L4AZg4pp8azRR0OLDNZL9Cr5Ovlv6Q=="
+        "requested": "[0.3.0, )",
+        "resolved": "0.3.0",
+        "contentHash": "x52TbzXTrKKrq6dgQTqWayvO/NLsAEMMfPChdbaBeE4fP9hNVB4ILbIIwaBKQOKnA4FRODNJ2UIKSFFT8ByFGA=="
       },
       "RulesKernel.Randomness": {
         "type": "Direct",
-        "requested": "[0.2.0, )",
-        "resolved": "0.2.0",
-        "contentHash": "iOXJMPbZ2dDt1UAnL2G0xgVTwhwsRu7rySWk0QqB3utAjh9FVhpbGA+vPOUCLcvo2jv0yUouniLgCz4b//MV2A==",
+        "requested": "[0.3.0, )",
+        "resolved": "0.3.0",
+        "contentHash": "txm7VjBd07XHowLLGUv5+zU0/9m+Pfus8HfPbngsY5TYSNNznNOYJ/zhWrhS5W+IUknHpQ4eYDcqLmEqkyZ/Kw==",
         "dependencies": {
-          "RulesKernel": "0.2.0"
+          "RulesKernel": "0.3.0"
         }
       },
       "tabletop.dice": {
         "type": "Project",
         "dependencies": {
-          "RulesKernel.Randomness": "[0.2.0, )"
+          "RulesKernel.Randomness": "[0.3.0, )"
         }
       }
     }
