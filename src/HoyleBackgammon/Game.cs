@@ -30,7 +30,7 @@ public sealed record Turn(Player Player, DiceThrow? Thrown, Play? Play, Position
 /// <param name="OpeningThrowAdopted">Whether the opener adopted the deciding pair.</param>
 /// <param name="Turns">Every turn, in order.</param>
 /// <param name="Winner">Who won.</param>
-/// <param name="Value">Whether the win was a hit, a gammon or a backgammon.</param>
+/// <param name="Value">Whether the win was a hit, a gammon or a backgammon. <see cref="ValueRulings"/> names any owner's ruling it relies on.</param>
 /// <param name="Next">Who throws first in the game after this one.</param>
 public sealed record GameRecord(
     ReplayCompatibilityIdentity Identity,
@@ -44,11 +44,22 @@ public sealed record GameRecord(
     NextOpening Next)
 {
     /// <summary>
-    /// The record in its canonical serialisation, replay schema 3: RFC 8785 canonical JSON, UTF-8
+    /// The owner's rulings <see cref="Value"/> relies on, in <see cref="OwnerRulings.All"/>'s order; empty when the
+    /// corpus names the result unaided (<see cref="GameResult.Rulings"/>, <c>docs/decisions/0010</c>).
+    /// </summary>
+    public ImmutableArray<OwnerRuling> ValueRulings { get; init; } = [];
+
+    /// <summary>The game's result, for scoring a rubber: the winner and the value, with the rulings the value relies on.</summary>
+    public GameResult Result => new(Winner, Value) { Rulings = ValueRulings };
+
+    /// <summary>
+    /// The record in its canonical serialisation, replay schema 4: RFC 8785 canonical JSON, UTF-8
     /// without a byte-order mark, every field of the record including <see cref="Identity"/>,
-    /// <see cref="Map"/> and, on each turn played, the owner's rulings its play relies on
-    /// (<see cref="Play.Rulings"/>), each with who ruled and when. The same game gives the same bytes on every run, framework and platform
-    /// (<c>docs/decisions/0006</c> defines the shape; <c>docs/decisions/0009</c> adds <c>rulings</c>).
+    /// <see cref="Map"/>, on each turn played the owner's rulings its play relies on
+    /// (<see cref="Play.Rulings"/>), and the owner's rulings the game's value relies on
+    /// (<see cref="ValueRulings"/>), each with who ruled and when. The same game gives the same bytes on every
+    /// run, framework and platform (<c>docs/decisions/0006</c> defines the shape; <c>docs/decisions/0009</c> adds
+    /// each turn's <c>rulings</c>; <c>docs/decisions/0010</c> adds <c>valueRulings</c>).
     /// </summary>
     /// <returns>The bytes.</returns>
     public byte[] ToCanonicalJson() => GameRecordJson.Serialise(this);
@@ -65,10 +76,17 @@ public static class Game
     /// <see cref="GameRecord"/> carries it.
     /// </summary>
     /// <remarks>
-    /// The replay schema is version 3 since each turn of a <see cref="GameRecord"/> names the owner's
+    /// The replay schema is version 4 since the record names the owner's rulings its value relies on
+    /// (<c>valueRulings</c>, <c>docs/decisions/0010</c>), and version 3 since each turn of a <see cref="GameRecord"/> names the owner's
     /// rulings its play relies on (<c>docs/decisions/0009</c>); version 2 gave the record its identity,
     /// its map and a canonical serialisation of its own (<c>docs/decisions/0006</c>).
-    /// The ruleset is version 5 from Brandon's rulings of 2026-09-15 on, which answer the second parts of
+    /// The ruleset is version 6 from Brandon's rulings of 2026-09-15 on the first parts of those two questions and on
+    /// all of <c>game-value</c>'s, which make every throw playable and every finish valued: where either number alone
+    /// can be played the higher is compelled, a man hit mid-bear-off who re-enters bears off again only once every man
+    /// is home, the finish no named result covers is a hit, and a loser both gammoned and backgammoned by the corpus's
+    /// words is backgammoned. A throw or finish version 5 declined for any of them is played or valued, and names the
+    /// ruling (<c>docs/decisions/0010</c>).
+    /// Version 5 began with Brandon's rulings of 2026-09-15 on, which answer the second parts of
     /// two questions <c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0 leaves open, and not from the corpus:
     /// orders of a throw reaching the same position are one play, and bearing off begins within the throw
     /// that brings the last man home. A throw version 4 declined for either is played, and the play names
@@ -81,8 +99,8 @@ public static class Game
     /// (<c>docs/decisions/0004</c>).
     /// </remarks>
     public static ReplayCompatibilityIdentity Identity { get; } = new(
-        ruleset: new RulesetVersion("hoyle-1909-backgammon", 5),
-        replaySchema: new ReplaySchemaVersion(3),
+        ruleset: new RulesetVersion("hoyle-1909-backgammon", 6),
+        replaySchema: new ReplaySchemaVersion(4),
         sourceBaselines: [MapEntries.Baseline],
         randomAlgorithm: RandomAlgorithmId.Pcg32SetSeq64XshRr32);
 
@@ -197,11 +215,14 @@ public static class Game
 
             if (Outcome.Winner(position) is { } winner)
             {
-                return Outcome.ValueOf(position, winner).Match(
-                    value => Resolution<GameRecord>.FromValue(new GameRecord(
+                return Outcome.ResultOf(position, winner).Match(
+                    result => Resolution<GameRecord>.FromValue(new GameRecord(
                         Identity,
                         MapPackage.FromProvenance,
-                        start, roll, adopted, turns.ToImmutable(), winner, value, Outcome.Next(value))),
+                        start, roll, adopted, turns.ToImmutable(), result.Winner, result.Value, Outcome.Next(result.Value))
+                    {
+                        ValueRulings = result.Rulings,
+                    }),
                     Resolution<GameRecord>.FromUnresolved);
             }
 

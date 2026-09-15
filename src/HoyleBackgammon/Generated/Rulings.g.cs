@@ -22,9 +22,19 @@ namespace HoyleBackgammon;
 /// <param name="Record">The engine's decision record that holds the ruling, relative to the engine root.</param>
 public sealed partial record OwnerRuling(string Id, string EntryId, string Span, string Answer, string RuledBy, DateOnly RuledOn, string Record);
 
-/// <summary>The 2 owner's ruling(s) in corpus-map.overlay.json, one static each, in overlay order.</summary>
+/// <summary>The 6 owner's ruling(s) in corpus-map.overlay.json, one static each, in overlay order.</summary>
 public static partial class OwnerRulings
 {
+    /// <summary><c>must-play-whole-throw/1</c>: Where either number alone can be played but not both, the higher number must be played.</summary>
+    public static OwnerRuling MustPlayWholeThrow1 { get; } = new(
+        "must-play-whole-throw/1",
+        "must-play-whole-throw",
+        "An unplayable part is lost and the whole must be played 'if it is possible'. The text does not say what happens when either die alone is playable but not both -- a case every modern ruleset settles explicitly.",
+        "Where either number alone can be played but not both, the higher number must be played.",
+        "Brandon",
+        new DateOnly(2026, 9, 15),
+        "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md");
+
     /// <summary><c>must-play-whole-throw/2</c>: One play: orders of the same numbers that reach the same position are offered once, crediting the rules of the first order found.</summary>
     public static OwnerRuling MustPlayWholeThrow2 { get; } = new(
         "must-play-whole-throw/2",
@@ -34,6 +44,16 @@ public static partial class OwnerRulings
         "Brandon",
         new DateOnly(2026, 9, 15),
         "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md");
+
+    /// <summary><c>bearing-off-eligible/1</c>: No: a player whose man is hit after he has begun to bear off may not bear off again until every man is back in his home table.</summary>
+    public static OwnerRuling BearingOffEligible1 { get; } = new(
+        "bearing-off-eligible/1",
+        "bearing-off-eligible",
+        "The stage begins 'when either player has succeeded in getting all his men into his home table', and the chapter never says whether it lasts. If one of his men is hit after he has begun to bear off and then re-enters, the text does not say whether he may go on bearing off the men still at home or must first bring every man home again.",
+        "No: a player whose man is hit after he has begun to bear off may not bear off again until every man is back in his home table.",
+        "Brandon",
+        new DateOnly(2026, 9, 15),
+        "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md");
 
     /// <summary><c>bearing-off-eligible/2</c>: Yes: once a player's first number brings his last man home, the number left bears off.</summary>
     public static OwnerRuling BearingOffEligible2 { get; } = new(
@@ -45,6 +65,26 @@ public static partial class OwnerRulings
         new DateOnly(2026, 9, 15),
         "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md");
 
+    /// <summary><c>game-value/1</c>: A single game (a hit): a loser who has borne off a man, has none on the bar or in the winner's home table, and is not all home loses a hit.</summary>
+    public static OwnerRuling GameValue1 { get; } = new(
+        "game-value/1",
+        "game-value",
+        "The three named results do not cover every finish. Written as predicates on the loser they are: all his men home and he has begun to bear off (a hit); he has not begun to bear off (a gammon); he has a man up or in the winner's home table (a backgammon). A loser who has borne off a man, been taken up, re-entered and run that man clear of the winner's home table but not yet back into his own answers none of them, and the corpus does not say what such a win is worth.",
+        "A single game (a hit): a loser who has borne off a man, has none on the bar or in the winner's home table, and is not all home loses a hit.",
+        "Brandon",
+        new DateOnly(2026, 9, 15),
+        "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md");
+
+    /// <summary><c>game-value/2</c>: A backgammon, never also a gammon: a loser who has borne off nothing and has a man on the bar or in the winner's home table is backgammoned.</summary>
+    public static OwnerRuling GameValue2 { get; } = new(
+        "game-value/2",
+        "game-value",
+        "Nor are they disjoint, in two cases. A loser who has borne off nothing answers 'before his adversary has begun to do the same' (a gammon); if he also has a man up, or a man in the winner's home table, he answers 'a man or men \"up\" (_i.e._, on the bar) or in his (the winner's) home table' (a backgammon) as well. The corpus does not say which result he suffers in either case.",
+        "A backgammon, never also a gammon: a loser who has borne off nothing and has a man on the bar or in the winner's home table is backgammoned.",
+        "Brandon",
+        new DateOnly(2026, 9, 15),
+        "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md");
+
     /// <summary>Every ruling, in overlay order.</summary>
-    public static ImmutableArray<OwnerRuling> All { get; } = [MustPlayWholeThrow2, BearingOffEligible2];
+    public static ImmutableArray<OwnerRuling> All { get; } = [MustPlayWholeThrow1, MustPlayWholeThrow2, BearingOffEligible1, BearingOffEligible2, GameValue1, GameValue2];
 }

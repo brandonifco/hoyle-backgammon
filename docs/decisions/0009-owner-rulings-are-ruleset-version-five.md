@@ -1,7 +1,9 @@
 # 0009: The owner's rulings on two open questions are ruleset version five
 
 **Status:** accepted, 2026-09-15. Supersedes [decision 0008](0008-map-6-0-0-is-ruleset-version-four.md)
-where it declines the second parts of two questions. The rest of 0008 stands.
+where it declines the second parts of two questions. The rest of 0008 stands. Superseded in part by
+[decision 0010](0010-owner-rulings-are-ruleset-version-six.md), which rules on the first parts it still declines
+and on `game-value`'s question (ruleset 6, replay schema 4).
 
 > **Amendment, 2026-09-15: the rulings are held in the overlay (rules-factory 0.6.0, decision 0027).**
 > The factory gained the carrier this record's last paragraph asked for, and the rulings moved into it

@@ -20,9 +20,9 @@ namespace HoyleBackgammon
 {
     internal static partial class Handlers
     {
-        /// <summary><c>game-value</c>: <see cref="Outcome.ValueOf"/>, a hit, a gammon or a backgammon, or the rule's decline.</summary>
+        /// <summary><c>game-value</c>: <see cref="Outcome.ResultOf"/>, a hit, a gammon or a backgammon, with the owner's rulings it relies on.</summary>
         internal static partial Resolution<object> GameValue(Requests.GameValueRequest request) =>
-            Answer(Demand(request.Position, request.EntryId, nameof(request.Position)), Outcome.ValueOf(
+            Answer(Demand(request.Position, request.EntryId, nameof(request.Position)), Outcome.ResultOf(
                 request.Position!.Position,
                 Demand(request.Winner, request.EntryId, nameof(request.Winner))));
     }
