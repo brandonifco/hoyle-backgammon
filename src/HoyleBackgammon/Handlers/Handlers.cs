@@ -23,6 +23,14 @@ namespace HoyleBackgammon;
 /// the corpus, so it is not an unresolved result.
 /// </para>
 /// <para>
+/// A request that asks about a position takes an <see cref="AssertedPosition"/>, not a bare
+/// <see cref="Position"/>, and a value answered about it comes back as an
+/// <see cref="AssertedAnswer{T}"/> carrying that assertion, as <see cref="Game.Play"/> carries its
+/// start into <see cref="GameRecord.Start"/>. A decline is the rule's <see cref="UnresolvedResult"/>
+/// unchanged: the kernel's type has no place for an attribution, and <see cref="Game.Play"/> does not
+/// attach one to its declines either.
+/// </para>
+/// <para>
 /// Inside this class the members <c>OpeningRoll</c>, <c>GameValue</c> and
 /// <c>AgreedBackgammonMultiple</c> hide the engine's types of the same names, so the handler
 /// files name those types with <c>global::</c>.
@@ -35,6 +43,16 @@ internal static partial class Handlers
     private static Resolution<object> Answer<T>(Resolution<T> resolution)
         where T : notnull =>
         resolution.Match(value => Resolution<object>.FromValue(value), Resolution<object>.FromUnresolved);
+
+    /// <summary>A rule's value about an asserted position, carrying the assertion back.</summary>
+    private static Resolution<object> Value<T>(AssertedPosition asserted, T value)
+        where T : notnull =>
+        Resolution<object>.FromValue(new AssertedAnswer<T>(value, asserted));
+
+    /// <summary>A rule's answer about an asserted position: its value with the assertion, or its decline as it stands.</summary>
+    private static Resolution<object> Answer<T>(AssertedPosition asserted, Resolution<T> resolution)
+        where T : notnull =>
+        resolution.Match(value => Value(asserted, value), Resolution<object>.FromUnresolved);
 
     private static T Demand<T>(T? input, string entryId, string name)
         where T : class =>

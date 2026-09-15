@@ -184,11 +184,20 @@ rule and returns the rule's answer or its decline:
 ```csharp
 var resolution = EntryPoints.MustPlayWholeThrow.Resolve(new MustPlayWholeThrowRequest
 {
-    Position = Setup.StartingPositionFromCorpus(),
+    Position = new AssertedPosition(Setup.StartingPositionFromCorpus(), AssertedBy: "me"),
     Player = Player.White,
     Thrown = new DiceThrow(6, 3),
 });
+// resolution's value is an AssertedAnswer<ImmutableArray<Play>>: the plays, and the assertion.
 ```
+
+A request that asks about a position takes an `AssertedPosition`, never a bare `Position`, and its
+value comes back as an `AssertedAnswer<T>` holding the rule's value and that same assertion
+(`AssertedBy`, `Justification`), as `Game.Play` keeps its start in `GameRecord.Start`. Thirteen
+entries take a position; `AssertedPositionEntryPointTests` resolves every one and fails if a new
+request takes a position without being covered. A decline is the rule's `UnresolvedResult` as it
+stands: the kernel type has no place for an attribution, and `Game.Play` attaches none to its
+declines either.
 
 An entry the engine declines (`doubling-cube`, say) answers through its entry point too, with the
 reason its correspondence row gives and its own citation.

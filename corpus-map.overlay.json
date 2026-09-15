@@ -308,15 +308,27 @@
       },
       {
         "test": "MustPlayWholeThrowEntryPointTests.A_six_trois_with_a_man_up_resolves_to_the_plays_of_the_whole_throw_each_move_citing_its_entry",
-        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, `if (extended || !extended)`, and no filter to the compelled use); this test went red, and so did the doublet test beside it. It went red too when Move.Authority named move-by-pip for an entry from the bar (`MoveKind.Entry => MapEntries.MoveByPip`), and when it named legal-destination for an ordinary move."
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, `if (extended || !extended)`, and no filter to the compelled use); this test went red, and so did the doublet test beside it. It went red too when Move.Authority named move-by-pip for an entry from the bar (`MoveKind.Entry => MapEntries.MoveByPip`), and when it named legal-destination for an ordinary move. Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
         "test": "MustPlayWholeThrowEntryPointTests.Doublets_resolve_to_the_one_play_that_goes_as_far_as_the_throw_can_each_move_citing_its_entry",
-        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`)."
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`). Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
         "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275",
-        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red, and no other test in the class did."
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red, and no other test in the class did."
+      },
+      {
+        "test": "AssertedPositionEntryPointTests.Every_entry_asked_about_an_asserted_position_answers_with_that_assertion",
+        "mutation": "Covers all thirteen entries whose request takes a position; named here, where PR #11 found the attribution dropped. Handlers.Value attached a copy of the assertion asserted by \"the engine\" (`new AssertedPosition(asserted.Position, \"the engine\", asserted.Justification)` for `asserted`); every row went red. The must-play-whole-throw handler answered the bare plays (`Answer(LegalPlays.For(...))`, the assertion dropped); that row went red and no other."
+      },
+      {
+        "test": "AssertedPositionEntryPointTests.Every_request_that_takes_a_position_takes_an_asserted_one_and_is_resolved_above",
+        "mutation": "OpeningRollRequest gained an `AssertedPosition? Position` input that the theory beside it does not resolve; this test went red and no other test in the class did."
+      },
+      {
+        "test": "AssertedPositionEntryPointTests.A_request_without_a_position_is_the_callers_error_not_an_answer",
+        "mutation": "Handlers.Missing dropped the parameter name from its ArgumentException; this test went red. It went red too when the game-value handler defaulted a missing position to the corpus start asserted by \"the engine\" instead of demanding one (the rule then threw for the winner, not the position)."
       }
     ]
   },
@@ -450,11 +462,11 @@
       },
       {
         "test": "GameValueEntryPointTests.A_finished_game_resolves_to_a_hit_a_gammon_or_a_backgammon",
-        "mutation": "Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); the hit row went red. Outcome.ValueOf ignored a loser's man on the bar (`bool backgammon = LoserStandsInWinnersHome(...)` alone); the backgammon row went red."
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); the hit row went red. Outcome.ValueOf ignored a loser's man on the bar (`bool backgammon = LoserStandsInWinnersHome(...)` alone); the backgammon row went red. Every row went red too when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
         "test": "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry",
-        "mutation": "Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf dropped the overlap decline (`BorneOff(loser) < 0` for `== 0`), valuing both losers a backgammon; both rows went red. Declining the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`, map 3.0.0's question) turned the pip-19 row red and left the man-up row green. Ignoring a loser's man on the bar turned the man-up row red."
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf dropped the overlap decline (`BorneOff(loser) < 0` for `== 0`), valuing both losers a backgammon; both rows went red. Declining the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`, map 3.0.0's question) turned the pip-19 row red and left the man-up row green. Ignoring a loser's man on the bar turned the man-up row red."
       }
     ]
   },

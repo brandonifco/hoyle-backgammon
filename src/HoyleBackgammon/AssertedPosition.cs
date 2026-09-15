@@ -42,6 +42,28 @@ public sealed record AssertedPosition(
             : $"{Position} (asserted by {AssertedBy}, uncited)";
 }
 
+/// <summary>
+/// An entry's answer about a position somebody asserted, with the assertion it rests on.
+/// </summary>
+/// <remarks>
+/// What <see cref="EntryPoints"/> returns for every entry whose request takes a position: the rule's
+/// value, and the <see cref="AssertedPosition"/> it was asked about, so the attribution survives the
+/// typed surface as it survives <see cref="Game.Play"/> into <see cref="GameRecord.Start"/>
+/// (<c>docs/decisions/0002</c>).
+/// </remarks>
+/// <typeparam name="T">The rule's value type.</typeparam>
+/// <param name="Value">The rule's value.</param>
+/// <param name="Position">The position the rule was asked about, and who asserted it.</param>
+public sealed record AssertedAnswer<T>(T Value, AssertedPosition Position)
+    where T : notnull
+{
+    /// <summary>Who is answerable for the position, <see cref="AssertedPosition.AssertedBy"/>.</summary>
+    public string AssertedBy => Position.AssertedBy;
+
+    /// <summary>Where the asserter says the position comes from, <see cref="AssertedPosition.Justification"/>.</summary>
+    public SourceLocator? Justification => Position.Justification;
+}
+
 /// <summary>Setting a game up.</summary>
 public static class Setup
 {
