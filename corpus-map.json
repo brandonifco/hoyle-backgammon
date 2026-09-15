@@ -26,7 +26,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -51,7 +51,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -80,7 +80,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -117,7 +117,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -175,7 +175,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -206,7 +206,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -245,7 +245,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -294,7 +294,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -327,7 +327,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -359,7 +359,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -394,7 +394,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -422,7 +422,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -455,7 +455,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -489,7 +489,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -529,7 +529,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -582,7 +582,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -623,7 +623,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -675,7 +675,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -724,7 +724,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -765,7 +765,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -808,7 +808,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -850,7 +850,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -887,7 +887,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -929,7 +929,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -961,7 +961,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -991,7 +991,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -1026,7 +1026,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -1068,7 +1068,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {
@@ -1109,7 +1109,7 @@
       "status": "implemented",
       "implementedIn": {
         "ruleset": "hoyle-1909-backgammon",
-        "version": 1
+        "version": 2
       },
       "tests": [
         {

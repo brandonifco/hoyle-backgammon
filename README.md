@@ -133,6 +133,10 @@ a representation; what the corpus fixes about it is in `Geometry`'s remarks.
 
 ## Determinism
 
+The replay identity is ruleset `hoyle-1909-backgammon` version 2 since map 3.0.0, whose
+corrections make some games decline where version 1 finished them
+([decision 0004](docs/decisions/0004-map-3-0-0-is-ruleset-version-two.md)).
+
 Same seed, same ordered decisions, same game. The draws are accounted for exactly: two per
 pair of dice thrown, none for a player whose play is wholly suspended (he does not throw),
 none for an adopted opening throw (it re-uses the deciding pair). `DeterminismTests` asserts
