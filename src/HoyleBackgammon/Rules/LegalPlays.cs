@@ -9,8 +9,8 @@ namespace HoyleBackgammon;
 public static class LegalPlays
 {
     /// <summary>
-    /// Every play <paramref name="player"/> may make with <paramref name="entitlement"/>, or an
-    /// unresolved result where the corpus does not settle what the throw allows.
+    /// Every play <paramref name="player"/> may make with <paramref name="entitlement"/>. Where the corpus
+    /// does not settle what the throw allows, the owner's rulings do, and each play names those it relies on.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -29,20 +29,19 @@ public static class LegalPlays
     /// <para>
     /// What it does not settle is the map's recorded ambiguity: where either die alone can be
     /// played but not both, the two candidate plays are incomparable, neither can be extended,
-    /// and the text gives no rule for choosing. The entry's fate is <c>unresolved</c>, so this
-    /// returns <see cref="UnresolvedReason.RequiresInterpretation"/> rather than silently
-    /// adopting the modern convention of compelling the higher die.
+    /// and the text gives no rule for choosing. The entry's fate is <c>unresolved</c>. Ruleset
+    /// versions 2 to 5 returned <see cref="UnresolvedReason.RequiresInterpretation"/> there; since
+    /// version 6 the owner's ruling compels the higher number, and the play names it (below).
     /// </para>
     /// <para>
-    /// <b>A second decline, not this rule's.</b> Where a line of the throw reaches a position in
+    /// <b>A second question, not this rule's.</b> Where a line of the throw reaches a position in
     /// which <see cref="BearingOff.HasReEnteredMidBearOff"/> holds with a number still to play
     /// -- from the start of the throw, or after entering the man that was hit -- which rules
     /// govern that number turns on whether bearing off lasts once a man is hit and re-enters,
     /// and the corpus does not say. That is <see cref="MapEntries.BearingOffEligible"/>'s
     /// question (<c>fate: unresolved</c> since <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0,
-    /// blind-mapping resolution rows 12 and 13), so the throw returns
-    /// <see cref="UnresolvedReason.RequiresInterpretation"/> citing that entry, and is decided
-    /// before any question of which plays are compelled.
+    /// blind-mapping resolution rows 12 and 13). Versions 2 to 5 declined the throw citing that
+    /// entry; since version 6 the owner's ruling answers it (below).
     /// </para>
     /// <para>
     /// A man up does not lift the compulsion. The map records no <c>enter-from-bar</c>
@@ -74,12 +73,24 @@ public static class LegalPlays
     /// rest.</item>
     /// </list>
     /// <para>
-    /// <b>Two owner's rulings, not Hoyle (<c>docs/decisions/0009</c>).</b> The map
-    /// (<c>RulesFactory.Maps.HoyleBackgammon</c> 6.0.0, rules-factory#125) records two questions this
-    /// list turns on as the second parts of open questions, <c>fate: unresolved</c>, and the corpus does
-    /// not settle either. Ruleset version 4 declined both (<c>docs/decisions/0008</c>). Brandon, the
-    /// engine's owner, ruled on both on 2026-09-15, and this applies the rulings and names them on every
-    /// play that relies on one (<see cref="Play.Rulings"/>):
+    /// <b>Four owner's rulings, not Hoyle (<c>docs/decisions/0009</c> and <c>docs/decisions/0010</c>).</b>
+    /// Every play lists those it relies on in <see cref="Play.Rulings"/>, in <see cref="OwnerRulings.All"/>'s
+    /// order. The first two, the questions' first parts, are version 6's (<c>docs/decisions/0010</c>):
+    /// </para>
+    /// <list type="bullet">
+    /// <item><see cref="OwnerRulings.TheHigherNumberIsCompelled"/>, <see cref="MapEntries.MustPlayWholeThrow"/>'s
+    /// first part: where the maximal uses are incomparable (either number alone, not both), the plays that use
+    /// the higher number are the compelled ones, and each names the ruling. A throw with only one playable number
+    /// compels it, as before, and names nothing: the corpus settles that.</item>
+    /// <item><see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/>, <see cref="MapEntries.BearingOffEligible"/>'s
+    /// first part: a player whose man, hit mid-bear-off, has re-entered plays his numbers as ordinary moves until
+    /// every man is home again, which is what <see cref="BearingOff.IsEligible"/> already gives. A play is marked
+    /// where its line passes through a state where <see cref="BearingOff.HasReEnteredMidBearOff"/> holds with a
+    /// number still to play, or is reached from one, as for the ruling below.</item>
+    /// </list>
+    /// <para>
+    /// The second parts are version 5's (<c>docs/decisions/0009</c>). Map 6.0.0 (rules-factory#125) added
+    /// them to the two questions, and ruleset version 4 declined both (<c>docs/decisions/0008</c>):
     /// </para>
     /// <list type="bullet">
     /// <item><see cref="OwnerRulings.APlayIsThePositionItReaches"/>, <see cref="MapEntries.MustPlayWholeThrow"/>'s
@@ -96,10 +107,6 @@ public static class LegalPlays
     /// is made under a bearing-off rule.</item>
     /// </list>
     /// <para>
-    /// The first parts of both questions are not ruled on and still decline: either die alone playable but
-    /// not both (above), and a man hit mid-bear-off who has re-entered.
-    /// </para>
-    /// <para>
     /// No hash-set or dictionary iteration order reaches the list. <c>PlayEnumerationTests</c>
     /// pins the result for six-trois and double deuces from the starting position.
     /// </para>
@@ -109,7 +116,8 @@ public static class LegalPlays
     /// <param name="entitlement">The numbers the throw entitles, from <see cref="Movement.Entitlement"/>.</param>
     /// <returns>
     /// The plays, in a fixed enumeration order, never empty: a throw with nothing playable
-    /// yields exactly one play, which moves no man.
+    /// yields exactly one play, which moves no man. Since ruleset version 6 it never declines; it stays a
+    /// resolution because the questions it answers are open in the map.
     /// </returns>
     public static Resolution<ImmutableArray<Play>> For(
         Position position, Player player, ImmutableArray<int> entitlement)
@@ -131,34 +139,26 @@ public static class LegalPlays
         var search = new Search(BearingOff.IsEligible(position, player));
         Explore(position, player, values, available, new int[values.Length], [], terminals, search);
 
-        if (search.ReachedReEntryMidBearOff)
-        {
-            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
-                UnresolvedReason.RequiresInterpretation,
-                "play a number for a player who had begun to bear off and whose man, hit, has "
-                + "re-entered: whether he may go on bearing off the men still at home",
-                MapEntries.BearingOffEligible.Locator));
-        }
-
         var maximal = terminals
             .Select(t => t.Used)
             .Distinct(UsedComparer.Instance)
             .Where(used => !terminals.Any(other => StrictlyContains(other.Used, used)))
             .ToList();
 
-        if (maximal.Count > 1)
+        // Incomparable maximal uses arise only for two different numbers, each playable alone and
+        // neither after the other: [1, 0] and [0, 1]. must-play-whole-throw's first part; the owner's
+        // ruling compels the higher, values[0].
+        bool higherCompelled = maximal.Count > 1;
+        if (higherCompelled && (maximal.Count != 2 || values.Length != 2))
         {
-            return Resolution<ImmutableArray<Play>>.FromUnresolved(new UnresolvedResult(
-                UnresolvedReason.RequiresInterpretation,
-                "choose between plays that use incomparable parts of a throw that cannot be "
-                + "played whole",
-                MapEntries.MustPlayWholeThrow.Locator));
+            throw new InvalidOperationException(
+                $"{maximal.Count} incomparable uses of {values.Length} numbers; only either-number-alone was expected.");
         }
 
-        var compelled = maximal[0];
+        var compelled = higherCompelled ? maximal.Single(used => used[0] > 0) : maximal[0];
         var plays = terminals
             .Where(t => UsedComparer.Instance.Equals(t.Used, compelled))
-            .Select(t => new Play(t.Moves, t.Position) { Rulings = search.RulingsFor(t) })
+            .Select(t => new Play(t.Moves, t.Position) { Rulings = search.RulingsFor(t, higherCompelled) })
             .ToImmutableArray();
 
         return Resolution<ImmutableArray<Play>>.FromValue(plays);
@@ -211,15 +211,12 @@ public static class LegalPlays
         search.Seen.Add(state, (id, authorities));
         search.Edges.Add([]);
 
-        if (search.ReachedReEntryMidBearOff)
-        {
-            return id;
-        }
-
+        // bearing-off-eligible's first part: the state is one the owner's ruling decides. Movement gives the
+        // ruling's answer already (not eligible while a man is outside); the node is marked so every play
+        // reached from it names the ruling.
         if (remaining.Any(r => r > 0) && BearingOff.HasReEnteredMidBearOff(position, player))
         {
-            search.ReachedReEntryMidBearOff = true;
-            return id;
+            search.ReEnteredMidBearOff.Add(id);
         }
 
         bool extended = false;
@@ -260,8 +257,10 @@ public static class LegalPlays
     private sealed class Search(bool eligibleAtStart)
     {
         private HashSet<int>? _reachedFromDifferentRules;
+        private HashSet<int>? _reachedFromReEntry;
 
-        public bool ReachedReEntryMidBearOff { get; set; }
+        /// <summary>The nodes where a man hit mid-bear-off has re-entered with a number still to play.</summary>
+        public HashSet<int> ReEnteredMidBearOff { get; } = [];
 
         /// <summary>Each state reached, by its first order: the node's id and that order's authorities.</summary>
         public Dictionary<Node, (int Id, string Authorities)> Seen { get; } = [];
@@ -273,9 +272,13 @@ public static class LegalPlays
         public HashSet<int> DifferentRules { get; } = [];
 
         /// <summary>The owner's rulings the play a terminal line reaches relies on, in <see cref="OwnerRulings.All"/>'s order.</summary>
-        public ImmutableArray<OwnerRuling> RulingsFor(Terminal terminal)
+        public ImmutableArray<OwnerRuling> RulingsFor(Terminal terminal, bool higherCompelled)
         {
-            var rulings = ImmutableArray.CreateBuilder<OwnerRuling>();
+            var rulings = new List<OwnerRuling>();
+            if (higherCompelled)
+            {
+                rulings.Add(OwnerRulings.TheHigherNumberIsCompelled);
+            }
 
             // A pruned order reaching a marked state goes on from it exactly as the first order does,
             // since what a move is permitted by depends only on the position it is played from; so every
@@ -286,12 +289,18 @@ public static class LegalPlays
                 rulings.Add(OwnerRulings.APlayIsThePositionItReaches);
             }
 
+            _reachedFromReEntry ??= Reachable(ReEnteredMidBearOff);
+            if (_reachedFromReEntry.Contains(terminal.Node))
+            {
+                rulings.Add(OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain);
+            }
+
             if (!eligibleAtStart && terminal.Moves.Any(m => m.Kind is MoveKind.BearingOffMove or MoveKind.BearingOffRemove or MoveKind.BearingOffHighest))
             {
                 rulings.Add(OwnerRulings.BearingOffBeginsWithinTheThrow);
             }
 
-            return rulings.DrainToImmutable();
+            return OwnerRulings.InOrder(rulings);
         }
 
         private HashSet<int> Reachable(HashSet<int> from)

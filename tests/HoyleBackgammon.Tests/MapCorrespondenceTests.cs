@@ -36,6 +36,15 @@ namespace HoyleBackgammon.Tests;
 /// order: it is reached only when rows 1 to 6 do not match, and its entry is implemented.
 /// </para>
 /// <para>
+/// <b>A question the owner has fully ruled on owes no decline.</b> rules-factory decision 0027 lets an
+/// overlay item carry <c>rulings</c> and <c>declines</c>, and <c>declines: []</c> declares that every part of
+/// the entry's open question has an owner's ruling. Row 6 still predicts <c>RequiresInterpretation</c> for
+/// such an entry, because the map is unchanged, but the engine has declared that it declines nothing there. So
+/// for an entry the overlay declares fully ruled the check is the other way round: no code path may return
+/// <c>RequiresInterpretation</c> citing it (<c>docs/decisions/0010</c>). The overlay is read here, not the
+/// generated registry, because the rulings are never merged into the map.
+/// </para>
+/// <para>
 /// <c>src/HoyleBackgammon/Generated/</c> is not read. The registry's own declines are the
 /// generated code's, and the generated tests prove them.
 /// </para>
@@ -49,6 +58,17 @@ public class MapCorrespondenceTests
     private static readonly Regex Construction = new(@"new UnresolvedResult\(", RegexOptions.CultureInvariant);
 
     private sealed record Decline(string File, UnresolvedReason Reason, string EntryId);
+
+    /// <summary>The entries <c>corpus-map.overlay.json</c> declares fully ruled: <c>rulings</c> and <c>declines: []</c>.</summary>
+    private static HashSet<string> FullyRuled()
+    {
+        using var overlay = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(EngineTree.PathOf("corpus-map.overlay.json")));
+        return overlay.RootElement.EnumerateObject()
+            .Where(item => item.Value.TryGetProperty("rulings", out var rulings) && rulings.GetArrayLength() > 0
+                && item.Value.TryGetProperty("declines", out var declines) && declines.GetArrayLength() == 0)
+            .Select(item => item.Name)
+            .ToHashSet(StringComparer.Ordinal);
+    }
 
     private static IEnumerable<FileInfo> HandWrittenSources() =>
         new DirectoryInfo(EngineTree.PathOf("src")).EnumerateFiles("*.cs", SearchOption.AllDirectories)
@@ -149,11 +169,24 @@ public class MapCorrespondenceTests
     public void Every_entry_whose_row_predicts_a_decline_has_a_hand_written_code_path_returning_it()
     {
         var declines = Declines().Where(d => d.Reason != UnresolvedReason.UnsupportedInteraction).ToList();
+        var fullyRuled = FullyRuled();
         var problems = new List<string>();
         foreach (var entry in Registry.Entries)
         {
             var cited = declines.Where(d => d.EntryId == entry.Id).Select(d => d.Reason).ToHashSet();
             var predicted = Predicted(entry.Row);
+            if (fullyRuled.Contains(entry.Id))
+            {
+                if (predicted != UnresolvedReason.RequiresInterpretation)
+                {
+                    problems.Add($"{entry.Id}: the overlay declares it fully ruled, and it matches {entry.Row}, not an open question");
+                }
+
+                problems.AddRange(cited.Select(reason =>
+                    $"{entry.Id}: the overlay declares it fully ruled (declines: []), but the code returns {reason} citing it"));
+                continue;
+            }
+
             if (predicted is null)
             {
                 problems.AddRange(cited.Select(reason =>
@@ -171,6 +204,16 @@ public class MapCorrespondenceTests
         }
 
         Assert.Empty(problems);
+    }
+
+    [Fact]
+    public void The_entries_the_overlay_declares_fully_ruled_are_the_three_the_owner_ruled_on()
+    {
+        // Pinned, so the exemption above cannot widen unnoticed: a fourth entry declared fully ruled is a new
+        // decision record, not an edit to the overlay alone (docs/decisions/0010).
+        Assert.Equal(
+            ["bearing-off-eligible", "game-value", "must-play-whole-throw"],
+            FullyRuled().Order(StringComparer.Ordinal));
     }
 
     [Fact]

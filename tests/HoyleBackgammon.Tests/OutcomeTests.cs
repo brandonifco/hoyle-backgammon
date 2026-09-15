@@ -8,9 +8,17 @@ public class GameValueTests
     private static Position WhiteHasWon(Side black) =>
         Board.Of(Board.Men().RestBorneOff(), black);
 
-    private static GameValue ValueOf(Side black) =>
-        Assert.IsType<Resolution<GameValue>.Resolved>(
-            Outcome.ValueOf(WhiteHasWon(black), Player.White)).Value;
+    private static GameResult ResultOf(Position position) =>
+        Assert.IsType<Resolution<GameResult>.Resolved>(Outcome.ResultOf(position, Player.White)).Value;
+
+    /// <summary>A result the corpus names unaided: its value, after checking it names no owner's ruling.</summary>
+    private static GameValue ValueOf(Side black)
+    {
+        var result = ResultOf(WhiteHasWon(black));
+        Assert.Equal(Player.White, result.Winner);
+        Assert.Empty(result.Rulings);
+        return result.Value;
+    }
 
     [Fact]
     public void The_adversary_bearing_off_makes_it_a_hit()
@@ -42,27 +50,30 @@ public class GameValueTests
         // borne off two, so he has begun to bear off and this is not also a gammon. It used to
         // be a loser with nothing borne off, which answers the gammon condition as well; the
         // map names that overlap as unresolved since 3.0.0 (blind-mapping resolution row 52),
-        // and A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon now holds it.
+        // and A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling now holds it.
+        // Borne off and up, he is the corpus's own backgammon, and names no ruling (docs/decisions/0010).
         Assert.Equal(
             GameValue.Backgammon,
             ValueOf(Board.Men().At(Geometry.BarPip, 1).At(0, 2).RestAt(3)));
     }
 
     [Fact]
-    public void A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon()
+    public void A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling()
     {
         // Nothing borne off: "before his adversary has begun to do the same" (a gammon). A man
         // on the bar: "a man or men 'up'" (a backgammon). game-value's question names this
         // loser since map 3.0.0 (blind-mapping resolution row 52), and the corpus does not say
-        // which result he suffers.
-        var position = WhiteHasWon(Board.Men().At(Geometry.BarPip, 1).RestAt(13));
+        // which result he suffers; ruleset versions 2 to 5 declined. Brandon ruled on 2026-09-15 that
+        // he loses a backgammon, and only a backgammon (docs/decisions/0010), so the result names the ruling.
+        var result = ResultOf(WhiteHasWon(Board.Men().At(Geometry.BarPip, 1).RestAt(13)));
 
-        var unresolved = Assert.IsType<Resolution<GameValue>.Unresolved>(
-            Outcome.ValueOf(position, Player.White));
+        Assert.Equal(GameValue.Backgammon, result.Value);
+        var ruling = Assert.Single(result.Rulings);
+        Assert.Same(OwnerRulings.TheOverlapIsABackgammon, ruling);
+        Assert.Equal(("game-value/2", "game-value", 2), (ruling.Id, ruling.EntryId, ruling.QuestionPart));
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
-        Assert.Equal(MapEntries.GameValue.Locator, unresolved.Result.Locator);
-        Assert.Contains("gammon condition and the backgammon condition", unresolved.Result.Attempted, StringComparison.Ordinal);
+        // It pays what the corpus says a backgammon pays: the agreed multiple, not a gammon's double as well.
+        Assert.Equal(4, Outcome.Pays(result.Value, new AgreedBackgammonMultiple(4, "GameValueTests")).Multiple);
     }
 
     [Theory]
@@ -85,21 +96,20 @@ public class GameValueTests
     [InlineData(19)]
     [InlineData(22)]
     [InlineData(24)]
-    public void A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon(int pip)
+    public void A_man_in_the_winners_home_table_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling(int pip)
     {
         // Nothing borne off: "before his adversary has begun to do the same" (a gammon). A man in
         // the winner's home table: "or in his (the winner's) home table" (a backgammon). No man up,
         // so this is the arm of the overlap map 3.0.0's question left out and 4.0.0 names
-        // (finding 17, rules-factory#102); the corpus does not say which result he suffers.
+        // (finding 17, rules-factory#102); the corpus does not say which result he suffers. Brandon's
+        // ruling of 2026-09-15 is the same for both arms: a backgammon, naming it (docs/decisions/0010).
         var position = WhiteHasWon(Board.Men().At(pip, 1).RestAt(13));
 
-        var unresolved = Assert.IsType<Resolution<GameValue>.Unresolved>(
-            Outcome.ValueOf(position, Player.White));
+        var result = ResultOf(position);
 
         Assert.Equal(0, position.OnBar(Player.Black));
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
-        Assert.Equal(MapEntries.GameValue.Locator, unresolved.Result.Locator);
-        Assert.Contains("gammon condition and the backgammon condition", unresolved.Result.Attempted, StringComparison.Ordinal);
+        Assert.Equal(GameValue.Backgammon, result.Value);
+        Assert.Equal([OwnerRulings.TheOverlapIsABackgammon], result.Rulings.ToArray());
     }
 
     [Fact]
@@ -112,25 +122,32 @@ public class GameValueTests
     }
 
     [Fact]
-    public void The_three_named_results_do_not_cover_every_finish()
+    public void The_finish_no_named_result_covers_is_a_hit_naming_the_owners_ruling()
     {
         // Two men off, so it is not a gammon; a man on the eighteen point, so his men are not
         // all home and it is not a hit; not up and not in the winner's home table, so it is
-        // not a backgammon. Finding 4 in MAP-FINDINGS.md: game-value is recorded clear.
-        var position = WhiteHasWon(Board.Men().At(0, 2).At(18, 1).RestAt(3));
+        // not a backgammon. Finding 4 in MAP-FINDINGS.md; game-value's question's first part, and ruleset
+        // versions 2 to 5 declined. Brandon ruled on 2026-09-15 that such a loser loses a single game, a hit
+        // (docs/decisions/0010), so the result names the ruling, and pays the single stake.
+        var result = ResultOf(WhiteHasWon(Board.Men().At(0, 2).At(18, 1).RestAt(3)));
 
-        var unresolved = Assert.IsType<Resolution<GameValue>.Unresolved>(
-            Outcome.ValueOf(position, Player.White));
+        Assert.Equal(GameValue.Hit, result.Value);
+        var ruling = Assert.Single(result.Rulings);
+        Assert.Same(OwnerRulings.TheUncoveredFinishIsAHit, ruling);
+        Assert.Equal(("game-value/1", "game-value", 1), (ruling.Id, ruling.EntryId, ruling.QuestionPart));
+        Assert.Equal(1, Outcome.Pays(result.Value, new AgreedBackgammonMultiple(3, "GameValueTests")).Multiple);
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
-        Assert.Equal(MapEntries.GameValue.Locator, unresolved.Result.Locator);
+        // The ruling is only for him. All home again with men off is the corpus's hit, and borne off with a man
+        // still in the winner's home table the corpus's backgammon: neither names it.
+        Assert.Equal(GameValue.Hit, ValueOf(Board.Men().At(0, 2).At(6, 1).RestAt(3)));
+        Assert.Equal(GameValue.Backgammon, ValueOf(Board.Men().At(0, 2).At(19, 1).RestAt(3)));
     }
 
     [Fact]
     public void A_player_who_has_not_won_has_no_game_value()
     {
         Assert.Throws<ArgumentException>(
-            () => Outcome.ValueOf(Corpus.StartingPosition.Position, Player.White));
+            () => Outcome.ResultOf(Corpus.StartingPosition.Position, Player.White));
     }
 
     [Fact]
@@ -253,7 +270,15 @@ public class StakeTests
 /// </summary>
 public class RubberScoringTests
 {
-    private static Resolution<Player> Rubber(params GameResult[] games) => Outcome.RubberWinner(games);
+    private static Resolution<RubberResult> Rubber(params GameResult[] games) => Outcome.RubberWinner(games);
+
+    /// <summary>The winner of a rubber the corpus scores unaided, after checking it names no owner's ruling.</summary>
+    private static Player Winner(Resolution<RubberResult> rubber)
+    {
+        var result = Assert.IsType<Resolution<RubberResult>.Resolved>(rubber).Value;
+        Assert.Empty(result.Rulings);
+        return result.Winner;
+    }
 
     [Theory]
     [InlineData(GameValue.Hit)]
@@ -262,10 +287,7 @@ public class RubberScoringTests
     public void Having_lost_the_first_hit_he_who_loses_the_next_game_has_lost_the_rubber(GameValue next)
     {
         // "if he loses the next game, he has lost the rubber also": however the next game is won.
-        var winner = Assert.IsType<Resolution<Player>.Resolved>(
-            Rubber(new(Player.White, GameValue.Hit), new(Player.White, next)));
-
-        Assert.Equal(Player.White, winner.Value);
+        Assert.Equal(Player.White, Winner(Rubber(new(Player.White, GameValue.Hit), new(Player.White, next))));
     }
 
     [Fact]
@@ -273,10 +295,45 @@ public class RubberScoringTests
     {
         // "but if he can secure a gammon (reckoning as a double game), he becomes the winner of
         // the rubber."
-        var winner = Assert.IsType<Resolution<Player>.Resolved>(
-            Rubber(new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Gammon)));
+        Assert.Equal(Player.Black, Winner(Rubber(new(Player.White, GameValue.Hit), new(Player.Black, GameValue.Gammon))));
+    }
 
-        Assert.Equal(Player.Black, winner.Value);
+    [Fact]
+    public void A_rubber_scored_from_a_game_valued_by_an_owners_ruling_names_that_ruling()
+    {
+        // Since ruleset version 6 a game can be a hit or a backgammon by the owner's ruling on game-value's
+        // question (docs/decisions/0010), and a rubber scored from it relies on the ruling as much as the game
+        // does. White's first game is the finish no named result covers, a hit only by game-value/1: the rubber
+        // scores, as the corpus's sentence scores a first hit, and that ruling is named. Before version 6 the
+        // game itself declined, so this rubber could not be scored at all.
+        var ruledHit = Assert.IsType<Resolution<GameResult>.Resolved>(Outcome.ResultOf(
+            Board.Of(Board.Men().RestBorneOff(), Board.Men().At(0, 2).At(18, 1).RestAt(3)), Player.White)).Value;
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit], ruledHit.Rulings.ToArray());
+
+        var lost = Assert.IsType<Resolution<RubberResult>.Resolved>(Rubber(ruledHit, new(Player.White, GameValue.Gammon))).Value;
+        Assert.Equal(Player.White, lost.Winner);
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit], lost.Rulings.ToArray());
+
+        var won = Assert.IsType<Resolution<RubberResult>.Resolved>(Rubber(ruledHit, new(Player.Black, GameValue.Gammon))).Value;
+        Assert.Equal(Player.Black, won.Winner);
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit], won.Rulings.ToArray());
+
+        // Both games ruled: every ruling once, in OwnerRulings.All's order, whichever game came first.
+        var ruledBackgammon = new GameResult(Player.White, GameValue.Backgammon) { Rulings = [OwnerRulings.TheOverlapIsABackgammon] };
+        var both = Assert.IsType<Resolution<RubberResult>.Resolved>(Rubber(ruledHit, ruledBackgammon)).Value;
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit, OwnerRulings.TheOverlapIsABackgammon], both.Rulings.ToArray());
+        var twice = new GameResult(Player.White, GameValue.Hit) { Rulings = [OwnerRulings.TheUncoveredFinishIsAHit] };
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit],
+            Assert.IsType<Resolution<RubberResult>.Resolved>(Rubber(ruledHit, twice)).Value.Rulings.ToArray());
+
+        // Through the entry point, from the results of played games: the same answer and the same ruling.
+        var answer = Assert.IsType<RubberResult>(Assert.IsType<Resolution<object>.Resolved>(EntryPoints.RubberScoring.Resolve(
+            new HoyleBackgammon.Requests.RubberScoringRequest { Games = [ruledHit, new(Player.Black, GameValue.Gammon)] })).Value);
+        Assert.Equal(Player.Black, answer.Winner);
+        Assert.Equal([OwnerRulings.TheUncoveredFinishIsAHit], answer.Rulings.ToArray());
+
+        // A rubber the corpus leaves open still declines, ruled games or not, and a decline names no ruling.
+        Assert.IsType<Resolution<RubberResult>.Unresolved>(Rubber(ruledHit, new(Player.Black, GameValue.Hit)));
     }
 
     public static TheoryData<GameResult[]> Unsettled => new()
@@ -310,7 +367,7 @@ public class RubberScoringTests
     [MemberData(nameof(Unsettled))]
     public void Every_other_rubber_is_the_question_the_corpus_leaves_open(GameResult[] games)
     {
-        var unresolved = Assert.IsType<Resolution<Player>.Unresolved>(Rubber(games));
+        var unresolved = Assert.IsType<Resolution<RubberResult>.Unresolved>(Rubber(games));
 
         Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Result.Reason);
         Assert.Equal(MapEntries.RubberScoring.Locator, unresolved.Result.Locator);

@@ -127,7 +127,7 @@ public class MustPlayWholeThrowEntryPointTests
         Assert.Equal([OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow], play.Rulings.ToArray());
         var ruling = play.Rulings[0];
         Assert.Equal("must-play-whole-throw/2", ruling.Id);
-        Assert.Equal(EntryPoints.MustPlayWholeThrow.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(EntryPoints.MustPlayWholeThrow.Id, ruling.EntryId);
         Assert.Equal(2, ruling.QuestionPart);
         Assert.Equal("Brandon", ruling.RuledBy);
         Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
@@ -168,7 +168,7 @@ public class MustPlayWholeThrowEntryPointTests
         var ruling = Assert.Single(play.Rulings);
         Assert.Same(OwnerRulings.BearingOffBeginsWithinTheThrow, ruling);
         Assert.Equal("bearing-off-eligible/2", ruling.Id);
-        Assert.Equal(EntryPoints.BearingOffEligible.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(EntryPoints.BearingOffEligible.Id, ruling.EntryId);
         Assert.Equal(2, ruling.QuestionPart);
         Assert.Equal("Brandon", ruling.RuledBy);
         Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
@@ -200,30 +200,48 @@ public class MustPlayWholeThrowEntryPointTests
             EntryPoints.MoveByPip.Resolve(new MoveByPipRequest { Position = position, Player = Player.White, Die = die })).Value).Value;
 
     [Fact]
-    public void Either_die_alone_playable_but_not_both_declines_citing_page_275()
+    public void Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling()
     {
         // Playing the six leaves the man on the deuce point, where a trois cannot be played;
         // playing the trois leaves him on the cinque, where a six cannot. The corpus gives no rule
-        // for choosing, and the entry point says so with the entry's own citation.
+        // for choosing (must-play-whole-throw's question's first part, fate unresolved), and ruleset
+        // versions 2 to 5 declined citing p. 275. Brandon ruled on 2026-09-15 that the higher number
+        // must be played (docs/decisions/0010): the entry point answers the six, and the play names the
+        // ruling, with who ruled, when and the record, beside the move's own authority, move-by-pip.
         var position = Asserted(
             Board.Men().At(24, 1).At(8, 1).RestAt(1),
             Board.Men().At(7, 2).At(4, 2).RestAt(12));
 
-        var unresolved = Assert.IsType<Resolution<object>.Unresolved>(
-            Resolve(position, Player.White, new DiceThrow(6, 3))).Result;
+        var play = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(6, 3)), position));
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal("hoyle-1909", unresolved.Locator.SourceId);
-        Assert.Equal("BACKGAMMON / Playing / p. 275", unresolved.Locator.Citation);
-        Assert.Equal(unresolved.Locator, Assert.Single(Registry.Citations(EntryPoints.MustPlayWholeThrow.Id)));
-        Assert.Equal(unresolved.Locator, EntryPoints.MustPlayWholeThrow.Registered.Locator);
+        Assert.Equal("8/2(6)", play.ToString());
+        Assert.Equal(MapEntries.MoveByPip, Assert.Single(play.Moves).Authority);
+        var ruling = Assert.Single(play.Rulings);
+        Assert.Same(OwnerRulings.TheHigherNumberIsCompelled, ruling);
+        Assert.Equal("must-play-whole-throw/1", ruling.Id);
+        Assert.Equal(EntryPoints.MustPlayWholeThrow.Id, ruling.EntryId);
+        Assert.Equal(1, ruling.QuestionPart);
+        Assert.StartsWith("An unplayable part is lost", ruling.Span, StringComparison.Ordinal);
+        Assert.Equal("Brandon", ruling.RuledBy);
+        Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
+        Assert.Equal("docs/decisions/0010-owner-rulings-are-ruleset-version-six.md", ruling.Record);
+        Assert.True(File.Exists(EngineTree.PathOf(ruling.Record)));
+
+        // Only one number playable at all is the corpus's own case, and names nothing: block the cinque
+        // point too and the six is compelled by the text alone.
+        var onlySix = Asserted(
+            Board.Men().At(24, 1).At(8, 1).RestAt(1),
+            Board.Men().At(7, 2).At(4, 2).At(20, 2).RestAt(12));
+        var compelled = Assert.Single(Compelled(Resolve(onlySix, Player.White, new DiceThrow(6, 3)), onlySix));
+        Assert.Equal("8/2(6)", compelled.ToString());
+        Assert.Empty(compelled.Rulings);
     }
 }
 
 /// <summary>
 /// <c>game-value</c> resolved end to end through <see cref="EntryPoints.GameValue"/> from finished
-/// positions a caller asserts: the three named results, and the two overlaps the map leaves
-/// unresolved. Nothing here calls <see cref="Outcome"/> directly.
+/// positions a caller asserts: the three named results, and the finishes the map leaves unresolved, which the
+/// owner's rulings value (<c>docs/decisions/0010</c>). Nothing here calls <see cref="Outcome"/> directly.
 /// </summary>
 public class GameValueEntryPointTests
 {
@@ -259,26 +277,51 @@ public class GameValueEntryPointTests
     {
         var resolved = Assert.IsType<Resolution<object>.Resolved>(WhiteHasWon(Parse(black)));
 
-        var answer = Assert.IsType<AssertedAnswer<GameValue>>(resolved.Value);
-        Assert.Equal(expected, answer.Value);
+        var answer = Assert.IsType<AssertedAnswer<GameResult>>(resolved.Value);
+        Assert.Equal(expected, answer.Value.Value);
+        Assert.Equal(Player.White, answer.Value.Winner);
+        Assert.Empty(answer.Value.Rulings);
         Assert.Equal(nameof(GameValueEntryPointTests), answer.AssertedBy);
+    }
+
+    /// <summary>The result, after checking the answer carries back the assertion and names exactly <paramref name="ruling"/>.</summary>
+    private static GameResult Ruled(Resolution<object> resolution, OwnerRuling ruling)
+    {
+        var answer = Assert.IsType<AssertedAnswer<GameResult>>(Assert.IsType<Resolution<object>.Resolved>(resolution).Value);
+        Assert.Equal(nameof(GameValueEntryPointTests), answer.AssertedBy);
+        Assert.Same(ruling, Assert.Single(answer.Value.Rulings));
+        Assert.Equal("Brandon", ruling.RuledBy);
+        Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
+        Assert.Equal("docs/decisions/0010-owner-rulings-are-ruleset-version-six.md", ruling.Record);
+        return answer.Value;
+    }
+
+    [Fact]
+    public void The_finish_no_named_result_covers_resolves_to_a_hit_naming_the_owners_ruling()
+    {
+        // Two borne off, a man on Black's 18: begun to bear off, not all home, not up and not in White's home
+        // table. No named result covers him (game-value's question's first part), and ruleset versions 2 to 5
+        // declined. Brandon's ruling of 2026-09-15: a hit, named on the answer (docs/decisions/0010).
+        var result = Ruled(WhiteHasWon(Parse("off=2 18=1 3=12")), OwnerRulings.TheUncoveredFinishIsAHit);
+
+        Assert.Equal(GameValue.Hit, result.Value);
+        Assert.Equal("game-value/1", result.Rulings[0].Id);
     }
 
     [Theory]
     [InlineData("bar=1 13=14")]
     [InlineData("19=1 13=14")]
-    public void Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry(string black)
+    public void Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_is_a_backgammon_naming_the_owners_ruling(string black)
     {
         // Nothing borne off answers the gammon condition; a man up, or a man on White's home table
         // (Black's 19 to 24), answers the backgammon condition. game-value's question names both
-        // (map 3.0.0 row 52; map 4.0.0, finding 17), and the corpus does not say which he suffers.
-        var unresolved = Assert.IsType<Resolution<object>.Unresolved>(WhiteHasWon(Parse(black))).Result;
+        // (map 3.0.0 row 52; map 4.0.0, finding 17), and the corpus does not say which he suffers; ruleset
+        // versions 2 to 5 declined citing p. 276. Brandon's ruling of 2026-09-15: a backgammon, and only a
+        // backgammon, named on the answer (docs/decisions/0010).
+        var result = Ruled(WhiteHasWon(Parse(black)), OwnerRulings.TheOverlapIsABackgammon);
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal("hoyle-1909", unresolved.Locator.SourceId);
-        Assert.Equal("BACKGAMMON / Bearing off the Men / p. 276", unresolved.Locator.Citation);
-        Assert.Equal(unresolved.Locator, Assert.Single(Registry.Citations(EntryPoints.GameValue.Id)));
-        Assert.Contains("gammon condition and the backgammon condition", unresolved.Attempted, StringComparison.Ordinal);
+        Assert.Equal(GameValue.Backgammon, result.Value);
+        Assert.Equal(("game-value/2", 2), (result.Rulings[0].Id, result.Rulings[0].QuestionPart));
     }
 
     private static Side Parse(string men)
@@ -413,8 +456,15 @@ public class SeededGameReplayTests
     /// names the owner's rulings its play relies on. One does: White's 11/8 8/5 3/off 3/off, which bears off
     /// after the trois that brings his last man home (<c>bearing-off-eligible/2</c>).
     /// </para>
+    /// <para>
+    /// Re-pinned again for ruleset version 6 and replay schema 4 (<c>docs/decisions/0010</c>). The game is move
+    /// for move the same, 65 turns and a gammon for White: it declined nowhere under version 5, so none of the
+    /// new rulings reaches it. The bytes differ in the identity's two versions and in the record's new
+    /// <c>valueRulings</c>, which is <c>[]</c> for a gammon the corpus names. Previous pin
+    /// <c>b02846a9...6bb316a2</c>.
+    /// </para>
     /// </remarks>
-    private const string RecordedReplaySha256 = "b02846a92005cdc751ad7337de015583cad6600bdf410c94a74552396bb316a2";
+    private const string RecordedReplaySha256 = "24af54b1bd433e2ba9bb12f2a9e3ecc5bf660290a9d415e4eb9087dda24ba274";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -441,20 +491,20 @@ public class SeededGameReplayTests
         Assert.Equal(RecordedReplaySha256, Convert.ToHexString(SHA256.HashData(recorded)).ToLowerInvariant());
 
         // Two runs are comparable only under the same identity, and the record carries it: ruleset
-        // hoyle-1909-backgammon version 5 (Brandon's rulings of 2026-09-15 on map 6.0.0's open questions,
-        // docs/decisions/0009), replay schema 3, from map 6.0.0. The map is the one the embedded provenance
+        // hoyle-1909-backgammon version 6 (Brandon's rulings of 2026-09-15 on map 6.0.0's open questions,
+        // docs/decisions/0009 and 0010), replay schema 4, from map 6.0.0. The map is the one the embedded provenance
         // names, not a constant of the engine's.
         Assert.Equal(Game.Identity, first.Identity);
         Assert.Equal("hoyle-1909-backgammon", first.Identity.Ruleset.Id);
-        Assert.Equal(5, first.Identity.Ruleset.Version);
-        Assert.Equal(3, first.Identity.ReplaySchema.Version);
+        Assert.Equal(6, first.Identity.Ruleset.Version);
+        Assert.Equal(4, first.Identity.ReplaySchema.Version);
         Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "6.0.0"), first.Map);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
         var map = provenance.RootElement.GetProperty("map");
         Assert.Equal(map.GetProperty("packageId").GetString(), first.Map.PackageId);
         Assert.Equal(map.GetProperty("version").GetString(), first.Map.Version);
         Assert.StartsWith(
-            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":3,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":5},",
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":4,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":6},",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
         Assert.Contains(
@@ -463,9 +513,12 @@ public class SeededGameReplayTests
             StringComparison.Ordinal);
 
         // Where a turn's play relies on an owner's ruling the record says so, with who ruled and when, so a
-        // replayed game never passes the ruling off as the corpus's (docs/decisions/0009).
+        // replayed game never passes the ruling off as the corpus's (docs/decisions/0009). A gammon the corpus
+        // names relies on none, and the record says that too (docs/decisions/0010).
         var ruled = first.Turns.Where(t => t.Play is { Rulings.IsEmpty: false }).ToList();
         Assert.NotEmpty(ruled);
+        Assert.Empty(first.ValueRulings);
+        Assert.Contains("\"value\":\"Gammon\",\"valueRulings\":[],", Encoding.UTF8.GetString(recorded), StringComparison.Ordinal);
         Assert.Equal(
             ruled.Sum(t => t.Play!.Rulings.Length),
             Encoding.UTF8.GetString(recorded).Split("\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"").Length - 1);
@@ -478,7 +531,8 @@ public class SeededGameReplayTests
         // name, no whitespace, a suspended turn (no throw, moves null) beside a turn with nothing
         // playable (moves empty) and one with a hit, the justification null, and an asserter whose
         // name needs a quote, a backslash, a newline, a unit separator and a non-ASCII letter; and a turn
-        // whose play names both owner's rulings (docs/decisions/0009), rulings null where moves are.
+        // whose play names both owner's rulings (docs/decisions/0009), rulings null where moves are; and a value
+        // that relies on an owner's ruling (docs/decisions/0010).
         var position = Setup.StartingPositionFromCorpus();
         var record = new GameRecord(
             Game.Identity,
@@ -496,14 +550,17 @@ public class SeededGameReplayTests
                 }, position),
             ],
             Player.White,
-            GameValue.Gammon,
-            NextOpening.ThrowAgainForTheRight);
+            GameValue.Backgammon,
+            NextOpening.ThrowAgainForTheRight)
+        {
+            ValueRulings = [OwnerRulings.TheOverlapIsABackgammon],
+        };
 
         string men = "[0,0,0,0,0,0,5,0,3,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,2,0]";
         string board = $"{{\"Black\":{men},\"White\":{men}}}";
         string expected =
-            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":3,"
-            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":5},"
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":4,"
+            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":6},"
             + "\"sourceBaselines\":[{\"asOf\":null,\"contentHash\":\"5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e\","
             + "\"hashDerivation\":\"gutenberg-plain-text-including-boilerplate\",\"sourceId\":\"hoyle-1909\"}]},"
             + "\"map\":{\"packageId\":\"Some.Map\",\"version\":\"1.2.3\"},"
@@ -525,7 +582,10 @@ public class SeededGameReplayTests
             + "\"record\":\"docs/decisions/0009-owner-rulings-are-ruleset-version-five.md\",\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"}"
             + $"],\"thrown\":[2,1]}}"
             + "],"
-            + "\"value\":\"Gammon\",\"winner\":\"White\"}";
+            + "\"value\":\"Backgammon\","
+            + "\"valueRulings\":[{\"entry\":\"game-value\",\"id\":\"game-value/2\",\"questionPart\":2,"
+            + "\"record\":\"docs/decisions/0010-owner-rulings-are-ruleset-version-six.md\",\"ruledBy\":\"Brandon\",\"ruledOn\":\"2026-09-15\"}],"
+            + "\"winner\":\"White\"}";
 
         byte[] bytes = record.ToCanonicalJson();
 

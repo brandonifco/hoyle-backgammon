@@ -27,55 +27,87 @@ public class BearingOffEligibilityTests
     // enter-from-bar's suspension of the three bearing-off rules, which map 3.0.0 records
     // (blind-mapping resolution rows 11, 14 and 17): it is below, in BearingOffSuspensionTests.
     // That IsEligible is false for him was a reading of the question the same version leaves
-    // unresolved -- whether the stage lasts once a man is hit (rows 12 and 13) -- and is
-    // dropped; the two tests after it hold the decline in its place.
+    // unresolved -- whether the stage lasts once a man is hit (rows 12 and 13). Ruleset versions 2
+    // to 5 declined there. Since version 6 it is the owner's ruling (docs/decisions/0010), and the two
+    // tests after this hold the ruling and where it is named.
 
     [Fact]
-    public void A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle()
+    public void A_man_re_entered_after_bearing_off_began_bears_off_again_only_once_every_man_is_home_naming_the_owners_ruling()
     {
-        // WholeThrowTests' old fixture: thirteen off, a man re-entered on the far ace point and
-        // another on the eight. A six-trois takes the eight-point man home with a number left,
-        // and whether his bearing off goes on from there is bearing-off-eligible's question
-        // (map 3.0.0, blind-mapping resolution rows 12 and 13).
-        var position = Board.Of(
-            Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
-            Board.Men().At(7, 2).At(4, 2).RestAt(12));
-
-        var unresolved = Legal.Unresolved(position, Player.White, new DiceThrow(6, 3));
-
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal(MapEntries.BearingOffEligible.Locator, unresolved.Locator);
-
-        // And from the start of a throw: a man at home, a man outside, men off, none up.
+        // Ten off, four on his trois point, and a man hit and re-entered, now on his twenty point: he has
+        // begun to bear off, a man of his has re-entered, and he has men at home. Whether he may go on bearing
+        // off is bearing-off-eligible's question's first part, which the corpus does not settle. Brandon ruled
+        // on 2026-09-15 that he may not until every man is back in his home table.
         var atHome = Board.Of(
             Board.Men().At(20, 1).At(3, 4).RestBorneOff(),
             Board.Men().RestAt(13));
         Assert.True(BearingOff.HasReEnteredMidBearOff(atHome, Player.White));
+
+        // Asked directly, through the entry point: not eligible, naming the ruling.
+        var asserted = new AssertedPosition(atHome, AssertedBy: nameof(BearingOffEligibilityTests));
+        var answer = Assert.IsType<AssertedAnswer<BearingOffEligibility>>(Assert.IsType<Resolution<object>.Resolved>(
+            EntryPoints.BearingOffEligible.Resolve(new() { Position = asserted, Player = Player.White })).Value);
+        Assert.Same(asserted, answer.Position);
+        Assert.False(answer.Value.Eligible);
+        var ruling = Assert.Single(answer.Value.Rulings);
+        Assert.Same(OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain, ruling);
+        Assert.Equal(("bearing-off-eligible/1", "bearing-off-eligible", 1, "Brandon", new DateOnly(2026, 9, 15)),
+            (ruling.Id, ruling.EntryId, ruling.QuestionPart, ruling.RuledBy, ruling.RuledOn));
+
+        // Deuce-ace: every play moves men by pip and none bears off, not even 3/1 then off with the ace from
+        // the ace point, which the other reading would allow. Every play names the ruling.
+        var plays = Legal.Plays(atHome, Player.White, new DiceThrow(2, 1));
+        Assert.Contains(plays, p => p.ToString() == "20/18(2) 18/17(1)");
+        Assert.Contains(plays, p => p.ToString() == "3/1(2) 3/2(1)");
+        Assert.All(plays, p =>
+        {
+            Assert.DoesNotContain(p.Moves, m => m.BearsOff);
+            Assert.All(p.Moves, m => Assert.Equal(MapEntries.MoveByPip, m.Authority));
+            Assert.Equal([OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain], p.Rulings.ToArray());
+        });
+
+        // Once every man is home again he bears off, within the same throw: the man on the eight point comes
+        // home with the six and the trois bears off from the trois point. That play relies on this ruling (the
+        // throw began with him re-entered) and on bearing-off-eligible/2 (docs/decisions/0009).
+        var eight = Board.Of(Board.Men().At(8, 1).At(3, 4).RestBorneOff(), Board.Men().RestAt(13));
+        var homeAndOff = Assert.Single(Legal.Plays(eight, Player.White, new DiceThrow(6, 3)), p => p.ToString() == "8/2(6) 3/off(3)");
         Assert.Equal(
-            MapEntries.BearingOffEligible.Locator,
-            Legal.Unresolved(atHome, Player.White, new DiceThrow(2, 1)).Locator);
+            [OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain, OwnerRulings.BearingOffBeginsWithinTheThrow],
+            homeAndOff.Rulings.ToArray());
     }
 
     [Fact]
-    public void The_decline_is_only_where_the_question_arises()
+    public void The_re_entry_ruling_is_named_only_where_the_question_arises()
     {
         // Nothing borne off: he has not begun to bear off, so he is simply not home yet.
         var notBegun = Board.Of(Board.Men().At(20, 1).RestAt(3), Board.Men().RestAt(13));
         Assert.False(BearingOff.HasReEnteredMidBearOff(notBegun, Player.White));
-        Assert.NotEmpty(Legal.Plays(notBegun, Player.White, new DiceThrow(2, 1)));
+        Assert.Empty(BearingOff.Eligibility(notBegun, Player.White).Rulings);
+        Assert.All(Legal.Plays(notBegun, Player.White, new DiceThrow(2, 1)), p => Assert.Empty(p.Rulings));
 
         // All home again: both readings agree he is bearing off.
         var home = Board.Of(Board.Men().At(3, 4).RestBorneOff(), Board.Men().RestAt(13));
         Assert.False(BearingOff.HasReEnteredMidBearOff(home, Player.White));
+        Assert.True(BearingOff.Eligibility(home, Player.White).Eligible);
+        Assert.Empty(BearingOff.Eligibility(home, Player.White).Rulings);
+        Assert.All(Legal.Plays(home, Player.White, new DiceThrow(2, 1)), p => Assert.Empty(p.Rulings));
 
         // No man left at home: nothing to go on bearing off, so both readings agree he moves.
         var noneHome = Board.Of(Board.Men().At(20, 1).RestBorneOff(), Board.Men().RestAt(13));
         Assert.False(BearingOff.HasReEnteredMidBearOff(noneHome, Player.White));
-        Assert.NotEmpty(Legal.Plays(noneHome, Player.White, new DiceThrow(2, 1)));
+        Assert.Empty(BearingOff.Eligibility(noneHome, Player.White).Rulings);
+        Assert.All(Legal.Plays(noneHome, Player.White, new DiceThrow(2, 1)), p => Assert.Empty(p.Rulings));
 
-        // Still up: enter-from-bar suspends bearing off whichever reading holds.
+        // Still up: enter-from-bar suspends bearing off whichever reading holds, so the position names nothing.
+        // Entering with a number left brings the question about, and every play of that throw names the ruling.
         var up = Board.Of(Board.Men().At(Geometry.BarPip, 1).At(3, 4).RestBorneOff(), Board.Men().RestAt(13));
         Assert.False(BearingOff.HasReEnteredMidBearOff(up, Player.White));
+        Assert.Empty(BearingOff.Eligibility(up, Player.White).Rulings);
+        Assert.All(Legal.Plays(up, Player.White, new DiceThrow(2, 1)), p =>
+        {
+            Assert.Equal(MoveKind.Entry, p.Moves[0].Kind);
+            Assert.Equal([OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain], p.Rulings.ToArray());
+        });
     }
 
     [Fact]

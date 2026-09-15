@@ -20,25 +20,16 @@ namespace HoyleBackgammon
 {
     internal static partial class Handlers
     {
-        /// <summary><c>bearing-off-eligible</c>: <see cref="BearingOff.IsEligible"/>, except where <see cref="BearingOff.HasReEnteredMidBearOff"/> holds, the case <see cref="LegalPlays.For"/> declines.</summary>
+        /// <summary>
+        /// <c>bearing-off-eligible</c>: <see cref="BearingOff.Eligibility"/>, which names the owner's ruling where
+        /// a man hit mid-bear-off has re-entered (<c>docs/decisions/0010</c>). Ruleset versions 2 to 5 declined there.
+        /// </summary>
         internal static partial Resolution<object> BearingOffEligible(Requests.BearingOffEligibleRequest request)
         {
             var asserted = Demand(request.Position, request.EntryId, nameof(request.Position));
-            var position = asserted.Position;
-            var player = Demand(request.Player, request.EntryId, nameof(request.Player));
-
-            // The same case, the same reason and the same citation as LegalPlays.For's decline:
-            // the map's question is whether the stage lasts once a man is hit and re-enters.
-            if (BearingOff.HasReEnteredMidBearOff(position, player))
-            {
-                return Resolution<object>.FromUnresolved(new UnresolvedResult(
-                    UnresolvedReason.RequiresInterpretation,
-                    "say whether a player who had begun to bear off and whose man, hit, has re-entered "
-                    + "may go on bearing off the men still at home",
-                    MapEntries.BearingOffEligible.Locator));
-            }
-
-            return Value(asserted, BearingOff.IsEligible(position, player));
+            return Value(asserted, BearingOff.Eligibility(
+                asserted.Position,
+                Demand(request.Player, request.EntryId, nameof(request.Player))));
         }
     }
 }

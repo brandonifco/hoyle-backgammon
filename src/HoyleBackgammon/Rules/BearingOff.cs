@@ -3,6 +3,20 @@ using System.Collections.Immutable;
 namespace HoyleBackgammon;
 
 /// <summary>
+/// Whether a player may bear off, and the owner's rulings that answer relies on.
+/// </summary>
+/// <param name="Eligible">Whether every man of his is in his home table, so that he may bear off.</param>
+public sealed record BearingOffEligibility(bool Eligible)
+{
+    /// <summary>
+    /// The owner's rulings the answer relies on; empty when the corpus gives it unaided. Since ruleset
+    /// version 6, <see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/> where
+    /// <see cref="BearingOff.HasReEnteredMidBearOff"/> holds (<c>docs/decisions/0010</c>).
+    /// </summary>
+    public ImmutableArray<OwnerRuling> Rulings { get; init; } = [];
+}
+
+/// <summary>
 /// Bearing off: the last stage, where a throw may move a man within the home table or take
 /// one off the board.
 /// </summary>
@@ -26,8 +40,11 @@ public static class BearingOff
     /// stage <em>lasts</em>: a player hit after he has begun to bear off, whose man re-enters,
     /// may go on bearing off the men still at home, or may have to bring every man home again.
     /// This predicate is the literal test and nothing more. Where the question actually arises
-    /// -- <see cref="HasReEnteredMidBearOff"/> -- <see cref="LegalPlays.For"/> declines before
-    /// consulting it. While his man is still up the question does not arise at all:
+    /// -- <see cref="HasReEnteredMidBearOff"/> -- the owner's ruling since ruleset version 6 is that he may
+    /// not bear off again until every man is home, which is this test's answer; <see cref="Eligibility"/>
+    /// gives it with the ruling named, and <see cref="LegalPlays.For"/> names it on the plays
+    /// (<see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/>, <c>docs/decisions/0010</c>).
+    /// Versions 2 to 5 declined there. While his man is still up the question does not arise at all:
     /// <c>enter-from-bar</c> suspends every bearing-off rule (rows 11, 14 and 17), and
     /// <see cref="MovesForDie"/> refuses on that ground first.
     /// </para>
@@ -60,9 +77,25 @@ public static class BearingOff
     }
 
     /// <summary>
+    /// <see cref="MapEntries.BearingOffEligible"/>'s answer: <see cref="IsEligible"/>, naming
+    /// <see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/> where
+    /// <see cref="HasReEnteredMidBearOff"/> holds, the question's first part, which the corpus does not settle
+    /// and the owner has ruled on (<c>docs/decisions/0010</c>).
+    /// </summary>
+    public static BearingOffEligibility Eligibility(Position position, Player player)
+    {
+        ArgumentNullException.ThrowIfNull(position);
+        return new BearingOffEligibility(IsEligible(position, player))
+        {
+            Rulings = HasReEnteredMidBearOff(position, player) ? [OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain] : [],
+        };
+    }
+
+    /// <summary>
     /// Whether <paramref name="player"/> is in the one position the corpus does not settle for
     /// <see cref="MapEntries.BearingOffEligible"/>: he has begun to bear off, a man of his was
-    /// hit and has re-entered, and he still has men in his home table to bear off.
+    /// hit and has re-entered, and he still has men in his home table to bear off. Where it holds, an
+    /// answer relies on <see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/> (<c>docs/decisions/0010</c>).
     /// </summary>
     /// <remarks>
     /// <para>
@@ -76,7 +109,7 @@ public static class BearingOff
     /// </para>
     /// <list type="bullet">
     /// <item>"has begun to bear off" is at least one man borne off, the reading
-    /// <see cref="Outcome.ValueOf"/> already gives the same words in <c>game-value</c>;</item>
+    /// <see cref="Outcome.ResultOf"/> already gives the same words in <c>game-value</c>;</item>
     /// <item>"then re-enters" is no man of his on the bar (while one is up,
     /// <c>enter-from-bar</c> suspends bearing off whichever reading holds);</item>
     /// <item>"must first bring every man home again" needs a man outside his home table, or

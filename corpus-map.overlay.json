@@ -3,7 +3,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -16,7 +16,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -33,7 +33,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -50,7 +50,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -63,7 +63,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -76,7 +76,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -97,7 +97,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -114,7 +114,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -123,15 +123,15 @@
       },
       {
         "test": "SeededGameReplayTests.A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions",
-        "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id. Re-pinned for ruleset version 4 (map 6.0.0, rules-factory#125; docs/decisions/0008) with seed 20260965, since seed 20260914's game now declines; the dice-swap mutation re-observed on the new game (72 turns), still red, and so was Game.Identity's ruleset at version 3. Re-pinned for ruleset version 5 and replay schema 3 (Brandon's rulings of 2026-09-15; docs/decisions/0009), back on seed 20260914, whose game finishes again (65 turns, a gammon for White) and names one owner's ruling on one turn; the dice-swap mutation re-observed on it, still red. It went red too with Game.Identity's ruleset at version 4, with its replay schema at 2, with each turn's `rulings` left out of the serialisation (written under another name), with a ruling's ruledBy written as its entry id, with bearing-off-eligible/2 dated 2026-09-16, and whenever LegalPlays.For named a ruling a play does not rely on or failed to name one it does (bearing-off-eligible/2 never named, or named in a throw that began with every man home; must-play-whole-throw/2 named for every pruned order)."
+        "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id. Re-pinned for ruleset version 4 (map 6.0.0, rules-factory#125; docs/decisions/0008) with seed 20260965, since seed 20260914's game now declines; the dice-swap mutation re-observed on the new game (72 turns), still red, and so was Game.Identity's ruleset at version 3. Re-pinned for ruleset version 5 and replay schema 3 (Brandon's rulings of 2026-09-15; docs/decisions/0009), back on seed 20260914, whose game finishes again (65 turns, a gammon for White) and names one owner's ruling on one turn; the dice-swap mutation re-observed on it, still red. It went red too with Game.Identity's ruleset at version 4, with its replay schema at 2, with each turn's `rulings` left out of the serialisation (written under another name), with a ruling's ruledBy written as its entry id, with bearing-off-eligible/2 dated 2026-09-16, and whenever LegalPlays.For named a ruling a play does not rely on or failed to name one it does (bearing-off-eligible/2 never named, or named in a throw that began with every man home; must-play-whole-throw/2 named for every pruned order). Re-pinned for ruleset 6 and replay schema 4 (docs/decisions/0010): the game is move for move that of ruleset 5; its bytes with the two versions set back and valueRulings removed hash to the ruleset 5 pin. The canonical serialisation omitting valueRulings; this test went red, and so did The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record."
       },
       {
         "test": "SeededGameReplayTests.The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record",
         "mutation": "Named beside the seeded replay whose bytes it defines (docs/decisions/0006). GameRecordJson wrote C0 controls other than the five named escapes as themselves (the `case < ' '` arm removed); this test went red and the seeded replay did not. It went red too with object members in reverse order, with the identity left out, with the replay schema at 1, with Game.Identity's ruleset at version 2, and with a move's authority written as its MoveKind. Its ruleset literal moved to 4 (map 6.0.0, rules-factory#125); Game.Identity's ruleset at version 3 turned it red. Its literals moved to ruleset 5 and replay schema 3, and its record gained a turn whose play names both owner's rulings (docs/decisions/0009). Each turn's `rulings` left out of the serialisation turned it red; so did a ruling's ruledBy written as its entry id, bearing-off-eligible/2 dated 2026-09-16, Game.Identity's ruleset at version 4, and its replay schema at 2."
       },
       {
-        "test": "IdentityTests.The_replay_schema_is_version_three",
-        "mutation": "Named beside the seeded replay whose schema it pins (docs/decisions/0006, and 0009, which adds each turn's owner's rulings and makes the schema 3). Game.Identity's replay schema set back to 2 (`new ReplaySchemaVersion(2)`); this test went red, with both SeededGameReplayTests. Before the rename, with the schema at 2, the same test went red with it set back to 1."
+        "test": "IdentityTests.The_replay_schema_is_version_four",
+        "mutation": "Named beside the seeded replay whose schema it pins (docs/decisions/0006; 0009, which adds each turn's owner's rulings and makes the schema 3; 0010, which adds the rulings the game's value relies on, valueRulings, and makes it 4). Game.Identity's replay schema set back to 3 (`new ReplaySchemaVersion(3)`); this test went red, with both SeededGameReplayTests. Before this rename, with the schema at 3, it went red with the schema set back to 2, and before the rename to three with it set back to 1."
       }
     ]
   },
@@ -139,7 +139,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -156,7 +156,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -173,7 +173,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -186,7 +186,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -199,7 +199,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -216,7 +216,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -233,7 +233,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -262,7 +262,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -279,7 +279,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -291,16 +291,8 @@
         "mutation": "The same mutation, partial plays offered; this test went red. Re-observed after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red."
       },
       {
-        "test": "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it",
-        "mutation": "LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red. Re-observed after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, blind-mapping resolution rows 12 and 13); still red."
-      },
-      {
-        "test": "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
-        "mutation": "The same mutation, the incomparable case resolved silently; this test went red. Re-observed after bearing-off-eligible's declines were excluded from the comparison (map 3.0.0, rows 12 and 13); still red. Re-observed after map 6.0.0's declines (rules-factory#125), both of the throw's order and of bearing off within it, were excluded by what the engine attempted (Legal.IsEitherDieAloneDecline); still red. Re-observed under ruleset version 5, where the second parts of both questions are the owner's rulings and decline nothing (docs/decisions/0009): `> 2` for `> 1`; still red. It went red too with bearing-off-eligible's re-entry decline removed."
-      },
-      {
         "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
-        "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing. Re-observed (the trois case) after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red."
+        "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing. Re-observed (the trois case) after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red. Since ruleset version 6 it also holds that the play names no owner's ruling, since the corpus settles this case (docs/decisions/0010): must-play-whole-throw/1 named wherever the throw was not played whole; this test went red."
       },
       {
         "test": "WholeThrowTests.A_man_up_is_still_compelled_to_play_the_whole_throw",
@@ -323,10 +315,6 @@
         "mutation": "Named here because it resolves through EntryPoints.MustPlayWholeThrow; the question is bearing-off-eligible's, and it is named there too. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0009); replaces A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible (ruleset 4's decline, docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing bearing-off-eligible where a player not eligible at the start of the throw played a move under bearing off); this test went red. bearing-off-eligible/2 never named (`!eligibleAtStart && false`); red. Named whatever the start (`(eligibleAtStart || true)`); red, on the throw that began with every man home. must-play-whole-throw/2 named for every pruned order; red. bearing-off-eligible/2 dated 2026-09-16; red."
       },
       {
-        "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275",
-        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red, and no other test in the class did."
-      },
-      {
         "test": "AssertedPositionEntryPointTests.Every_entry_asked_about_an_asserted_position_answers_with_that_assertion",
         "mutation": "Covers all thirteen entries whose request takes a position; named here, where PR #11 found the attribution dropped. Handlers.Value attached a copy of the assertion asserted by \"the engine\" (`new AssertedPosition(asserted.Position, \"the engine\", asserted.Justification)` for `asserted`); every row went red. The must-play-whole-throw handler answered the bare plays (`Answer(LegalPlays.For(...))`, the assertion dropped); that row went red and no other."
       },
@@ -341,14 +329,54 @@
       {
         "test": "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on",
         "mutation": "Seed 20260913 with the first play offered, which declined under ruleset 4 (docs/decisions/0008) and finishes under ruleset 5, naming both owner's rulings on its one turn that relies on them (docs/decisions/0009); replaces A_game_that_finished_under_ruleset_three_declines_citing_page_275. Ruleset 4's decline of orders under different rules restored; this test went red. So did ruleset 4's decline of bearing off within the throw. must-play-whole-throw/2 never named; red. bearing-off-eligible/2 never named; red. Named whatever the start; red. BearingOff.HasWon holding once any man was off; red."
+      },
+      {
+        "test": "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_higher_is_compelled_naming_the_owners_ruling",
+        "mutation": "This entry's question's first part, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): where either number alone can be played but not both, the higher must be. Replaces Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry where the maximal uses were incomparable); this test went red, and so did MapCorrespondenceTests.Every_entry_whose_row_predicts_a_decline_has_a_hand_written_code_path_returning_it, which holds a fully ruled entry to declining nothing. The lower number compelled (`used[1] > 0` for `used[0] > 0`); red. must-play-whole-throw/1 never named (`higherCompelled && false`); red."
+      },
+      {
+        "test": "WholeThrowTests.The_owners_ruling_is_named_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+        "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Replaces The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both: the same shape, computed from single-die moves alone, now coincides with must-play-whole-throw/1 being named, and every play there uses the higher number; the random walk no longer stops, since no throw declines. Ruleset 5's decline restored; this test went red. The lower number compelled; red. The ruling never named; red. The ruling named wherever the throw was not played whole (`higherCompelled || compelled.Sum() < entitlement.Length`); red. bearing-off-eligible/1 replaced by the other reading, bearing off resumed with a man re-entered (`IsEligible(...) || HasReEnteredMidBearOff(...)` in Movement.MovesForDie); red."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling",
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces Either_die_alone_playable_but_not_both_declines_citing_page_275. Ruleset 5's decline restored; this test went red. The lower number compelled; red. must-play-whole-throw/1 never named; red. Named wherever the throw was not played whole, so the throw with only the six playable at all named it too; red, and so did WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled."
       }
-    ]
+    ],
+    "rulings": [
+      {
+        "id": "must-play-whole-throw/1",
+        "span": "An unplayable part is lost and the whole must be played 'if it is possible'. The text does not say what happens when either die alone is playable but not both -- a case every modern ruleset settles explicitly.",
+        "answer": "Where either number alone can be played but not both, the higher number must be played.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+        "tests": [
+          "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_higher_is_compelled_naming_the_owners_ruling",
+          "WholeThrowTests.The_owners_ruling_is_named_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+          "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling"
+        ]
+      },
+      {
+        "id": "must-play-whole-throw/2",
+        "span": "Nor does it say what a play of the whole throw is: the position the numbers reach, or the moves in the order they are made. Where two orders use the same numbers and reach the same position, the text does not say whether they are one play or two, which matters where the rule that permits a move differs between the orders (with the last man outside on the eight point and deuce-ace thrown, 8/6 6/5 and 8/7 7/5 both leave that man on the five point, but the first plays the ace after every man is home and the second does not; see bearing-off-eligible's question).",
+        "answer": "One play: orders of the same numbers that reach the same position are offered once, crediting the rules of the first order found.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+        "tests": [
+          "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_are_one_play_naming_the_owners_ruling",
+          "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+        ]
+      }
+    ],
+    "declines": []
   },
   "bearing-off-eligible": {
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -356,24 +384,55 @@
         "mutation": "BearingOff.IsEligible ignored a man on pip 7 (the outer-table loop started at 8); this test went red."
       },
       {
-        "test": "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle",
-        "mutation": "LegalPlays.For never tested BearingOff.HasReEnteredMidBearOff, so the throw was played as though the man had to come home again (the reading map 3.0.0 leaves unresolved, blind-mapping resolution rows 12 and 13); this test went red. Replaces A_man_hit_back_out_mid_bear_off_stops_it, whose IsEligible assertion was a reading of that question and whose suspension assertion moved to BearingOffSuspensionTests."
-      },
-      {
-        "test": "BearingOffEligibilityTests.The_decline_is_only_where_the_question_arises",
-        "mutation": "BearingOff.HasReEnteredMidBearOff held without a man borne off (the `BorneOff(player) == 0` arm dropped), so a player not yet home at all declined; this test went red. It went red too with the man-at-home arm dropped (`return outside;` for `return home && outside;`)."
-      },
-      {
         "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling",
         "mutation": "This entry's question's second part, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's: the number left bears off (docs/decisions/0009). Resolved through EntryPoints.MustPlayWholeThrow because it is a question about a throw. Replaces A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible (docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry where a player not eligible at the start of the throw played a move under bearing off); this test went red. LegalPlays.For never named bearing-off-eligible/2 (`!eligibleAtStart && false`); red. It named it whatever the start (`(eligibleAtStart || true)`); red."
+      },
+      {
+        "test": "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_bears_off_again_only_once_every_man_is_home_naming_the_owners_ruling",
+        "mutation": "This entry's question's first part, fate unresolved since map 3.0.0 (blind-mapping resolution rows 12 and 13), is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a man hit after bearing off began who re-enters may not bear off again until every man is home. Replaces A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle (the decline of ruleset versions 2 to 5). Through EntryPoints.BearingOffEligible and LegalPlays.For. Ruleset 5's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry once a line reached the case with a number left); this test went red. bearing-off-eligible/1 never named on a play (the node never marked); red. Named only on a play whose last state is the marked one, not on plays reached from it (`[.. ReEnteredMidBearOff]` for `Reachable(ReEnteredMidBearOff)`); red. The other reading, bearing off resumed (`IsEligible(...) || HasReEnteredMidBearOff(...)` in Movement.MovesForDie); red. BearingOff.Eligibility never naming the ruling (`Rulings = []`); red, and no other test."
+      },
+      {
+        "test": "BearingOffEligibilityTests.The_re_entry_ruling_is_named_only_where_the_question_arises",
+        "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Replaces The_decline_is_only_where_the_question_arises. bearing-off-eligible/1 named at every state with a number left (`HasReEnteredMidBearOff(...) || true`); this test went red. Named only where the question arises at the start of the throw, not after entering the man that was hit (`moves.IsEmpty && ...`); red. Ruleset 5's decline restored; red. The ruling never named; red. The other reading, bearing off resumed; red."
+      },
+      {
+        "test": "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on",
+        "mutation": "Seed 20260907, adopting the opening throw and taking the middle play, declined under ruleset 5 at a man re-entered mid-bear-off and finishes under ruleset 6 as a backgammon against a loser with nothing off and a man in the winner's home table, naming bearing-off-eligible/1 on two turns and game-value/2 on its value, in the record and its canonical bytes (docs/decisions/0010). Ruleset 5's decline of a man re-entered mid-bear-off restored; this test went red. bearing-off-eligible/1 never named; red. Named only on a throw that began re-entered, not after entering; red. game-value's overlap decline restored; red. The overlap valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. Game.Play not setting GameRecord.ValueRulings; red, and no other test. The canonical serialisation omitting valueRulings; red."
       }
-    ]
+    ],
+    "rulings": [
+      {
+        "id": "bearing-off-eligible/1",
+        "span": "The stage begins 'when either player has succeeded in getting all his men into his home table', and the chapter never says whether it lasts. If one of his men is hit after he has begun to bear off and then re-enters, the text does not say whether he may go on bearing off the men still at home or must first bring every man home again.",
+        "answer": "No: a player whose man is hit after he has begun to bear off may not bear off again until every man is back in his home table.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+        "tests": [
+          "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_bears_off_again_only_once_every_man_is_home_naming_the_owners_ruling",
+          "BearingOffEligibilityTests.The_re_entry_ruling_is_named_only_where_the_question_arises",
+          "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+        ]
+      },
+      {
+        "id": "bearing-off-eligible/2",
+        "span": "Nor does it say when within a throw the stage begins. If a man played with the first number of a throw is the last to come home, the text does not say whether the number left is played under this stage ('each throw entitles the player either to move forward a man or men ... or to remove men'), or as an ordinary move because the throw began before the stage was reached. On the first reading, with his last man outside on the nine point and six-trois thrown, 9/3 then bearing that man off with the trois is a legal play, and so is 9/6 then bearing him off with the six; on the second reading neither is. The quatre-trois example weighs both numbers against a distribution already home, so it does not decide the case.",
+        "answer": "Yes: once a player's first number brings his last man home, the number left bears off.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+        "tests": [
+          "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling"
+        ]
+      }
+    ],
+    "declines": []
   },
   "bearing-off-move-or-remove": {
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -394,7 +453,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -415,7 +474,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -436,7 +495,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -453,7 +512,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -462,35 +521,72 @@
       },
       {
         "test": "GameValueTests.A_man_up_makes_it_a_backgammon",
-        "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red. Re-observed after the loser was given two men borne off, so that he is not also a gammon (map 3.0.0, blind-mapping resolution row 52); under the mutation he now declines as the uncovered finish, and the test still went red."
-      },
-      {
-        "test": "GameValueTests.The_three_named_results_do_not_cover_every_finish",
-        "mutation": "Outcome.ValueOf called the uncovered finish a hit instead of declining; this test went red."
-      },
-      {
-        "test": "GameValueTests.A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon",
-        "mutation": "Outcome.ValueOf dropped the overlap decline and tested backgammon first, as it did before map 3.0.0 named the overlap in game-value's question (blind-mapping resolution row 52); this test went red."
-      },
-      {
-        "test": "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon",
-        "mutation": "Outcome.ValueOf declined the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`), as it did under map 3.0.0 before 4.0.0 named the man in the winner's home table in game-value's question (finding 17, rules-factory#102); this test went red for pips 19, 22 and 24, and nothing else did."
+        "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red. Re-observed after the loser was given two men borne off, so that he is not also a gammon (map 3.0.0, blind-mapping resolution row 52); under the mutation he now declines as the uncovered finish, and the test still went red. Re-observed under ruleset version 6 (docs/decisions/0010), where the uncovered finish is the owner's hit, game-value/1, and the test also holds that the corpus's backgammon names no ruling: a loser's man on the bar ignored; still red. game-value/2 named on every backgammon; red."
       },
       {
         "test": "GameValueEntryPointTests.A_finished_game_resolves_to_a_hit_a_gammon_or_a_backgammon",
         "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); the hit row went red. Outcome.ValueOf ignored a loser's man on the bar (`bool backgammon = LoserStandsInWinnersHome(...)` alone); the backgammon row went red. Every row went red too when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
       },
       {
-        "test": "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry",
-        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf dropped the overlap decline (`BorneOff(loser) < 0` for `== 0`), valuing both losers a backgammon; both rows went red. Declining the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`, map 3.0.0's question) turned the pip-19 row red and left the man-up row green. Ignoring a loser's man on the bar turned the man-up row red."
+        "test": "GameValueTests.The_finish_no_named_result_covers_is_a_hit_naming_the_owners_ruling",
+        "mutation": "This entry's question's first part, fate unresolved, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a loser who has borne off a man, has none up or in the winner's home table and is not all home loses a hit. Replaces The_three_named_results_do_not_cover_every_finish (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored in Outcome.ResultOf; this test went red. game-value/1 never named; red. Valued a gammon; red. game-value/1 named on the corpus's own hit too; red. game-value/2 named on every backgammon; red (its corpus backgammon row)."
+      },
+      {
+        "test": "GameValueEntryPointTests.The_finish_no_named_result_covers_resolves_to_a_hit_naming_the_owners_ruling",
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer<GameResult> carrying it back. Through EntryPoints.GameValue, not Outcome. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Ruleset 5's decline restored; this test went red. game-value/1 never named; red. Valued a gammon; red."
+      },
+      {
+        "test": "GameValueTests.A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+        "mutation": "This entry's question's second part, the overlap, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a loser who has borne off nothing and has a man up or in the winner's home table loses a backgammon, never also a gammon. Replaces A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored; this test went red. Valued a gammon (`begunToBearOff ? Backgammon : Gammon`); red. game-value/2 never named; red. A loser's man on the bar ignored; red."
+      },
+      {
+        "test": "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+        "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon. Ruleset 5's decline restored; this test went red. Valued a gammon; red. game-value/2 never named; red. Named only for a man up (`begunToBearOff || position.OnBar(loser) == 0 ? null : ...`); red, with the entry-point test beside it, and A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling stayed green."
+      },
+      {
+        "test": "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_is_a_backgammon_naming_the_owners_ruling",
+        "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer<GameResult> carrying it back. Through EntryPoints.GameValue, not Outcome. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry. Ruleset 5's decline restored; this test went red. Valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. A loser's man on the bar ignored; red."
+      },
+      {
+        "test": "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on",
+        "mutation": "Seed 20260907, adopting the opening throw and taking the middle play, declined under ruleset 5 at a man re-entered mid-bear-off and finishes under ruleset 6 as a backgammon against a loser with nothing off and a man in the winner's home table, naming bearing-off-eligible/1 on two turns and game-value/2 on its value, in the record and its canonical bytes (docs/decisions/0010). Ruleset 5's decline of a man re-entered mid-bear-off restored; this test went red. bearing-off-eligible/1 never named; red. Named only on a throw that began re-entered, not after entering; red. game-value's overlap decline restored; red. The overlap valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. Game.Play not setting GameRecord.ValueRulings; red, and no other test. The canonical serialisation omitting valueRulings; red."
       }
-    ]
+    ],
+    "rulings": [
+      {
+        "id": "game-value/1",
+        "span": "The three named results do not cover every finish. Written as predicates on the loser they are: all his men home and he has begun to bear off (a hit); he has not begun to bear off (a gammon); he has a man up or in the winner's home table (a backgammon). A loser who has borne off a man, been taken up, re-entered and run that man clear of the winner's home table but not yet back into his own answers none of them, and the corpus does not say what such a win is worth.",
+        "answer": "A single game (a hit): a loser who has borne off a man, has none on the bar or in the winner's home table, and is not all home loses a hit.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+        "tests": [
+          "GameValueTests.The_finish_no_named_result_covers_is_a_hit_naming_the_owners_ruling",
+          "GameValueEntryPointTests.The_finish_no_named_result_covers_resolves_to_a_hit_naming_the_owners_ruling"
+        ]
+      },
+      {
+        "id": "game-value/2",
+        "span": "Nor are they disjoint, in two cases. A loser who has borne off nothing answers 'before his adversary has begun to do the same' (a gammon); if he also has a man up, or a man in the winner's home table, he answers 'a man or men \"up\" (_i.e._, on the bar) or in his (the winner's) home table' (a backgammon) as well. The corpus does not say which result he suffers in either case.",
+        "answer": "A backgammon, never also a gammon: a loser who has borne off nothing and has a man on the bar or in the winner's home table is backgammoned.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+        "tests": [
+          "GameValueTests.A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+          "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+          "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_is_a_backgammon_naming_the_owners_ruling",
+          "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+        ]
+      }
+    ],
+    "declines": []
   },
   "agreed-backgammon-multiple": {
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -507,7 +603,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -524,7 +620,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -541,7 +637,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -562,7 +658,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -575,7 +671,7 @@
     "status": "implemented",
     "implementedIn": {
       "ruleset": "hoyle-1909-backgammon",
-      "version": 5
+      "version": 6
     },
     "tests": [
       {
@@ -589,6 +685,10 @@
       {
         "test": "RubberScoringTests.Every_other_rubber_is_the_question_the_corpus_leaves_open",
         "mutation": "Outcome.RubberWinner resolved a hit each to the second game's winner (`second.Value != GameValue.Backgammon` for `== GameValue.Gammon`); this test went red. It went red too when a rubber of three or more games was judged on its first two (`games.Count >= 2`), but only after the two-games-then-a-third row was added: the first three-game row declines on its first two anyway."
+      },
+      {
+        "test": "RubberScoringTests.A_rubber_scored_from_a_game_valued_by_an_owners_ruling_names_that_ruling",
+        "mutation": "Since ruleset version 6 a game's value can rest on an owner's ruling (game-value/1, game-value/2; docs/decisions/0010), and a rubber scored from it relies on the ruling too: RubberResult.Rulings is the union of the two games' rulings in OwnerRulings.All's order. Outcome.RubberWinner dropping the rulings (`rulings = []`); this test went red, and no other. Taking only the first game's (`InOrder(games[0].Rulings)`); red. Concatenating without de-duplicating or ordering (`[.. second.Rulings, .. games[0].Rulings]`); red. game-value's uncovered-finish decline restored, so the ruled hit this rubber is scored from cannot be valued; red. game-value/1 never named; red."
       }
     ]
   }

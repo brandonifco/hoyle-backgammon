@@ -79,11 +79,16 @@ public sealed record Play(ImmutableArray<Move> Moves, Position Result)
     /// <summary>
     /// The owner's rulings this play relies on, in <see cref="OwnerRulings.All"/>'s order; empty when it
     /// relies on none. A ruling answers part of a question the corpus leaves open, so a play that lists
-    /// one is offered on its owner's authority and not Hoyle's (<c>docs/decisions/0009</c>):
+    /// one is offered on its owner's authority and not Hoyle's (<c>docs/decisions/0009</c>, <c>docs/decisions/0010</c>):
     /// <list type="bullet">
+    /// <item><see cref="OwnerRulings.TheHigherNumberIsCompelled"/> where either number of the throw alone could be
+    /// played but not both, and this play uses the higher;</item>
     /// <item><see cref="OwnerRulings.APlayIsThePositionItReaches"/> where another order of the same
     /// numbers reaches the same position under different rules, and this play, the first order found,
     /// stands for both;</item>
+    /// <item><see cref="OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain"/> where the play is made by a player
+    /// whose man, hit after he began to bear off, has re-entered, with a number still to play, so it is made
+    /// without bearing off;</item>
     /// <item><see cref="OwnerRulings.BearingOffBeginsWithinTheThrow"/> where a move of this play bears
     /// off, or moves within the home table under bearing off, in a throw that began before every man
     /// was home.</item>

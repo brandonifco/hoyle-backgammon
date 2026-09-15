@@ -20,13 +20,13 @@ public class WholeThrowTests
     /// </summary>
     /// <remarks>
     /// The thirteen used to be borne off. That put every line of a throw into
-    /// <c>bearing-off-eligible</c>'s unresolved case the moment the mobile man reached home with
+    /// <c>bearing-off-eligible</c>'s open case the moment the mobile man reached home with
     /// a number left -- a player who has begun to bear off with a man outside, whose bearing off
-    /// may or may not continue -- which the map declines since
-    /// <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0 (blind-mapping resolution rows 12 and 13).
+    /// may or may not continue -- which the map leaves unresolved since
+    /// <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0 (blind-mapping resolution rows 12 and 13), and
+    /// which the owner's ruling answers since ruleset version 6 (<c>docs/decisions/0010</c>).
     /// Parking them on the ace point keeps the one-mobile-man shape this rule is about and takes
-    /// the other question out of it. <see cref="BearingOffEligibilityTests"/> keeps the old
-    /// fixture as that decline's own case.
+    /// the other question out of it.
     /// </remarks>
     private static Position OneMobileMan(bool blockTheTroisLanding) => Board.Of(
         Board.Men().At(24, 1).At(8, 1).RestAt(1),
@@ -65,6 +65,8 @@ public class WholeThrowTests
 
         var play = Assert.Single(Legal.Plays(position, Player.White, new DiceThrow(6, 3)));
 
+        // The corpus settles this, so the play names no owner's ruling, the higher number or not.
+        Assert.Empty(play.Rulings);
         Assert.Equal(playable, play.PipsUsed);
         var move = Assert.Single(play.Moves);
         Assert.Equal(8, move.From);
@@ -96,24 +98,31 @@ public class WholeThrowTests
     }
 
     [Fact]
-    public void Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it()
+    public void Where_either_die_alone_can_be_played_but_not_both_the_higher_is_compelled_naming_the_owners_ruling()
     {
         // Playing the six leaves the man on the deuce point, where a trois cannot be played;
         // playing the trois leaves him on the cinque, where a six cannot. Neither line can be
-        // extended, and the text gives no rule for choosing between them.
+        // extended, and the text gives no rule for choosing between them: must-play-whole-throw's
+        // question's first part, fate unresolved. Ruleset versions 2 to 5 declined. Brandon ruled on
+        // 2026-09-15 that the higher number must be played (docs/decisions/0010), so the six is the one
+        // play, and it names the ruling so it is not passed off as Hoyle's.
         var position = OneMobileMan(blockTheTroisLanding: false);
 
-        var unresolved = Legal.Unresolved(position, Player.White, new DiceThrow(6, 3));
+        var play = Assert.Single(Legal.Plays(position, Player.White, new DiceThrow(6, 3)));
 
-        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
-        Assert.Equal(MapEntries.MustPlayWholeThrow.Locator, unresolved.Locator);
+        Assert.Equal("8/2(6)", play.ToString());
+        Assert.Equal([OwnerRulings.TheHigherNumberIsCompelled], play.Rulings.ToArray());
+        Assert.Equal("must-play-whole-throw/1", play.Rulings[0].Id);
+
+        // The same shape with the numbers the other way round in the throw: still the six.
+        Assert.Equal("8/2(6)", Assert.Single(Legal.Plays(position, Player.White, new DiceThrow(3, 6))).ToString());
     }
 
     [Fact]
     public void Each_die_alone_really_is_playable_in_that_position()
     {
-        // Without this the test above would pass for the wrong reason -- an unresolved result
-        // proves nothing unless both branches exist.
+        // Without this the test above would pass for the wrong reason -- the ruling decides
+        // nothing unless both branches exist.
         var position = OneMobileMan(blockTheTroisLanding: false);
 
         Assert.Equal(new[] { 8 }, Movement.MovesForDie(position, Player.White, 6).Select(m => m.From));
@@ -157,14 +166,15 @@ public class WholeThrowTests
     }
 
     [Fact]
-    public void The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both()
+    public void The_owners_ruling_is_named_in_exactly_one_shape_either_die_alone_playable_but_not_both()
     {
         // A derived consequence of reading the rule as "nothing less than a maximal set": two
         // plays can be incomparable only when the throw has two different numbers, each can
-        // be played alone, and neither can be followed by the other. Doublets never decline
+        // be played alone, and neither can be followed by the other. Doublets never need the ruling
         // -- their plays differ only in how many of one number they use, and those counts are
         // totally ordered -- and a throw with one playable die, or none, has a single maximal
-        // play. So "unresolved" and that shape must coincide exactly.
+        // play. So "names must-play-whole-throw/1" and that shape must coincide exactly, and where
+        // they do every play uses the higher number (docs/decisions/0010).
         //
         // Checked both ways over every one of the twenty-one throws, in the constructed
         // position above and in every position a set of seeded random games passes through.
@@ -183,37 +193,35 @@ public class WholeThrowTests
             positions.AddRange(PositionsPassedThrough(seed));
         }
 
-        int declined = 0;
+        int ruled = 0;
         foreach (var (position, player) in positions)
         {
             foreach (var thrown in TheTwentyOneThrows())
             {
-                var legal = LegalPlays.For(position, player, Movement.Entitlement(thrown));
-
-                // bearing-off-eligible's decline (map 3.0.0, blind-mapping resolution rows 12 and 13:
-                // a man hit mid-bear-off who re-enters) is decided before this shape is consulted, so a
-                // throw it declines says nothing about it either way. Only must-play-whole-throw's first
-                // question's decline counts. The second parts of both questions are the owner's rulings
-                // since ruleset version 5 and decline nothing (docs/decisions/0009).
-                if (legal is Resolution<ImmutableArray<Play>>.Unresolved { Result: var other }
-                    && !Legal.IsEitherDieAloneDecline(other))
-                {
-                    continue;
-                }
+                // Since ruleset version 6 no throw declines (docs/decisions/0010).
+                var plays = Legal.Plays(position, player, thrown);
 
                 bool shape = EitherDieAlonePlayableButNotBoth(position, player, thrown);
-                bool unresolved = legal is Resolution<ImmutableArray<Play>>.Unresolved;
+                bool named = plays.Any(p => p.Rulings.Contains(OwnerRulings.TheHigherNumberIsCompelled));
 
                 Assert.True(
-                    shape == unresolved,
-                    $"{thrown} for {player} in\n{position}\nshape={shape} unresolved={unresolved}");
-                declined += unresolved ? 1 : 0;
+                    shape == named,
+                    $"{thrown} for {player} in\n{position}\nshape={shape} named={named}");
+                if (named)
+                {
+                    Assert.All(plays, p =>
+                    {
+                        Assert.Contains(OwnerRulings.TheHigherNumberIsCompelled, p.Rulings);
+                        Assert.Equal(thrown.Higher, Assert.Single(p.Moves).Die);
+                    });
+                    ruled++;
+                }
             }
         }
 
-        // The constructed position declines 6-3 at least; without a decline the check above
-        // would hold vacuously for the "unresolved implies the shape" direction.
-        Assert.True(declined > 0);
+        // The constructed position is the shape for 6-3 at least; without it the check above
+        // would hold vacuously for the "named implies the shape" direction.
+        Assert.True(ruled > 0);
     }
 
     private static IEnumerable<DiceThrow> TheTwentyOneThrows()
@@ -249,8 +257,8 @@ public class WholeThrowTests
     }
 
     /// <summary>
-    /// Every position a random game passes through, with the player to move. Where the corpus
-    /// does not settle a throw the walk simply throws again, so a decline does not end it.
+    /// Every position a random game passes through, with the player to move. Since ruleset version 6
+    /// no throw declines (docs/decisions/0010), so the walk plays every throw.
     /// </summary>
     private static IEnumerable<(Position Position, Player Player)> PositionsPassedThrough(ulong seed)
     {
@@ -267,35 +275,8 @@ public class WholeThrowTests
 
             yield return (position, player);
 
-            // A player who had begun to bear off and whose hit man has re-entered is in
-            // bearing-off-eligible's unresolved case (map 3.0.0, blind-mapping resolution rows 12
-            // and 13): every throw declines there, so throwing again would never end. The walk
-            // stops instead; the positions it has yielded are still the evidence.
-            if (BearingOff.HasReEnteredMidBearOff(position, player))
-            {
-                yield break;
-            }
-
-            while (true)
-            {
-                var legal = LegalPlays.For(position, player, Movement.Entitlement(Opening.Throw(source)));
-                if (legal is Resolution<ImmutableArray<Play>>.Resolved resolved)
-                {
-                    var plays = resolved.Value;
-                    position = plays[(int)(source.NextUInt32() % (uint)plays.Length)].Result;
-                    break;
-                }
-
-                if (!Legal.IsEitherDieAloneDecline(((Resolution<ImmutableArray<Play>>.Unresolved)legal).Result))
-                {
-                    // Entering the hit man this throw reached the same case (rows 12 and 13), or,
-                    // since map 6.0.0 (rules-factory#125), the throw brings the last man home with a
-                    // number left. Near the end of bearing in that is every throw, so throwing again
-                    // need not end either; the walk stops.
-                    yield break;
-                }
-            }
-
+            var plays = Legal.Plays(position, player, Opening.Throw(source));
+            position = plays[(int)(source.NextUInt32() % (uint)plays.Length)].Result;
             player = player.Adversary();
         }
     }

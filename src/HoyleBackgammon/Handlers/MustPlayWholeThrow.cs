@@ -24,7 +24,7 @@ namespace HoyleBackgammon
 {
     internal static partial class Handlers
     {
-        /// <summary><c>must-play-whole-throw</c>: the plays a throw compels, or the rule's decline, <see cref="LegalPlays.For"/>.</summary>
+        /// <summary><c>must-play-whole-throw</c>: the plays a throw compels, each naming the owner's rulings it relies on, <see cref="LegalPlays.For"/>.</summary>
         internal static partial Resolution<object> MustPlayWholeThrow(Requests.MustPlayWholeThrowRequest request) =>
             Answer(Demand(request.Position, request.EntryId, nameof(request.Position)), LegalPlays.For(
                 request.Position!.Position,

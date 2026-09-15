@@ -39,8 +39,9 @@ public sealed record MapPackage(string PackageId, string Version)
 }
 
 /// <summary>
-/// The canonical serialisation of a <see cref="GameRecord"/>: replay schema 3, the format
-/// <c>docs/decisions/0006</c> defines with each turn's owner's rulings added (<c>docs/decisions/0009</c>).
+/// The canonical serialisation of a <see cref="GameRecord"/>: replay schema 4, the format
+/// <c>docs/decisions/0006</c> defines with each turn's owner's rulings added (schema 3, <c>docs/decisions/0009</c>)
+/// and the rulings the game's value relies on (schema 4, <c>docs/decisions/0010</c>).
 /// </summary>
 /// <remarks>
 /// JSON in the canonical form of RFC 8785 (JCS), restricted to what a record holds: objects,
@@ -86,6 +87,7 @@ internal static class GameRecordJson
         ["turns"] = record.Turns.Select(t => (object?)Of(t)).ToList(),
         ["winner"] = Name(record.Winner),
         ["value"] = Name(record.Value),
+        ["valueRulings"] = Of(record.ValueRulings),
         ["next"] = Name(record.Next),
     };
 
@@ -145,18 +147,19 @@ internal static class GameRecordJson
             }).ToList()
             : null,
         ["position"] = Of(turn.Position),
-        ["rulings"] = turn.Play is { } ruled
-            ? ruled.Rulings.Select(r => (object?)new Obj
-            {
-                ["id"] = r.Id,
-                ["entry"] = r.Entry.Id,
-                ["questionPart"] = r.QuestionPart,
-                ["ruledBy"] = r.RuledBy,
-                ["ruledOn"] = r.RuledOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
-                ["record"] = r.Record,
-            }).ToList()
-            : null,
+        ["rulings"] = turn.Play is { } ruled ? Of(ruled.Rulings) : null,
     };
+
+    private static List<object?> Of(System.Collections.Immutable.ImmutableArray<OwnerRuling> rulings) =>
+        rulings.Select(r => (object?)new Obj
+        {
+            ["id"] = r.Id,
+            ["entry"] = r.EntryId,
+            ["questionPart"] = r.QuestionPart,
+            ["ruledBy"] = r.RuledBy,
+            ["ruledOn"] = r.RuledOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            ["record"] = r.Record,
+        }).ToList();
 
     private static string Name<T>(T value)
         where T : struct, Enum => value.ToString();

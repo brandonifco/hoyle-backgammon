@@ -4,8 +4,8 @@
     "name": "HoyleBackgammon"
   },
   "factory": {
-    "version": "0.5.0",
-    "commit": "5bdd77f2b4b0a5e628c1f4b2dd5c476025785184",
+    "version": "0.6.0",
+    "commit": "ec6294a008a4983fc8b3c406e29657b9bb88c06d",
     "dirty": false
   },
   "map": {
@@ -50,19 +50,19 @@
       },
       {
         "path": "tools/factory/__main__.py",
-        "sha256": "c6f32f36f16d6ce5f7d747762fd74075c5555b33422c026a4f73eb13bf17f541"
+        "sha256": "e36697ae5b26a375f45c1c1dd6afab54f096162c7bb06003a257236a6a5db996"
       },
       {
         "path": "tools/factory/backlog.py",
-        "sha256": "700a2a23910c7cfd25f1f3dac64486beb48f4c173f600bdd5e08cbbb4bc27979"
+        "sha256": "43027c085a9dc027016118a81f0159d2e09b33340ee402fc26415b31d972ed7f"
       },
       {
         "path": "tools/factory/gate.py",
-        "sha256": "5780300022c373e69bd7c17c7ad89219cd9cb66e957572bedd57cd4da6c49ece"
+        "sha256": "3af31278d127048660d6f8ef9f4c9d7ad4ba136e87c7ebd4fd3d9d736cca326b"
       },
       {
         "path": "tools/factory/generate.py",
-        "sha256": "b29436046ecc4bf5cc99f28903f26b67ef77b12ef4b13cfa07b9ab6995a38471"
+        "sha256": "65adbdbd6e0473793ae593c44a0273a1d0b44f4edbcdb47e858cce959176c0e0"
       },
       {
         "path": "tools/factory/intake.py",
@@ -82,15 +82,15 @@
       },
       {
         "path": "tools/factory/provenance.py",
-        "sha256": "38dfa1883967854b3b19e2a4a888acbaead999cba92be70dbc083087da7b687c"
+        "sha256": "715ae6898c9e370589d32f38a32b8bb8ace2b144281b19bdbcac9b6eff403f98"
       },
       {
         "path": "tools/factory/recipe/engine-gate.py",
-        "sha256": "760665b2a05fbdaf720bddfd51e6bc3d1dfaf11568de3f8cbbff6f9a74e97181"
+        "sha256": "6bdfc491088584d5dbca128692e4d3fb7182655d24f9b24c2b45e641b605ffdb"
       },
       {
         "path": "tools/factory/recipe/map-overlay.py",
-        "sha256": "4e33b9c8369b4e41434c6f89fdc94f8a4877cd45acb4b8e0b81bd0cc8ff9fbfa"
+        "sha256": "11cb78f15f1e6a1ccc8a08542d5fd59beecb30bb8e0a6c903460d6b041129714"
       },
       {
         "path": "tools/factory/recipe/validate.sh",
@@ -101,16 +101,20 @@
         "sha256": "f7720e2d2a26d65bb738c77d6be6fb84a46960a3e7230a75ed27ab66ce1b0033"
       },
       {
+        "path": "tools/factory/rulings.py",
+        "sha256": "cd99fde18b6c9b031e6669d36d3d2af7030afbc686c3fdd8e7c40a0fc07e5fe2"
+      },
+      {
         "path": "tools/factory/transaction.py",
-        "sha256": "cddfd4be68e61cec11c1b9dbb6fd6c47d7fcd371215534c675ff5556322751ec"
+        "sha256": "554d2b30826cb5c828bd1bb3dfb5b2888846a8fa22aa0982f4f5c5576cfd1e1a"
       },
       {
         "path": "tools/factory/verify.py",
-        "sha256": "7c6920906be9ce16302440cfd7d834d0a39bbdfbc51981e78c8f054507061c3d"
+        "sha256": "ff188e0da339ed80599065ceaf81be45818590d4a91b1534aa709ce6dcf2c964"
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "f9d455e2100a2351b77050cd683a0c8e10dc25e839847e3ab48ebb867e5a82c1"
+    "digest": "7ff7910df87495c5ee8f3caca337eab84273d7fa82c6c0c83913f7801cb26236"
   },
   "generated": [
     {
@@ -131,11 +135,11 @@
     },
     {
       "path": "scripts/engine-gate.py",
-      "sha256": "760665b2a05fbdaf720bddfd51e6bc3d1dfaf11568de3f8cbbff6f9a74e97181"
+      "sha256": "6bdfc491088584d5dbca128692e4d3fb7182655d24f9b24c2b45e641b605ffdb"
     },
     {
       "path": "scripts/factory/generate.py",
-      "sha256": "b29436046ecc4bf5cc99f28903f26b67ef77b12ef4b13cfa07b9ab6995a38471"
+      "sha256": "65adbdbd6e0473793ae593c44a0273a1d0b44f4edbcdb47e858cce959176c0e0"
     },
     {
       "path": "scripts/factory/intake.py",
@@ -147,11 +151,15 @@
     },
     {
       "path": "scripts/factory/provenance.py",
-      "sha256": "38dfa1883967854b3b19e2a4a888acbaead999cba92be70dbc083087da7b687c"
+      "sha256": "715ae6898c9e370589d32f38a32b8bb8ace2b144281b19bdbcac9b6eff403f98"
+    },
+    {
+      "path": "scripts/factory/rulings.py",
+      "sha256": "cd99fde18b6c9b031e6669d36d3d2af7030afbc686c3fdd8e7c40a0fc07e5fe2"
     },
     {
       "path": "scripts/map-overlay.py",
-      "sha256": "4e33b9c8369b4e41434c6f89fdc94f8a4877cd45acb4b8e0b81bd0cc8ff9fbfa"
+      "sha256": "11cb78f15f1e6a1ccc8a08542d5fd59beecb30bb8e0a6c903460d6b041129714"
     },
     {
       "path": "scripts/validate.sh",
@@ -176,6 +184,10 @@
     {
       "path": "src/HoyleBackgammon/Generated/Requests.g.cs",
       "sha256": "55dcfa46e0ebf73be20ddef888d5832d6f95f6683eb1a6e63158998021f153cd"
+    },
+    {
+      "path": "src/HoyleBackgammon/Generated/Rulings.g.cs",
+      "sha256": "2370298196db795bd11cc1888f27584130e82c97aa68f408175517257d20814c"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/CorrespondenceTests.g.cs",
@@ -244,7 +256,7 @@
     },
     {
       "path": "corpus-map.overlay.json",
-      "sha256": "2aacc63beff3786e0c0ab8afc25a905a0240ce3e7b17ea7c140eaae31f583d98"
+      "sha256": "0183a46640ad81237c1f4bcbf1b52abd72d9992dd051d8545be778868b8e67d2"
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",
@@ -279,5 +291,67 @@
       "sha256": "778035cb1290656fe3f4f8a862a5dac3f6df41b856f80f97e4aebacca1c8c500"
     }
   ],
-  "randomness": "seeded"
+  "randomness": "seeded",
+  "rulings": [
+    {
+      "id": "must-play-whole-throw/1",
+      "entry": "must-play-whole-throw",
+      "span": "An unplayable part is lost and the whole must be played 'if it is possible'. The text does not say what happens when either die alone is playable but not both -- a case every modern ruleset settles explicitly.",
+      "answer": "Where either number alone can be played but not both, the higher number must be played.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "recordSha256": "ccdad872a9d446d01a09816fe5d624bd1f1179e344aa2eb557520a8dd1a88ee6"
+    },
+    {
+      "id": "must-play-whole-throw/2",
+      "entry": "must-play-whole-throw",
+      "span": "Nor does it say what a play of the whole throw is: the position the numbers reach, or the moves in the order they are made. Where two orders use the same numbers and reach the same position, the text does not say whether they are one play or two, which matters where the rule that permits a move differs between the orders (with the last man outside on the eight point and deuce-ace thrown, 8/6 6/5 and 8/7 7/5 both leave that man on the five point, but the first plays the ace after every man is home and the second does not; see bearing-off-eligible's question).",
+      "answer": "One play: orders of the same numbers that reach the same position are offered once, crediting the rules of the first order found.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+      "recordSha256": "52a659b946b632af5cbd79f06b9c210adc2c2529a514a6491419ca6d7b3e746a"
+    },
+    {
+      "id": "bearing-off-eligible/1",
+      "entry": "bearing-off-eligible",
+      "span": "The stage begins 'when either player has succeeded in getting all his men into his home table', and the chapter never says whether it lasts. If one of his men is hit after he has begun to bear off and then re-enters, the text does not say whether he may go on bearing off the men still at home or must first bring every man home again.",
+      "answer": "No: a player whose man is hit after he has begun to bear off may not bear off again until every man is back in his home table.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "recordSha256": "ccdad872a9d446d01a09816fe5d624bd1f1179e344aa2eb557520a8dd1a88ee6"
+    },
+    {
+      "id": "bearing-off-eligible/2",
+      "entry": "bearing-off-eligible",
+      "span": "Nor does it say when within a throw the stage begins. If a man played with the first number of a throw is the last to come home, the text does not say whether the number left is played under this stage ('each throw entitles the player either to move forward a man or men ... or to remove men'), or as an ordinary move because the throw began before the stage was reached. On the first reading, with his last man outside on the nine point and six-trois thrown, 9/3 then bearing that man off with the trois is a legal play, and so is 9/6 then bearing him off with the six; on the second reading neither is. The quatre-trois example weighs both numbers against a distribution already home, so it does not decide the case.",
+      "answer": "Yes: once a player's first number brings his last man home, the number left bears off.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+      "recordSha256": "52a659b946b632af5cbd79f06b9c210adc2c2529a514a6491419ca6d7b3e746a"
+    },
+    {
+      "id": "game-value/1",
+      "entry": "game-value",
+      "span": "The three named results do not cover every finish. Written as predicates on the loser they are: all his men home and he has begun to bear off (a hit); he has not begun to bear off (a gammon); he has a man up or in the winner's home table (a backgammon). A loser who has borne off a man, been taken up, re-entered and run that man clear of the winner's home table but not yet back into his own answers none of them, and the corpus does not say what such a win is worth.",
+      "answer": "A single game (a hit): a loser who has borne off a man, has none on the bar or in the winner's home table, and is not all home loses a hit.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "recordSha256": "ccdad872a9d446d01a09816fe5d624bd1f1179e344aa2eb557520a8dd1a88ee6"
+    },
+    {
+      "id": "game-value/2",
+      "entry": "game-value",
+      "span": "Nor are they disjoint, in two cases. A loser who has borne off nothing answers 'before his adversary has begun to do the same' (a gammon); if he also has a man up, or a man in the winner's home table, he answers 'a man or men \"up\" (_i.e._, on the bar) or in his (the winner's) home table' (a backgammon) as well. The corpus does not say which result he suffers in either case.",
+      "answer": "A backgammon, never also a gammon: a loser who has borne off nothing and has a man on the bar or in the winner's home table is backgammoned.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "recordSha256": "ccdad872a9d446d01a09816fe5d624bd1f1179e344aa2eb557520a8dd1a88ee6"
+    }
+  ]
 }

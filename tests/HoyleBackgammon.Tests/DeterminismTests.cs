@@ -146,6 +146,43 @@ public class DeterminismTests
     }
 
     [Fact]
+    public void A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on()
+    {
+        // Seed 20260907, adopting the opening throw and taking the middle play offered, declined under ruleset
+        // version 5: on White's seventy-first turn his man, hit after he had begun to bear off, re-enters, which
+        // bearing-off-eligible's question's first part leaves open. Under version 6 the owner's rulings play it
+        // (docs/decisions/0010). White bears off again only once every man is home, and the turns that rely on
+        // that name it. He wins against a loser who has borne off nothing and has a man in White's home table,
+        // a gammon and a backgammon both by the corpus's words, and by the owner's ruling a backgammon: the
+        // record names that ruling on its value, and its bytes carry it.
+        var counting = new CountingSource(Pcg32.FromSeed(20260907UL, stream: 1));
+        var record = Assert.IsType<Resolution<GameRecord>.Resolved>(
+            Game.Play(Corpus.StartingPosition, counting, new MiddleDecider())).Value;
+
+        Assert.Equal(Player.White, record.Winner);
+        Assert.Equal(GameValue.Backgammon, record.Value);
+        Assert.Equal([OwnerRulings.TheOverlapIsABackgammon], record.ValueRulings.ToArray());
+        Assert.Equal(record.ValueRulings, record.Result.Rulings);
+        Assert.Equal(0, record.Turns[^1].Position.BorneOff(Player.Black));
+
+        var reEntered = record.Turns.Where(t => t.Play is { } p && p.Rulings.Contains(OwnerRulings.BearingOffStopsUntilEveryManIsHomeAgain)).ToList();
+        Assert.Equal(["bar/21(4) 21/17(4) 17/13(4) 13/9(4)*", "9/6(3)* 6/1(5)"], reEntered.Select(t => t.Play!.ToString()));
+        Assert.All(reEntered, t => Assert.Equal(Player.White, t.Player));
+
+        string json = System.Text.Encoding.UTF8.GetString(record.ToCanonicalJson());
+        Assert.Contains("\"valueRulings\":[{\"entry\":\"game-value\",\"id\":\"game-value/2\",", json, StringComparison.Ordinal);
+        Assert.Contains("\"id\":\"bearing-off-eligible/1\"", json, StringComparison.Ordinal);
+    }
+
+    /// <summary>Adopts the opening throw and takes the middle play offered.</summary>
+    private sealed class MiddleDecider : IDecider
+    {
+        public bool AdoptOpeningThrow(OpeningRoll roll) => true;
+
+        public int ChoosePlay(Player player, System.Collections.Immutable.ImmutableArray<Play> plays) => plays.Length / 2;
+    }
+
+    [Fact]
     public void Scripted_decisions_are_consumed_in_order_and_running_out_is_an_error()
     {
         var decider = new ScriptedDecider([1, 0, 0]);
