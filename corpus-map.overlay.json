@@ -120,6 +120,10 @@
       {
         "test": "OpeningThrowerOptionTests.Every_subsequent_throw_is_with_both_dice",
         "mutation": "Opening.Throw threw one die and doubled its face instead of throwing the pair; this test went red."
+      },
+      {
+        "test": "SeededGameReplayTests.A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions",
+        "mutation": "Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game (sixty-five turns) was untouched and its replay from the same seed and decisions was not; this test went red at the byte comparison. It went red too with Game.Identity's ruleset at version 2, and under LegalPlays.For offering partial plays (the pinned SHA-256 of the recording). Reading the dice from a shared generator instead of the caller's source turned it red as well, earlier, the recorded game itself declining."
       }
     ]
   },
@@ -293,6 +297,18 @@
       {
         "test": "WholeThrowTests.A_man_up_is_still_compelled_to_play_the_whole_throw",
         "mutation": "LegalPlays.For exempted a player with a man up from the compulsion -- every line, partial ones included, offered with no maximal filter -- which is the enter-from-bar suspension map 3.0.0 removed (blind-mapping resolution row 66); this test went red, and so did EnterFromBarTests.The_second_man_up_is_still_up_when_the_first_has_entered. It went red too under the partial-plays mutation above."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.A_six_trois_with_a_man_up_resolves_to_the_plays_of_the_whole_throw_each_move_citing_its_entry",
+        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, `if (extended || !extended)`, and no filter to the compelled use); this test went red, and so did the doublet test beside it. It went red too when Move.Authority named move-by-pip for an entry from the bar (`MoveKind.Entry => MapEntries.MoveByPip`), and when it named legal-destination for an ordinary move."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.Doublets_resolve_to_the_one_play_that_goes_as_far_as_the_throw_can_each_move_citing_its_entry",
+        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`)."
+      },
+      {
+        "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275",
+        "mutation": "Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For declined only when more than two uses were maximal (`> 2` for `> 1`), silently playing the first; this test went red, and no other test in the class did."
       }
     ]
   },
@@ -423,6 +439,14 @@
       {
         "test": "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon",
         "mutation": "Outcome.ValueOf declined the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`), as it did under map 3.0.0 before 4.0.0 named the man in the winner's home table in game-value's question (finding 17, rules-factory#102); this test went red for pips 19, 22 and 24, and nothing else did."
+      },
+      {
+        "test": "GameValueEntryPointTests.A_finished_game_resolves_to_a_hit_a_gammon_or_a_backgammon",
+        "mutation": "Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); the hit row went red. Outcome.ValueOf ignored a loser's man on the bar (`bool backgammon = LoserStandsInWinnersHome(...)` alone); the backgammon row went red."
+      },
+      {
+        "test": "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry",
+        "mutation": "Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf dropped the overlap decline (`BorneOff(loser) < 0` for `== 0`), valuing both losers a backgammon; both rows went red. Declining the overlap only for a man up (`position.OnBar(loser) > 0 && position.BorneOff(loser) == 0` for `backgammon && position.BorneOff(loser) == 0`, map 3.0.0's question) turned the pip-19 row red and left the man-up row green. Ignoring a loser's man on the bar turned the man-up row red."
       }
     ]
   },
