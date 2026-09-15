@@ -24,13 +24,19 @@ public class MustPlayWholeThrowEntryPointTests
     private static Resolution<object> Resolve(AssertedPosition position, Player player, DiceThrow thrown) =>
         EntryPoints.MustPlayWholeThrow.Resolve(new MustPlayWholeThrowRequest
         {
-            Position = position.Position,
+            Position = position,
             Player = player,
             Thrown = thrown,
         });
 
-    private static ImmutableArray<Play> Compelled(Resolution<object> resolution) =>
-        Assert.IsType<ImmutableArray<Play>>(Assert.IsType<Resolution<object>.Resolved>(resolution).Value);
+    /// <summary>The compelled plays, after checking the answer carries back the assertion it was asked about.</summary>
+    private static ImmutableArray<Play> Compelled(Resolution<object> resolution, AssertedPosition position)
+    {
+        var answer = Assert.IsType<AssertedAnswer<ImmutableArray<Play>>>(Assert.IsType<Resolution<object>.Resolved>(resolution).Value);
+        Assert.Same(position, answer.Position);
+        Assert.Equal(nameof(MustPlayWholeThrowEntryPointTests), answer.AssertedBy);
+        return answer.Value;
+    }
 
     [Fact]
     public void A_six_trois_with_a_man_up_resolves_to_the_plays_of_the_whole_throw_each_move_citing_its_entry()
@@ -39,12 +45,13 @@ public class MustPlayWholeThrowEntryPointTests
         // either number enters and the other can always follow. Entering and stopping short is
         // not open to him: every compelled play enters and then plays the other number, and no
         // other play is offered. Entering with the trois and running that man on six reaches the
-        // same position with the same numbers as bar/19 19/16, and the engine offers that play once.
+        // same position with the same numbers as bar/19 19/16, and the engine offers that play once
+        // (both orders enter-from-bar then move-by-pip; docs/decisions/0007).
         var position = Asserted(
             Board.Men().At(Geometry.BarPip, 1).At(8, 6).RestAt(6),
             Board.Men().RestAt(13));
 
-        var plays = Compelled(Resolve(position, Player.White, new DiceThrow(6, 3)));
+        var plays = Compelled(Resolve(position, Player.White, new DiceThrow(6, 3)), position);
 
         Assert.Equal(
             new[]
@@ -70,12 +77,47 @@ public class MustPlayWholeThrowEntryPointTests
             Board.Men().At(24, 1).At(8, 1).RestAt(1),
             Board.Men().At(3, 2).RestAt(12));
 
-        var play = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(2, 2))));
+        var play = Assert.Single(Compelled(Resolve(position, Player.White, new DiceThrow(2, 2)), position));
 
         Assert.Equal("8/6(2) 6/4(2) 4/2(2)", play.ToString());
         Assert.All(play.Moves, move => Assert.Equal(MapEntries.MoveByPip, move.Authority));
         Assert.Equal(1, play.Result.Men(Player.White, 2));
     }
+
+    [Fact]
+    public void Two_orders_reaching_the_same_position_are_offered_once_though_their_authorities_differ()
+    {
+        // White's last man outside stands on the eight point; he throws deuce ace. 8/6 then 6/5 and
+        // 8/7 then 7/5 leave the same men on the same points with the same numbers used, and the
+        // engine offers that play once, in the order it enumerates first. The two orders are not the
+        // same provenance: after 8/6 every man is home, so the ace is bearing-off-move-or-remove's;
+        // in the other order the man is still outside, on the seven point, when the deuce is played, so both
+        // moves are move-by-pip's. The corpus does not say whether a play is the position it reaches
+        // or the moves in their order (docs/decisions/0007, MAP-FINDINGS.md finding 18), so this
+        // pins the engine's behaviour rather than a reading.
+        var position = Asserted(Board.Men().At(8, 1).RestAt(6), Board.Men().RestAt(13));
+
+        var plays = Compelled(Resolve(position, Player.White, new DiceThrow(2, 1)), position);
+
+        var offered = Assert.Single(plays, p => p.Result.Men(Player.White, 5) == 1 && p.Result.Men(Player.White, 8) == 0);
+        Assert.Equal("8/6(2) 6/5(1)", offered.ToString());
+        Assert.Equal(
+            [MapEntries.MoveByPip, MapEntries.BearingOffMoveOrRemove],
+            offered.Moves.Select(m => m.Authority));
+
+        // The other order is open move by move, through move-by-pip's own entry point, and reaches
+        // the same position under different authorities.
+        var ace = Assert.Single(MovesByPip(position, 1), m => m.From == 8);
+        Assert.Equal(MapEntries.MoveByPip, ace.Authority);
+        var between = new AssertedPosition(position.Position.Apply(Player.White, ace.From, ace.To), AssertedBy: nameof(MustPlayWholeThrowEntryPointTests));
+        var deuce = Assert.Single(MovesByPip(between, 2), m => m.From == 7);
+        Assert.Equal(MapEntries.MoveByPip, deuce.Authority);
+        Assert.Equal(offered.Result, between.Position.Apply(Player.White, deuce.From, deuce.To));
+    }
+
+    private static ImmutableArray<Move> MovesByPip(AssertedPosition position, int die) =>
+        Assert.IsType<AssertedAnswer<ImmutableArray<Move>>>(Assert.IsType<Resolution<object>.Resolved>(
+            EntryPoints.MoveByPip.Resolve(new MoveByPipRequest { Position = position, Player = Player.White, Die = die })).Value).Value;
 
     [Fact]
     public void Either_die_alone_playable_but_not_both_declines_citing_page_275()
@@ -114,7 +156,7 @@ public class GameValueEntryPointTests
 
         return EntryPoints.GameValue.Resolve(new GameValueRequest
         {
-            Position = position.Position,
+            Position = position,
             Winner = Player.White,
         });
     }
@@ -137,7 +179,9 @@ public class GameValueEntryPointTests
     {
         var resolved = Assert.IsType<Resolution<object>.Resolved>(WhiteHasWon(Parse(black)));
 
-        Assert.Equal(expected, Assert.IsType<GameValue>(resolved.Value));
+        var answer = Assert.IsType<AssertedAnswer<GameValue>>(resolved.Value);
+        Assert.Equal(expected, answer.Value);
+        Assert.Equal(nameof(GameValueEntryPointTests), answer.AssertedBy);
     }
 
     [Theory]
@@ -177,6 +221,87 @@ public class GameValueEntryPointTests
 }
 
 /// <summary>
+/// Who asserted a position survives the typed surface. Every entry whose request takes a position takes
+/// an <see cref="AssertedPosition"/> and answers with an <see cref="AssertedAnswer{T}"/> carrying that
+/// same assertion back, as <see cref="Game.Play"/> carries its start into <see cref="GameRecord.Start"/>.
+/// </summary>
+public class AssertedPositionEntryPointTests
+{
+    private static readonly RulesKernel.Provenance.SourceLocator Cited = MapEntries.StartingPosition.Locator;
+
+    /// <summary>White all home on his six, five and four points; Black's fifteen on his own thirteen.</summary>
+    private static readonly AssertedPosition Home = new(
+        Board.Of(Board.Men().At(6, 5).At(5, 5).RestAt(4), Board.Men().RestAt(13)),
+        AssertedBy: "a study of bearing off",
+        Justification: Cited);
+
+    /// <summary>White has borne off all fifteen; Black has two off and the rest home, a hit.</summary>
+    private static readonly AssertedPosition Won = new(
+        Board.Of(Board.Men().RestBorneOff(), Board.Men().At(Geometry.BorneOffPip, 2).RestAt(3)),
+        AssertedBy: "a finished game");
+
+    public static TheoryData<string, Func<Resolution<object>>, AssertedPosition> Entries => new()
+    {
+        { "move-by-pip", () => EntryPoints.MoveByPip.Resolve(new() { Position = Home, Player = Player.Black, Die = 3 }), Home },
+        { "legal-destination", () => EntryPoints.LegalDestination.Resolve(new() { Position = Home, Player = Player.White, Pip = 3 }), Home },
+        { "made-point", () => EntryPoints.MadePoint.Resolve(new() { Position = Home, Player = Player.White, Pip = 6 }), Home },
+        { "blot-hit", () => EntryPoints.BlotHit.Resolve(new() { Position = Home, Player = Player.White, From = 6, To = 3 }), Home },
+        { "enter-from-bar", () => EntryPoints.EnterFromBar.Resolve(new() { Position = Home, Player = Player.White }), Home },
+        { "full-table-suspension", () => EntryPoints.FullTableSuspension.Resolve(new() { Position = Home, Player = Player.White }), Home },
+        { "must-play-whole-throw", () => EntryPoints.MustPlayWholeThrow.Resolve(new() { Position = Home, Player = Player.White, Thrown = new DiceThrow(6, 3) }), Home },
+        { "bearing-off-eligible", () => EntryPoints.BearingOffEligible.Resolve(new() { Position = Home, Player = Player.White }), Home },
+        { "bearing-off-move-or-remove", () => EntryPoints.BearingOffMoveOrRemove.Resolve(new() { Position = Home, Player = Player.White, Die = 5 }), Home },
+        { "bearing-off-highest", () => EntryPoints.BearingOffHighest.Resolve(new() { Position = Home, Player = Player.White, Die = 6 }), Home },
+        { "bearing-off-doublets", () => EntryPoints.BearingOffDoublets.Resolve(new() { Position = Home, Player = Player.White, Thrown = new DiceThrow(2, 2) }), Home },
+        { "win-condition", () => EntryPoints.WinCondition.Resolve(new() { Position = Won, Player = Player.White }), Won },
+        { "game-value", () => EntryPoints.GameValue.Resolve(new() { Position = Won, Winner = Player.White }), Won },
+    };
+
+    [Theory]
+    [MemberData(nameof(Entries))]
+    public void Every_entry_asked_about_an_asserted_position_answers_with_that_assertion(
+        string entry, Func<Resolution<object>> resolve, AssertedPosition asserted)
+    {
+        var value = Assert.IsType<Resolution<object>.Resolved>(resolve()).Value;
+
+        // The answer is an AssertedAnswer<T> of whatever the rule returns, and its assertion is the
+        // caller's own object: who asserted it and what they cited, not a copy the engine made up.
+        var type = value.GetType();
+        Assert.True(type.IsGenericType && type.GetGenericTypeDefinition() == typeof(AssertedAnswer<>), $"{entry} answered a {type}");
+        var position = Assert.IsType<AssertedPosition>(type.GetProperty(nameof(AssertedAnswer<object>.Position))!.GetValue(value));
+        Assert.Same(asserted, position);
+        Assert.Equal(asserted.AssertedBy, type.GetProperty(nameof(AssertedAnswer<object>.AssertedBy))!.GetValue(value));
+        Assert.Equal(asserted.Justification, type.GetProperty(nameof(AssertedAnswer<object>.Justification))!.GetValue(value));
+    }
+
+    [Fact]
+    public void Every_request_that_takes_a_position_takes_an_asserted_one_and_is_resolved_above()
+    {
+        // No request type still takes a bare Position, and the theory above covers every one that
+        // takes a position at all, so a new entry cannot drop the attribution unnoticed.
+        var positional = typeof(IEntryRequest).Assembly.GetExportedTypes()
+            .Where(t => t.Namespace == "HoyleBackgammon.Requests" && typeof(IEntryRequest).IsAssignableFrom(t))
+            .Select(t => (Type: t, Property: t.GetProperty("Position")))
+            .Where(r => r.Property is not null)
+            .ToList();
+
+        Assert.All(positional, r => Assert.Equal(typeof(AssertedPosition), r.Property!.PropertyType));
+        Assert.Equal(
+            Entries.Select(row => (string)row[0]).Order(StringComparer.Ordinal),
+            positional.Select(r => ((IEntryRequest)Activator.CreateInstance(r.Type)!).EntryId).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void A_request_without_a_position_is_the_callers_error_not_an_answer()
+    {
+        var error = Assert.Throws<ArgumentException>(() =>
+            EntryPoints.GameValue.Resolve(new() { Winner = Player.White }));
+
+        Assert.Equal(nameof(GameValueRequest.Position), error.ParamName);
+    }
+}
+
+/// <summary>
 /// One whole game through the public surface: the corpus's starting position asserted as a caller
 /// asserts it, <see cref="Game.Play"/> with a seeded <see cref="Pcg32"/>, the decisions recorded, and
 /// the game replayed from the same seed and those decisions.
@@ -186,11 +311,18 @@ public class SeededGameReplayTests
     private const ulong Seed = 20260914UL;
 
     /// <summary>
-    /// The SHA-256 of the recorded game's rendering. A literal, as <see cref="IdentityTests"/> keeps
-    /// its literals: if this changes, the engine plays this seed and these decisions differently,
-    /// which is a decision about the ruleset version and not a number to update until green.
+    /// The SHA-256 of the recorded game's canonical serialisation, <see cref="GameRecord.ToCanonicalJson"/>.
+    /// A literal, as <see cref="IdentityTests"/> keeps its literals: if this changes, the engine plays this
+    /// seed and these decisions differently or writes them differently, which is a decision about the
+    /// ruleset version or the replay schema and not a number to update until green.
     /// </summary>
-    private const string RecordedReplaySha256 = "606eb92458af7754b365c76b3d3eba436cd919a2c7db4d1c593b9a65e8500b9a";
+    /// <remarks>
+    /// Re-pinned from <c>606eb924...e8500b9a</c> when the record gained its own serialisation (replay
+    /// schema 2, <c>docs/decisions/0006</c>). The game did not change: the test's former rendering, run
+    /// over the new record with the schema read as 1, still hashes to the old literal, 65 turns and a
+    /// gammon for White. Only the bytes did, so the ruleset stays at version 3.
+    /// </remarks>
+    private const string RecordedReplaySha256 = "878936f1b49d970059f7231cecd9feb80ae93d27ea77d2cc8b5498100604da3d";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -204,63 +336,88 @@ public class SeededGameReplayTests
         var recorder = new RecordingDecider();
         var firstSource = new CountingSource(Pcg32.FromSeed(Seed, stream: 1));
         var first = Assert.IsType<Resolution<GameRecord>.Resolved>(Game.Play(start, firstSource, recorder)).Value;
-        byte[] recorded = Render(first);
+        byte[] recorded = first.ToCanonicalJson();
 
         // The replay knows nothing but the seed and the recorded decisions.
         var script = new ScriptedDecider(recorder.Decisions);
         var replaySource = new CountingSource(Pcg32.FromSeed(Seed, stream: 1));
         var replay = Assert.IsType<Resolution<GameRecord>.Resolved>(Game.Play(start, replaySource, script)).Value;
 
-        Assert.Equal(recorded, Render(replay));
+        Assert.Equal(recorded, replay.ToCanonicalJson());
         Assert.Equal(recorder.Decisions.Count, script.Consumed);
         Assert.Equal(firstSource.Drawn, replaySource.Drawn);
         Assert.Equal(RecordedReplaySha256, Convert.ToHexString(SHA256.HashData(recorded)).ToLowerInvariant());
 
-        // Two runs are comparable only under the same identity: ruleset hoyle-1909-backgammon
-        // version 3, from map 5.0.0. The identity does not carry the map version; the embedded
-        // provenance does. Map 5.0.0 changed only that line of the rendering: with it read as
-        // 4.0.0, the game renders to the hash pinned under map 4.0.0, 7d26993f...a947cc4.
-        Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
-        Assert.Equal(3, Game.Identity.Ruleset.Version);
+        // Two runs are comparable only under the same identity, and the record carries it: ruleset
+        // hoyle-1909-backgammon version 3, replay schema 2, from map 5.0.0. The map is the one the
+        // embedded provenance names, not a constant of the engine's.
+        Assert.Equal(Game.Identity, first.Identity);
+        Assert.Equal("hoyle-1909-backgammon", first.Identity.Ruleset.Id);
+        Assert.Equal(3, first.Identity.Ruleset.Version);
+        Assert.Equal(2, first.Identity.ReplaySchema.Version);
+        Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "5.0.0"), first.Map);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
         var map = provenance.RootElement.GetProperty("map");
-        Assert.Equal("RulesFactory.Maps.HoyleBackgammon", map.GetProperty("packageId").GetString());
-        Assert.Equal("5.0.0", map.GetProperty("version").GetString());
+        Assert.Equal(map.GetProperty("packageId").GetString(), first.Map.PackageId);
+        Assert.Equal(map.GetProperty("version").GetString(), first.Map.Version);
         Assert.StartsWith(
-            "identity hoyle-1909-backgammon v3 schema 1 map RulesFactory.Maps.HoyleBackgammon 5.0.0\n",
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":3},",
+            Encoding.UTF8.GetString(recorded),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"map\":{\"packageId\":\"RulesFactory.Maps.HoyleBackgammon\",\"version\":\"5.0.0\"}",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The game as bytes: the replay identity and the map it was produced from, then every field of
-    /// the record, in order. <see cref="GameRecord"/> has no serialisation of its own, so this is
-    /// the test's, built only from public members.
-    /// </summary>
-    private static byte[] Render(GameRecord record)
+    [Fact]
+    public void The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record()
     {
-        using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
-        var map = provenance.RootElement.GetProperty("map");
-        var identity = Game.Identity;
-        var text = new StringBuilder();
-        text.Append($"identity {identity.Ruleset.Id} v{identity.Ruleset.Version} schema {identity.ReplaySchema.Version} ")
-            .Append($"map {map.GetProperty("packageId").GetString()} {map.GetProperty("version").GetString()}\n");
-        foreach (var baseline in identity.SourceBaselines)
-        {
-            text.Append($"baseline {baseline.SourceId} {baseline.ContentHash} {baseline.HashDerivation}\n");
-        }
+        // A record built by hand, so every field and every escape is on the page: members sorted by
+        // name, no whitespace, a suspended turn (no throw, moves null) beside a turn with nothing
+        // playable (moves empty) and one with a hit, the justification null, and an asserter whose
+        // name needs a quote, a backslash, a newline, a unit separator and a non-ASCII letter.
+        var position = Setup.StartingPositionFromCorpus();
+        var record = new GameRecord(
+            Game.Identity,
+            new MapPackage("Some.Map", "1.2.3"),
+            new AssertedPosition(position, AssertedBy: "Ann \"A\\B\"\n\u001fé"),
+            new OpeningRoll([new DiceThrow(2, 2), new DiceThrow(5, 3)], Player.White),
+            OpeningThrowAdopted: true,
+            [
+                new Turn(Player.Black, null, null, position),
+                new Turn(Player.White, new DiceThrow(6, 6), new Play([], position), position),
+                new Turn(Player.Black, new DiceThrow(5, 3), new Play([new Move(8, 3, 5, MoveKind.Ordinary, TakesUpBlot: true)], position), position),
+            ],
+            Player.White,
+            GameValue.Gammon,
+            NextOpening.ThrowAgainForTheRight);
 
-        text.Append($"generator {identity.RandomAlgorithm?.Name}\n")
-            .Append($"start {record.Start.Position} asserted-by {record.Start.AssertedBy} justified-by {record.Start.Justification}\n")
-            .Append($"opening {string.Join(" ", record.OpeningRoll?.Attempts.Select(a => a.ToString()) ?? [])} ")
-            .Append($"opener {record.OpeningRoll?.Opener} adopted {record.OpeningThrowAdopted}\n");
-        foreach (var turn in record.Turns)
-        {
-            text.Append($"turn {turn.Player} {turn.Thrown?.ToString() ?? "suspended"} {turn.Play?.ToString() ?? "-"} => {turn.Position}\n");
-        }
+        string men = "[0,0,0,0,0,0,5,0,3,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,2,0]";
+        string board = $"{{\"Black\":{men},\"White\":{men}}}";
+        string expected =
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,"
+            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":3},"
+            + "\"sourceBaselines\":[{\"asOf\":null,\"contentHash\":\"5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e\","
+            + "\"hashDerivation\":\"gutenberg-plain-text-including-boilerplate\",\"sourceId\":\"hoyle-1909\"}]},"
+            + "\"map\":{\"packageId\":\"Some.Map\",\"version\":\"1.2.3\"},"
+            + "\"next\":\"ThrowAgainForTheRight\","
+            + "\"openingRoll\":{\"attempts\":[[2,2],[5,3]],\"opener\":\"White\"},"
+            + "\"openingThrowAdopted\":true,"
+            + $"\"start\":{{\"assertedBy\":\"Ann \\\"A\\\\B\\\"\\n\\u001fé\",\"justification\":null,\"position\":{board}}},"
+            + "\"turns\":["
+            + $"{{\"moves\":null,\"player\":\"Black\",\"position\":{board},\"thrown\":null}},"
+            + $"{{\"moves\":[],\"player\":\"White\",\"position\":{board},\"thrown\":[6,6]}},"
+            + "{\"moves\":[{\"authority\":\"move-by-pip\",\"die\":5,\"from\":8,\"kind\":\"Ordinary\",\"takesUpBlot\":true,\"to\":3}],"
+            + $"\"player\":\"Black\",\"position\":{board},\"thrown\":[5,3]}}"
+            + "],"
+            + "\"value\":\"Gammon\",\"winner\":\"White\"}";
 
-        text.Append($"winner {record.Winner} value {record.Value} next {record.Next}\n");
-        return Encoding.UTF8.GetBytes(text.ToString());
+        byte[] bytes = record.ToCanonicalJson();
+
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes));
+        Assert.NotEqual(0xEF, bytes[0]);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes);
     }
 
     /// <summary>Adopts the opening throw and takes the middle play offered, recording each decision.</summary>

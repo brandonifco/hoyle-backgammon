@@ -33,7 +33,7 @@ engine, and `doubling-cube` is recorded as out of scope with that reason rather 
 | `corpus-map.overlay.json` | The only part of the map this engine owns: `status`, `implementedIn` and `tests` on 29 entries, the tests that prove each one with the mutation that turned each test red (rules-factory#2). The gate merges it onto the restored package and fails if it sets any other field or names an entry the package lacks. Every correction this build found in the map itself is in `MAP-FINDINGS.md` and goes upstream as a new package version, never applied here. |
 | `provenance.json` | What the engine was produced from: factory version and commit, the map package and the SHA-256 of its bytes, the corpus baseline, the kernel, every factory recipe file, and the hash of every generated file and build input. Embedded in the assembly. |
 | `scripts/`, `.github/workflows/validate.yml`, `RulesFactory.Packages.g.props`, `backlog/` | The gate, its CI workflow, the kernel and map pins, and the (empty) backlog. Generated. |
-| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Seventeen findings, all accepted upstream, the last (17) in 4.0.0. |
+| `MAP-FINDINGS.md` | **Where the map turned out to be wrong.** Eighteen findings. Seventeen are accepted upstream, the last of those (17) in 4.0.0. Finding 18 is open: whether a play is the position it reaches or its moves in order ([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)). |
 | `corpus/hoyle.txt` | The pinned corpus, `boundaryPolicy: pin-in-repo`, copied in by `factory produce` after it hashed it. |
 
 ## Every rule cites its entry and its page
@@ -165,6 +165,12 @@ The replay identity is ruleset `hoyle-1909-backgammon` version 3 since map 4.0.0
 map 3.0.0, whose corrections made some games decline where version 1 finished them
 ([decision 0004](docs/decisions/0004-map-3-0-0-is-ruleset-version-two.md)).
 
+Every `GameRecord` carries that identity and the map package it was played under (`Identity`,
+`Map`, the map read from the embedded provenance), and `GameRecord.ToCanonicalJson()` is the
+record as bytes: RFC 8785 canonical JSON, replay schema 2
+([decision 0006](docs/decisions/0006-a-game-record-carries-its-identity-and-serialises-itself.md)).
+A replay hashes those bytes, not a rendering of its own.
+
 Same seed, same ordered decisions, same game. The draws are accounted for exactly: two per
 pair of dice thrown, none for a player whose play is wholly suspended (he does not throw),
 none for an adopted opening throw (it re-uses the deciding pair). `DeterminismTests` asserts
@@ -178,11 +184,20 @@ rule and returns the rule's answer or its decline:
 ```csharp
 var resolution = EntryPoints.MustPlayWholeThrow.Resolve(new MustPlayWholeThrowRequest
 {
-    Position = Setup.StartingPositionFromCorpus(),
+    Position = new AssertedPosition(Setup.StartingPositionFromCorpus(), AssertedBy: "me"),
     Player = Player.White,
     Thrown = new DiceThrow(6, 3),
 });
+// resolution's value is an AssertedAnswer<ImmutableArray<Play>>: the plays, and the assertion.
 ```
+
+A request that asks about a position takes an `AssertedPosition`, never a bare `Position`, and its
+value comes back as an `AssertedAnswer<T>` holding the rule's value and that same assertion
+(`AssertedBy`, `Justification`), as `Game.Play` keeps its start in `GameRecord.Start`. Thirteen
+entries take a position; `AssertedPositionEntryPointTests` resolves every one and fails if a new
+request takes a position without being covered. A decline is the rule's `UnresolvedResult` as it
+stands: the kernel type has no place for an attribution, and `Game.Play` attaches none to its
+declines either.
 
 An entry the engine declines (`doubling-cube`, say) answers through its entry point too, with the
 reason its correspondence row gives and its own citation.
@@ -202,8 +217,8 @@ kinds of file (rules-factory decision 0018):
 Everything else is hand-written and the factory never touches it: `src/Tabletop.Dice`, the rules
 in `src/HoyleBackgammon`, the handlers, the hand-written tests, the docs.
 
-**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.4.0
-(tag `factory/v0.4.0`, commit `f0da05f`, clean) from `RulesFactory.Maps.HoyleBackgammon` 5.0.0.
+**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.4.1
+(tag `factory/v0.4.1`, commit `02ea62a`, clean) from `RulesFactory.Maps.HoyleBackgammon` 5.0.0.
 The generated `ProvenanceTests` assert the copy embedded in the assembly is the file. To check the
 record against the tree, from a rules-factory checkout at that tag:
 

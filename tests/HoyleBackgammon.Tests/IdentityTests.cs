@@ -31,11 +31,13 @@ public class IdentityTests
     }
 
     [Fact]
-    public void The_replay_schema_is_version_one()
+    public void The_replay_schema_is_version_two()
     {
-        // The shape of a GameRecord: which fields a replay carries and what they mean. A
-        // recorded game from schema 1 cannot be read against another number.
-        Assert.Equal(1, Game.Identity.ReplaySchema.Version);
+        // The shape of a GameRecord: which fields a replay carries and what they mean. Version 2
+        // since the record carries its identity and map and has a canonical serialisation of its
+        // own (docs/decisions/0006). A recorded game from schema 1 cannot be read against another
+        // number.
+        Assert.Equal(2, Game.Identity.ReplaySchema.Version);
     }
 
     [Fact]

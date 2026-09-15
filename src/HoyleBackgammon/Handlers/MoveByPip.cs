@@ -5,8 +5,11 @@ namespace HoyleBackgammon.Requests
     /// <summary>The inputs <c>move-by-pip</c>'s rule reads.</summary>
     public sealed partial class MoveByPipRequest
     {
-        /// <summary>The position the rule is asked about.</summary>
-        public Position? Position { get; init; }
+        /// <summary>
+        /// The position the rule is asked about, and who asserted it. The answer carries the assertion
+        /// back (<see cref="AssertedAnswer{T}"/>), as <see cref="GameRecord.Start"/> does for a game.
+        /// </summary>
+        public AssertedPosition? Position { get; init; }
 
         /// <summary>The player the rule is asked about.</summary>
         public Player? Player { get; init; }
@@ -22,8 +25,8 @@ namespace HoyleBackgammon
     {
         /// <summary><c>move-by-pip</c>: <see cref="Movement.MovesForDie"/>.</summary>
         internal static partial Resolution<object> MoveByPip(Requests.MoveByPipRequest request) =>
-            Value(Movement.MovesForDie(
-                Demand(request.Position, request.EntryId, nameof(request.Position)),
+            Value(Demand(request.Position, request.EntryId, nameof(request.Position)), Movement.MovesForDie(
+                request.Position!.Position,
                 Demand(request.Player, request.EntryId, nameof(request.Player)),
                 Demand(request.Die, request.EntryId, nameof(request.Die))));
     }
