@@ -4,8 +4,8 @@
     "name": "HoyleBackgammon"
   },
   "factory": {
-    "version": "0.4.1",
-    "commit": "02ea62af2cad24439a5bcdf14df30ad9e887997b",
+    "version": "0.5.0",
+    "commit": "5bdd77f2b4b0a5e628c1f4b2dd5c476025785184",
     "dirty": false
   },
   "map": {
@@ -50,11 +50,11 @@
       },
       {
         "path": "tools/factory/__main__.py",
-        "sha256": "f379e379b03afc74ccf511051342fba7c6237b6f2c027fab04ece9d86cb512d8"
+        "sha256": "c6f32f36f16d6ce5f7d747762fd74075c5555b33422c026a4f73eb13bf17f541"
       },
       {
         "path": "tools/factory/backlog.py",
-        "sha256": "59ddcd5b6b7d20ca4df26b2cd4ec7ed18b0fc56609c6c45ef555091d9aba7c48"
+        "sha256": "700a2a23910c7cfd25f1f3dac64486beb48f4c173f600bdd5e08cbbb4bc27979"
       },
       {
         "path": "tools/factory/gate.py",
@@ -106,11 +106,11 @@
       },
       {
         "path": "tools/factory/verify.py",
-        "sha256": "48bcaf05b6d0628549af035c681900f713f175718e480014a43d3a876eb6260f"
+        "sha256": "7c6920906be9ce16302440cfd7d834d0a39bbdfbc51981e78c8f054507061c3d"
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "0f0d1a9c528ad93758d654a6d054aa92d60246c23d3ff14e5b309d10d6334c0e"
+    "digest": "f9d455e2100a2351b77050cd683a0c8e10dc25e839847e3ab48ebb867e5a82c1"
   },
   "generated": [
     {
