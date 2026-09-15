@@ -4,8 +4,8 @@
     "name": "HoyleBackgammon"
   },
   "factory": {
-    "version": "0.6.0",
-    "commit": "ec6294a008a4983fc8b3c406e29657b9bb88c06d",
+    "version": "0.7.0",
+    "commit": "069780809543a66d5556d713e337d850ef405b41",
     "dirty": false
   },
   "map": {
@@ -39,7 +39,7 @@
   },
   "kernel": {
     "packageId": "RulesKernel",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "packs": [],
   "recipes": {
@@ -62,7 +62,7 @@
       },
       {
         "path": "tools/factory/generate.py",
-        "sha256": "65adbdbd6e0473793ae593c44a0273a1d0b44f4edbcdb47e858cce959176c0e0"
+        "sha256": "afcea250d2dbd23390f156ece985824714ac68c65e8f4551c51323397c2388bb"
       },
       {
         "path": "tools/factory/intake.py",
@@ -114,7 +114,7 @@
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "7ff7910df87495c5ee8f3caca337eab84273d7fa82c6c0c83913f7801cb26236"
+    "digest": "1ddbbfea919b4fde8f98fe7d7973a4d1e6472fc6825e425f57c15a7b7d17ed0a"
   },
   "generated": [
     {
@@ -123,7 +123,7 @@
     },
     {
       "path": "RulesFactory.Packages.g.props",
-      "sha256": "aa0446f78119f71b4510643f6264cc6f46b61cf316b024b7deade9fcafd24fd9"
+      "sha256": "e9e03eee983b8db3a72daf00b6e3be28d685e9139731318ee24112959202bf55"
     },
     {
       "path": "backlog/README.md",
@@ -139,7 +139,7 @@
     },
     {
       "path": "scripts/factory/generate.py",
-      "sha256": "65adbdbd6e0473793ae593c44a0273a1d0b44f4edbcdb47e858cce959176c0e0"
+      "sha256": "afcea250d2dbd23390f156ece985824714ac68c65e8f4551c51323397c2388bb"
     },
     {
       "path": "scripts/factory/intake.py",
@@ -264,7 +264,7 @@
     },
     {
       "path": "src/HoyleBackgammon/packages.lock.json",
-      "sha256": "e013a1af3c627a49707c361735cae43867f56b1eb45087cd9ddef421fe11fe09"
+      "sha256": "e818fdd4d6acdc65f1cb9bdced2f0d48a5c28972585fded4981b84f936e9de4d"
     },
     {
       "path": "src/Tabletop.Dice/Tabletop.Dice.csproj",
@@ -272,7 +272,7 @@
     },
     {
       "path": "src/Tabletop.Dice/packages.lock.json",
-      "sha256": "68f6544d80f22e4da15b9001096bafb34ca6dfec6e7b27789b2dc7007956b3ec"
+      "sha256": "a900848fac01e0b7d74b463fadc3be92c8ca0839545d59aed1c9681a0472259c"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/HoyleBackgammon.Tests.csproj",
@@ -280,7 +280,7 @@
     },
     {
       "path": "tests/HoyleBackgammon.Tests/packages.lock.json",
-      "sha256": "342adea8dbf111791d4549ebaf44f9131db03be11fb280e1ee94d2fa9adbb742"
+      "sha256": "434882ba46a7c43a9c8122c774bd85f6b20e88864b20bfe255c9c64440cd430f"
     },
     {
       "path": "tests/Tabletop.Dice.Tests/Tabletop.Dice.Tests.csproj",
@@ -288,7 +288,7 @@
     },
     {
       "path": "tests/Tabletop.Dice.Tests/packages.lock.json",
-      "sha256": "778035cb1290656fe3f4f8a862a5dac3f6df41b856f80f97e4aebacca1c8c500"
+      "sha256": "75f7f075247e9b2297ee03bdbf88df7bc6b205528e1bd2e8bb8ee71898b5c0f8"
     }
   ],
   "randomness": "seeded",

@@ -2,8 +2,8 @@
 
 A deterministic backgammon engine produced by
 [rules-factory](https://github.com/brandonifco/rules-factory) from a corpus map, on
-[`RulesKernel`](https://www.nuget.org/packages/RulesKernel) 0.2.0 and
-[`RulesKernel.Randomness`](https://www.nuget.org/packages/RulesKernel.Randomness) 0.2.0.
+[`RulesKernel`](https://www.nuget.org/packages/RulesKernel) 0.3.0 and
+[`RulesKernel.Randomness`](https://www.nuget.org/packages/RulesKernel.Randomness) 0.3.0.
 
 The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Project Gutenberg
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
@@ -301,8 +301,8 @@ kinds of file (rules-factory decision 0018):
 Everything else is hand-written and the factory never touches it: `src/Tabletop.Dice`, the rules
 in `src/HoyleBackgammon`, the handlers, the hand-written tests, the docs.
 
-**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.6.0
-(tag `factory/v0.6.0`, commit `ec6294a`, clean) from `RulesFactory.Maps.HoyleBackgammon` 6.0.0.
+**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.7.0
+(tag `factory/v0.7.0`, commit `0697808`, clean) from `RulesFactory.Maps.HoyleBackgammon` 6.0.0.
 The generated `ProvenanceTests` assert the copy embedded in the assembly is the file. To check the
 record against the tree, from a rules-factory checkout at that tag:
 
