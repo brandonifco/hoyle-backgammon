@@ -87,11 +87,12 @@ public static class Outcome
     /// the case returns <see cref="UnresolvedReason.RequiresInterpretation"/>.
     /// </para>
     /// <para>
-    /// The question names a man <em>up</em>, and this declines exactly that. A loser who has
-    /// borne off nothing with a man in the winner's home table answers both conditions by the
-    /// same words, but the question does not name him, so he is still valued a backgammon;
-    /// finding 17 in <c>MAP-FINDINGS.md</c> takes that upstream rather than widening the decline
-    /// here.
+    /// The backgammon condition has two arms, a man up <em>or</em> a man in the winner's home
+    /// table, and a loser who has borne off nothing answers the gammon condition beside either.
+    /// Map 3.0.0's question named only the man up, so this declined only him and still valued
+    /// the man in the winner's home table a backgammon. Finding 17 in <c>MAP-FINDINGS.md</c> took
+    /// that upstream, and since <c>RulesFactory.Maps.HoyleBackgammon</c> 4.0.0 (rules-factory#102)
+    /// the question names both, so both decline.
     /// </para>
     /// <para>
     /// The three are not exhaustive. A loser who has borne off a man, been taken up,
@@ -120,16 +121,18 @@ public static class Outcome
 
         // "still a man or men up (i.e., on the bar) or in his (the winner's) home table". The
         // winner's home table is his own pips 1-6, which the loser counts as 24 down to 19.
-        if (position.OnBar(loser) > 0 && position.BorneOff(loser) == 0)
+        bool backgammon = position.OnBar(loser) > 0 || LoserStandsInWinnersHome(position, loser);
+        if (backgammon && position.BorneOff(loser) == 0)
         {
             return Resolution<GameValue>.FromUnresolved(new UnresolvedResult(
                 UnresolvedReason.RequiresInterpretation,
-                "value a win against a loser who has borne off nothing and has a man up, which "
-                + "answers the gammon condition and the backgammon condition both",
+                "value a win against a loser who has borne off nothing and has a man up or in the "
+                + "winner's home table, which answers the gammon condition and the backgammon "
+                + "condition both",
                 MapEntries.GameValue.Locator));
         }
 
-        if (position.OnBar(loser) > 0 || LoserStandsInWinnersHome(position, loser))
+        if (backgammon)
         {
             return Resolution<GameValue>.FromValue(GameValue.Backgammon);
         }
