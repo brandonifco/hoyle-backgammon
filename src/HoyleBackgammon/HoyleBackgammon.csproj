@@ -3,12 +3,15 @@
   <ItemGroup>
     <PackageReference Include="RulesKernel" />
     <PackageReference Include="RulesKernel.Randomness" />
-    <!-- The map this engine is built from. It carries no assemblies: its build props add one
-         RulesFactoryMap item naming the restored corpus-map.json and corpus-manifest.json,
-         which scripts/validate.sh reads. PrivateAssets keeps it from flowing to anything that
-         references this project. -->
-    <PackageReference Include="RulesFactory.Maps.HoyleBackgammon" PrivateAssets="all" />
+    <!-- The map package is referenced from RulesFactory.Packages.g.props, which `factory produce`
+         rewrites, so the reference always names the package the code was generated from. -->
     <ProjectReference Include="../Tabletop.Dice/Tabletop.Dice.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- What this engine was produced from (rules-factory tools/factory/provenance.py); a
+         generated test asserts the embedded copy is the file. -->
+    <EmbeddedResource Include="../../provenance.json" LogicalName="HoyleBackgammon.provenance.json" Link="provenance.json" />
   </ItemGroup>
 
 </Project>
