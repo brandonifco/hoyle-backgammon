@@ -41,11 +41,18 @@ question now names both overlap cases. That leaves no finding open. 4.0.0 is als
 this engine was *produced* from, by rules-factory 0.2.1 (see README.md); nothing in producing it
 changed a finding.
 
-**Finding 18 is open.** It came from the end-to-end tests (PR #11): two orders of the same moves can
-reach the same position under different authorities, and the corpus does not say whether a play
-is the position or the ordered moves. That makes 18 findings, 13 of them where the map is at
-fault. The engine keeps its behaviour until a map version answers it
+**Finding 18 came from the end-to-end tests** (PR #11): two orders of the same moves can reach the
+same position under different authorities, and the corpus does not say whether a play is the
+position or the ordered moves. That makes 18 findings, 13 of them where the map is at fault. The
+engine kept its behaviour until a map version answered it
 ([decision 0007](docs/decisions/0007-an-equivalent-order-is-offered-once-until-the-map-says-otherwise.md)).
+
+**A fifth round came with 6.0.0** (rules-factory#125, PR #127), and accepted finding 18. Both of its
+questions are now recorded, neither settled: `must-play-whole-throw`'s question asks whether two
+orders reaching the same position are one play or two, and `bearing-off-eligible`'s asks whether a
+number left after the last man comes home is played under bearing off. Each is `fate: unresolved`.
+The engine now declines both cases, which changes what a game returns, so the ruleset is version 4
+([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)). No finding is open.
 
 ---
 
@@ -598,4 +605,25 @@ second: whether a player whose last man comes home with one number of a throw be
 rest. Each needs a `fate`. Once one is recorded, the engine follows it: offer both orders or record
 the equivalent one, and decline or allow bearing off within the throw. If that changes what a rule
 returns, it is a ruleset change.
+
+**Accepted in 6.0.0** (rules-factory#125, PR #127). The map settles neither question and records
+both, as second parts of existing questions rather than a new entry. `must-play-whole-throw`'s
+question now asks whether two orders that use the same numbers and reach the same position are one
+play or two, with this finding's deuce-ace example. `bearing-off-eligible`'s asks whether a number
+left after the move that brings the last man home is played under the stage, with last man on the
+nine point and six-trois (9/3 then off with the trois, or 9/6 then off with the six). Both stay
+`clarity: ambiguous`, `fate: unresolved`, `RequiresInterpretation`; `move-by-pip`'s and
+`bearing-off-move-or-remove`'s notes point at them. The map's review found order itself free (the
+blind-mapping row `move-by-pip|clarity|die-movement` stands), which is not the same as saying two
+orders are one play.
+
+The engine no longer keeps 0007's behaviour. `LegalPlays.For` declines a throw where any order
+reaches a state an earlier order reached under a different multiset of authorities, citing
+`must-play-whole-throw`, and a throw where any line brings the last man home with a number still to
+play, citing `bearing-off-eligible`
+([decision 0008](docs/decisions/0008-map-6-0-0-is-ruleset-version-four.md)).
+`MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_decline_citing_page_275`
+and `MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible`
+are the declines' tests, named in the overlay. Most games played to the end now reach one of the two
+cases and decline, so the ruleset is version 4.
 

@@ -6,6 +6,17 @@ namespace HoyleBackgammon.Tests;
 
 public class DeterminismTests
 {
+    /// <summary>
+    /// A seed whose game from the corpus's start, taking the first play offered, finishes. It was
+    /// 20260913 until ruleset version 4 (map 6.0.0, rules-factory#125, docs/decisions/0008): that game
+    /// now declines, <see cref="A_game_that_finished_under_ruleset_three_declines_citing_page_275"/>.
+    /// 20260905 is the first from 20260900 that finishes.
+    /// </summary>
+    internal const ulong FinishingSeed = 20260905UL;
+
+    /// <summary>A second finishing seed, for the test that different seeds give different games. It was 1.</summary>
+    private const ulong OtherFinishingSeed = 20260921UL;
+
     private static GameRecord PlayOut(ulong seed, IDecider decider, out int drawn)
     {
         var counting = new CountingSource(Pcg32.FromSeed(seed, stream: 1));
@@ -17,8 +28,8 @@ public class DeterminismTests
     [Fact]
     public void The_same_seed_and_the_same_decisions_give_the_same_game()
     {
-        var first = PlayOut(20260913UL, new FirstOptionDecider(), out int firstDraws);
-        var second = PlayOut(20260913UL, new FirstOptionDecider(), out int secondDraws);
+        var first = PlayOut(FinishingSeed, new FirstOptionDecider(), out int firstDraws);
+        var second = PlayOut(FinishingSeed, new FirstOptionDecider(), out int secondDraws);
 
         Assert.Equal(firstDraws, secondDraws);
         Assert.Equal(first.Turns.Length, second.Turns.Length);
@@ -33,8 +44,8 @@ public class DeterminismTests
     public void A_different_seed_gives_a_different_game()
     {
         // Without this the test above would pass against an engine that ignored the generator.
-        var first = PlayOut(20260913UL, new FirstOptionDecider(), out _);
-        var other = PlayOut(1UL, new FirstOptionDecider(), out _);
+        var first = PlayOut(FinishingSeed, new FirstOptionDecider(), out _);
+        var other = PlayOut(OtherFinishingSeed, new FirstOptionDecider(), out _);
 
         Assert.NotEqual(
             first.Turns.Select(t => $"{t.Player} {t.Thrown} {t.Play}"),
@@ -47,7 +58,7 @@ public class DeterminismTests
         // A suspended player does not throw, and a re-thrown opening costs a pair. Two draws
         // per pair thrown and not one draw more: if any rule quietly consulted the generator,
         // or if a suspended turn threw, this would not balance.
-        var record = PlayOut(20260913UL, new FirstOptionDecider(), out int drawn);
+        var record = PlayOut(FinishingSeed, new FirstOptionDecider(), out int drawn);
 
         // Every turn that threw cost a pair, except an adopted opening throw, which re-used
         // the deciding pair and cost nothing.
@@ -61,7 +72,7 @@ public class DeterminismTests
     [Fact]
     public void The_thirty_men_are_conserved_through_every_turn()
     {
-        var record = PlayOut(20260913UL, new FirstOptionDecider(), out _);
+        var record = PlayOut(FinishingSeed, new FirstOptionDecider(), out _);
 
         foreach (var turn in record.Turns)
         {
@@ -81,7 +92,7 @@ public class DeterminismTests
     [Fact]
     public void A_finished_game_ends_with_the_winner_bearing_off_his_last_man()
     {
-        var record = PlayOut(20260913UL, new FirstOptionDecider(), out _);
+        var record = PlayOut(FinishingSeed, new FirstOptionDecider(), out _);
         var last = record.Turns[^1];
 
         Assert.Equal(record.Winner, last.Player);
@@ -94,7 +105,7 @@ public class DeterminismTests
     {
         // The record is the evidence, so it has to be independently checkable: replaying the
         // moves against Position.Apply must reproduce every position in it.
-        var record = PlayOut(20260913UL, new FirstOptionDecider(), out _);
+        var record = PlayOut(FinishingSeed, new FirstOptionDecider(), out _);
         var position = record.Start.Position;
 
         foreach (var turn in record.Turns)
@@ -111,10 +122,24 @@ public class DeterminismTests
     [Fact]
     public void The_starting_position_travels_with_the_result_and_names_who_asserted_it()
     {
-        var record = PlayOut(20260913UL, new FirstOptionDecider(), out _);
+        var record = PlayOut(FinishingSeed, new FirstOptionDecider(), out _);
 
         Assert.Equal(Corpus.StartingPosition.AssertedBy, record.Start.AssertedBy);
         Assert.NotNull(record.Start.Justification);
+    }
+
+    [Fact]
+    public void A_game_that_finished_under_ruleset_three_declines_citing_page_275()
+    {
+        // Seed 20260913 with the first play offered was this class's game until ruleset version 4: a
+        // gammon for White. Under map 6.0.0 (rules-factory#125) a throw in it plays a man home in two
+        // orders under different rules, which must-play-whole-throw leaves open, so the game stops
+        // there with the entry's citation rather than finishing (docs/decisions/0008).
+        var result = Game.Play(Corpus.StartingPosition, Pcg32.FromSeed(20260913UL, 1UL), new FirstOptionDecider());
+
+        var unresolved = Assert.IsType<Resolution<GameRecord>.Unresolved>(result).Result;
+        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
+        Assert.Equal(MapEntries.MustPlayWholeThrow.Locator, unresolved.Locator);
     }
 
     [Fact]
