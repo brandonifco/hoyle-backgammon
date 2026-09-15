@@ -1,3 +1,4 @@
+using RulesKernel.Resolution;
 using Tabletop.Dice;
 using Xunit;
 
@@ -21,16 +22,60 @@ public class BearingOffEligibilityTests
         Assert.False(BearingOff.IsEligible(position, Player.White));
     }
 
-    [Fact]
-    public void A_man_hit_back_out_mid_bear_off_stops_it()
-    {
-        var position = Board.Of(
-            Board.Men().At(Geometry.BarPip, 1).At(3, 4).RestBorneOff(),
-            Board.Men().RestAt(1));
+    // This was A_man_hit_back_out_mid_bear_off_stops_it, named by bearing-off-eligible in the
+    // overlay. It asserted two things. That a man up stops bearing off is kept, and is now
+    // enter-from-bar's suspension of the three bearing-off rules, which map 3.0.0 records
+    // (blind-mapping resolution rows 11, 14 and 17): it is below, in BearingOffSuspensionTests.
+    // That IsEligible is false for him was a reading of the question the same version leaves
+    // unresolved -- whether the stage lasts once a man is hit (rows 12 and 13) -- and is
+    // dropped; the two tests after it hold the decline in its place.
 
-        Assert.False(BearingOff.IsEligible(position, Player.White));
-        Assert.Throws<InvalidOperationException>(
-            () => BearingOff.MovesForDie(position, Player.White, 3));
+    [Fact]
+    public void A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle()
+    {
+        // WholeThrowTests' old fixture: thirteen off, a man re-entered on the far ace point and
+        // another on the eight. A six-trois takes the eight-point man home with a number left,
+        // and whether his bearing off goes on from there is bearing-off-eligible's question
+        // (map 3.0.0, blind-mapping resolution rows 12 and 13).
+        var position = Board.Of(
+            Board.Men().At(24, 1).At(8, 1).RestBorneOff(),
+            Board.Men().At(7, 2).At(4, 2).RestAt(12));
+
+        var unresolved = Legal.Unresolved(position, Player.White, new DiceThrow(6, 3));
+
+        Assert.Equal(UnresolvedReason.RequiresInterpretation, unresolved.Reason);
+        Assert.Equal(MapEntries.BearingOffEligible.Locator, unresolved.Locator);
+
+        // And from the start of a throw: a man at home, a man outside, men off, none up.
+        var atHome = Board.Of(
+            Board.Men().At(20, 1).At(3, 4).RestBorneOff(),
+            Board.Men().RestAt(13));
+        Assert.True(BearingOff.HasReEnteredMidBearOff(atHome, Player.White));
+        Assert.Equal(
+            MapEntries.BearingOffEligible.Locator,
+            Legal.Unresolved(atHome, Player.White, new DiceThrow(2, 1)).Locator);
+    }
+
+    [Fact]
+    public void The_decline_is_only_where_the_question_arises()
+    {
+        // Nothing borne off: he has not begun to bear off, so he is simply not home yet.
+        var notBegun = Board.Of(Board.Men().At(20, 1).RestAt(3), Board.Men().RestAt(13));
+        Assert.False(BearingOff.HasReEnteredMidBearOff(notBegun, Player.White));
+        Assert.NotEmpty(Legal.Plays(notBegun, Player.White, new DiceThrow(2, 1)));
+
+        // All home again: both readings agree he is bearing off.
+        var home = Board.Of(Board.Men().At(3, 4).RestBorneOff(), Board.Men().RestAt(13));
+        Assert.False(BearingOff.HasReEnteredMidBearOff(home, Player.White));
+
+        // No man left at home: nothing to go on bearing off, so both readings agree he moves.
+        var noneHome = Board.Of(Board.Men().At(20, 1).RestBorneOff(), Board.Men().RestAt(13));
+        Assert.False(BearingOff.HasReEnteredMidBearOff(noneHome, Player.White));
+        Assert.NotEmpty(Legal.Plays(noneHome, Player.White, new DiceThrow(2, 1)));
+
+        // Still up: enter-from-bar suspends bearing off whichever reading holds.
+        var up = Board.Of(Board.Men().At(Geometry.BarPip, 1).At(3, 4).RestBorneOff(), Board.Men().RestAt(13));
+        Assert.False(BearingOff.HasReEnteredMidBearOff(up, Player.White));
     }
 
     [Fact]
@@ -41,6 +86,35 @@ public class BearingOffEligibilityTests
             Board.Men().RestAt(1));
 
         Assert.True(BearingOff.IsEligible(position, Player.White));
+    }
+}
+
+/// <summary>
+/// enter-from-bar suspends bearing-off-move-or-remove, bearing-off-highest and
+/// bearing-off-doublets since map 3.0.0 (blind-mapping resolution rows 11, 14 and 17): "Until
+/// he does this, the play of his other men is suspended", bearing off included.
+/// </summary>
+public class BearingOffSuspensionTests
+{
+    [Fact]
+    public void A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters()
+    {
+        // Ten off, four on his trois point, one up. Black's men are all on his own thirteen
+        // point, so every number enters. Every die is one his home men could otherwise remove
+        // or move with -- a trois from the trois point, a six from the highest point.
+        var position = Board.Of(
+            Board.Men().At(Geometry.BarPip, 1).At(3, 4).RestBorneOff(),
+            Board.Men().RestAt(13));
+
+        for (int die = 1; die <= 6; die++)
+        {
+            var move = Assert.Single(Movement.MovesForDie(position, Player.White, die));
+            Assert.Equal(MoveKind.Entry, move.Kind);
+        }
+
+        var refused = Assert.Throws<InvalidOperationException>(
+            () => BearingOff.MovesForDie(position, Player.White, 3));
+        Assert.Contains(MapEntries.EnterFromBar.Locator.Citation, refused.Message, StringComparison.Ordinal);
     }
 }
 

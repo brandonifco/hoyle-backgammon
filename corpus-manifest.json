@@ -13,6 +13,7 @@
       "verification": "committed-copy",
       "committedPath": "corpus/hoyle.txt",
       "quotation": "verbatim",
+      "randomness": "seeded",
       "retrievedFrom": "https://www.gutenberg.org/ebooks/39445.txt.utf-8",
       "references": []
     }
@@ -23,7 +24,7 @@
       "sourceId": "hoyle-1909",
       "upstream": {
         "package": "RulesFactory.Maps.HoyleBackgammon",
-        "version": "2.0.0"
+        "version": "3.0.0"
       },
       "overlay": "corpus-map.overlay.json",
       "derivation": "corpus-map.json is merge(package map, overlay) under rules-factory decision 0015. The package is referenced at an exact version in Directory.Packages.props and pinned by content hash in src/HoyleBackgammon/packages.lock.json, restored in locked mode; the overlay sets only status, implementedIn and tests, the build facts only this engine can know. scripts/validate.sh fails if the overlay sets any other field or names an entry the package lacks, if corpus-map.json is not exactly the merge, or if this upstream is not the restored package. Corrections this build finds go upstream (MAP-FINDINGS.md) and arrive as a new package version, never applied here."

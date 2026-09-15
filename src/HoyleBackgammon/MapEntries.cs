@@ -4,7 +4,7 @@ using RulesKernel.Provenance;
 namespace HoyleBackgammon;
 
 /// <summary>
-/// The thirty-two entries of <c>corpus-map.json</c>, one static per entry, with the
+/// The thirty-three entries of <c>corpus-map.json</c>, one static per entry, with the
 /// citations copied verbatim from the map.
 /// </summary>
 /// <remarks>
@@ -32,6 +32,13 @@ namespace HoyleBackgammon;
 /// <c>hit-pays-single-stake</c> is a fact no sentence states, split out of
 /// <c>stake-multiplier</c> under <c>rules-factory/docs/decisions/0012</c>; it is a
 /// <see cref="DerivedMapEntry"/> and carries no citation.
+/// </para>
+/// <para>
+/// The thirty-third came with <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0, the blind second
+/// mapping (<c>rules-factory/examples/hoyle-backgammon/blind-mapping/resolutions.json</c>, rows
+/// 114 and 115): <c>rubber-scoring</c>, a sentence that had sat inside <c>die-faces</c>' span
+/// with no verdict on it. The same version made <c>bearing-off-eligible</c> ambiguous (rows 12
+/// and 13) and widened <c>game-value</c>'s question to the overlap (row 52).
 /// </para>
 /// </remarks>
 public static class MapEntries
@@ -62,6 +69,7 @@ public static class MapEntries
     private const string BearingOff276 = "BACKGAMMON / Bearing off the Men / p. 276";
     private const string BearingOff277 = "BACKGAMMON / Bearing off the Men / p. 277";
     private const string HintsForPlay277 = "BACKGAMMON / Hints for Play / p. 277";
+    private const string HintsForPlay278 = "BACKGAMMON / Hints for Play / p. 278";
 
     private static MapEntry Entry(string id, string name, string citation) =>
         new(id, name, new SourceLocator(SourceId, citation));
@@ -163,7 +171,10 @@ public static class MapEntries
     public static MapEntry MustPlayWholeThrow { get; } =
         Entry("must-play-whole-throw", "The whole throw must be played if it can be", Playing275);
 
-    /// <summary>Bearing off begins when all men are home.</summary>
+    /// <summary>
+    /// Bearing off begins when all men are home. Ambiguous; fate unresolved: whether the stage
+    /// lasts once a man is hit after bearing off has begun and re-enters.
+    /// </summary>
     public static MapEntry BearingOffEligible { get; } =
         Entry("bearing-off-eligible", "Bearing off begins when all men are home", BearingOff275);
 
@@ -185,7 +196,7 @@ public static class MapEntries
 
     /// <summary>
     /// A win is a hit, a gammon, or a backgammon. Ambiguous: the three named results do not
-    /// cover every finish, and the fate of the one they miss is unresolved.
+    /// cover every finish, nor are they disjoint, and the fate of both cases is unresolved.
     /// </summary>
     public static MapEntry GameValue { get; } =
         Entry("game-value", "A win is a hit, a gammon, or a backgammon", BearingOff276);
@@ -230,6 +241,14 @@ public static class MapEntries
             "die-faces",
             "The faces a die bears, and the throws a pair of them can show",
             HintsForPlay277);
+
+    /// <summary>
+    /// How games count towards a rubber. Ambiguous; fate unresolved: the chapter never defines
+    /// a rubber's length or winning total, nor how a backgammon reckons. Stated only in the two
+    /// cases a sentence of advice gives, which is all <see cref="Outcome.RubberWinner"/> answers.
+    /// </summary>
+    public static MapEntry RubberScoring { get; } =
+        Entry("rubber-scoring", "How games count towards a rubber", HintsForPlay278);
 
     /// <summary>Doubling the stake during play. Declined: out of scope, absent from a 1909 corpus.</summary>
     public static MapEntry DoublingCube { get; } =

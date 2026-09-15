@@ -36,6 +36,11 @@ public enum NextOpening
     ThrowAgainForTheRight,
 }
 
+/// <summary>One game of a rubber: who won it, and what kind of win it was.</summary>
+/// <param name="Winner">Who won the game.</param>
+/// <param name="Value">Whether it was a hit, a gammon or a backgammon.</param>
+public sealed record GameResult(Player Winner, GameValue Value);
+
 /// <summary>Winning, and what the win is worth.</summary>
 public static class Outcome
 {
@@ -67,28 +72,33 @@ public static class Outcome
     /// got all his men into his own home table, and has begun to bear off" (a hit); the winner
     /// finished "before his adversary has begun to do the same" (a gammon); the adversary
     /// "has still a man or men 'up' (i.e., on the bar) or in his (the winner's) home table" (a
-    /// backgammon). Backgammon is tested first, because the three conditions overlap and the
-    /// corpus plainly intends the larger name to win.
+    /// backgammon).
     /// </para>
     /// <para>
-    /// The overlap is smaller than it looks, and worth stating exactly. A man up does
-    /// <em>not</em> imply nothing has been borne off: a player may bear off and then be hit,
-    /// which is the very manoeuvre the gap case below turns on — a loser holding
-    /// <c>{bar 1, off 3}</c> is a backgammon by the corpus's words and has borne off three
-    /// men. What does overlap is a loser who has borne off nothing <em>and</em> has a man up
-    /// or in the winner's home table: he answers the gammon condition and the backgammon
-    /// condition both, and that is the case an ordering had to be chosen for. The map's
-    /// <c>note</c> records that the choice was made; its <c>ambiguity.question</c> does not
-    /// name it, because the ordering the corpus "plainly intends" is not the case this rule
-    /// declines. See finding 4 in <c>MAP-FINDINGS.md</c>.
+    /// <b>The overlap.</b> A man up does <em>not</em> imply nothing has been borne off: a player
+    /// may bear off and then be hit, which is the very manoeuvre the gap case below turns on —
+    /// a loser holding <c>{bar 1, off 3}</c> is a backgammon by the corpus's words, and nothing
+    /// else. What does overlap is a loser who has borne off nothing <em>and</em> has a man up:
+    /// he answers the gammon condition and the backgammon condition both. This engine used to
+    /// test backgammon first, on the ground that the corpus plainly intends the larger name to
+    /// win, and the map's note recorded that an ordering had been chosen. Since
+    /// <c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0 the map's <c>ambiguity.question</c> names
+    /// that overlap (blind-mapping resolution row 52) and the ordering is gone from the note, so
+    /// the case returns <see cref="UnresolvedReason.RequiresInterpretation"/>.
+    /// </para>
+    /// <para>
+    /// The question names a man <em>up</em>, and this declines exactly that. A loser who has
+    /// borne off nothing with a man in the winner's home table answers both conditions by the
+    /// same words, but the question does not name him, so he is still valued a backgammon;
+    /// finding 17 in <c>MAP-FINDINGS.md</c> takes that upstream rather than widening the decline
+    /// here.
     /// </para>
     /// <para>
     /// The three are not exhaustive. A loser who has borne off a man, been taken up,
     /// re-entered and run the man clear of the winner's home table satisfies none of them: he
     /// has begun to bear off, so it is not a gammon; his men are not all home, so it is not a
     /// hit; he is neither up nor in the winner's home table, so it is not a backgammon. That
-    /// case returns <see cref="UnresolvedReason.RequiresInterpretation"/>, and it is the one
-    /// case this rule declines: the entry is <c>clarity: ambiguous</c> with
+    /// case returns <see cref="UnresolvedReason.RequiresInterpretation"/> too: the entry is <c>clarity: ambiguous</c> with
     /// <c>fate: unresolved</c> and its <c>question</c> names exactly this finish. It used to
     /// be recorded <c>clarity: clear</c> while this line declined — the map saying the case
     /// could not happen while the engine handled it — which is finding 4 in
@@ -110,6 +120,15 @@ public static class Outcome
 
         // "still a man or men up (i.e., on the bar) or in his (the winner's) home table". The
         // winner's home table is his own pips 1-6, which the loser counts as 24 down to 19.
+        if (position.OnBar(loser) > 0 && position.BorneOff(loser) == 0)
+        {
+            return Resolution<GameValue>.FromUnresolved(new UnresolvedResult(
+                UnresolvedReason.RequiresInterpretation,
+                "value a win against a loser who has borne off nothing and has a man up, which "
+                + "answers the gammon condition and the backgammon condition both",
+                MapEntries.GameValue.Locator));
+        }
+
         if (position.OnBar(loser) > 0 || LoserStandsInWinnersHome(position, loser))
         {
             return Resolution<GameValue>.FromValue(GameValue.Backgammon);
@@ -189,6 +208,62 @@ public static class Outcome
         };
 
         return new StakeDue(value, multiple, agreed);
+    }
+
+    /// <summary>
+    /// Who has won the rubber, from its games in the order they were played.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="MapEntries.RubberScoring"/> (<c>RulesFactory.Maps.HoyleBackgammon</c> 3.0.0,
+    /// blind-mapping resolution rows 114 and 115): "This case often arises where the player has
+    /// already lost the first hit of a rubber, in which case, if he loses the next game, he has
+    /// lost the rubber also; but if he can secure a gammon (reckoning as a double game), he
+    /// becomes the winner of the rubber."
+    /// </para>
+    /// <para>
+    /// That sentence settles two sequences, and this answers those two and nothing else:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>a hit, then a second game won by the same player, whatever its value: he wins the
+    /// rubber;</item>
+    /// <item>a hit, then a gammon won by the other player: the other player wins it.</item>
+    /// </list>
+    /// <para>
+    /// Every other sequence returns <see cref="UnresolvedReason.RequiresInterpretation"/>. The
+    /// map's question is why: the chapter "never defines a rubber's length or winning total,
+    /// and does not say how a backgammon reckons". So a first game that was not a hit, a second
+    /// game the loser of the first wins by a hit or a backgammon, a rubber of one game, and a
+    /// rubber of three or more all decline — the last because nothing says a third game
+    /// belongs to the rubber rather than to the next one.
+    /// </para>
+    /// </remarks>
+    /// <param name="games">The rubber's games, first first.</param>
+    /// <exception cref="ArgumentNullException">If <paramref name="games"/> is null.</exception>
+    public static Resolution<Player> RubberWinner(IReadOnlyList<GameResult> games)
+    {
+        ArgumentNullException.ThrowIfNull(games);
+
+        if (games.Count == 2 && games[0].Value == GameValue.Hit)
+        {
+            var first = games[0].Winner;
+            var second = games[1];
+            if (second.Winner == first)
+            {
+                return Resolution<Player>.FromValue(first);
+            }
+
+            if (second.Value == GameValue.Gammon)
+            {
+                return Resolution<Player>.FromValue(second.Winner);
+            }
+        }
+
+        return Resolution<Player>.FromUnresolved(new UnresolvedResult(
+            UnresolvedReason.RequiresInterpretation,
+            "score a rubber the corpus's one sentence about rubbers does not settle: its length, "
+            + "its winning total and what a backgammon reckons are never stated",
+            MapEntries.RubberScoring.Locator));
     }
 
     /// <summary>
