@@ -4,29 +4,29 @@
     "name": "HoyleBackgammon"
   },
   "factory": {
-    "version": "0.2.1",
-    "commit": "b910e2f1480886ac17f2a11579234e97fc1dcdbc",
+    "version": "0.4.0",
+    "commit": "f0da05fff2bb1dae0ea7031873276959ae4c481c",
     "dirty": false
   },
   "map": {
     "packageId": "RulesFactory.Maps.HoyleBackgammon",
-    "version": "4.0.0",
-    "nupkgSha256": "f3b1fdffa553f246d10f2da8426182f2785062410c450f2f20d8ad4f63cd4a37",
+    "version": "5.0.0",
+    "nupkgSha256": "ff9207e96d2218ae1d4f7a25d44a2346efbbba521bf46791a067eb2e92d077cd",
     "files": [
       {
         "role": "map",
         "path": "map/corpus-map.json",
-        "sha256": "82b135bfa760df7b9157abff2ce882f8f8b9d57189f0803baeec74c7f2ace0a8"
+        "sha256": "6cf722b6532d1a333a830783365f7b28840219a1ae4b9b099688262896005078"
       },
       {
         "role": "manifest",
         "path": "map/corpus-manifest.json",
-        "sha256": "e5704b5d64c0174842872fcba6030f7a8e60421391589e89aa1044eb21e5567e"
+        "sha256": "8f36445244a9c4c0fc3ea10a2249f008f63797102e1ca457633070f57141e7ad"
       },
       {
         "role": "checker",
         "path": "tools/check-map.py",
-        "sha256": "6916236c2a9be9557bf18d4447668a55846e1dc0b6bde63280c3add1ff4aed67"
+        "sha256": "3198b323fbad84c6c7b284b88dce188d02c16b7bdd569c31ad090c58491e37c8"
       }
     ]
   },
@@ -46,27 +46,35 @@
     "files": [
       {
         "path": "tools/check-map.py",
-        "sha256": "6916236c2a9be9557bf18d4447668a55846e1dc0b6bde63280c3add1ff4aed67"
+        "sha256": "3198b323fbad84c6c7b284b88dce188d02c16b7bdd569c31ad090c58491e37c8"
       },
       {
         "path": "tools/factory/__main__.py",
-        "sha256": "2dbcd2a8aae455637420005f869f1ad8ee6af4e8b5f003d223cf7efa0cab6c9f"
+        "sha256": "11b2c64cf1a425060d580765cbb9205c1c95d6f7eea194b5bc6ab000083c9b50"
       },
       {
         "path": "tools/factory/backlog.py",
-        "sha256": "2e3a65d98551d0fab798097964f8bae6d9b0f1fb043dc268b680fafd2b230234"
+        "sha256": "59ddcd5b6b7d20ca4df26b2cd4ec7ed18b0fc56609c6c45ef555091d9aba7c48"
       },
       {
         "path": "tools/factory/gate.py",
-        "sha256": "cd32d12b033c005e8479b10cb36b79dd49ad3e3ee06e0ffacce46f083978c9a7"
+        "sha256": "5780300022c373e69bd7c17c7ad89219cd9cb66e957572bedd57cd4da6c49ece"
       },
       {
         "path": "tools/factory/generate.py",
-        "sha256": "17d9230d51a517b954d74a64d8f9deb9ee86dc0807d9182e0e17dcd611f9d1b6"
+        "sha256": "b29436046ecc4bf5cc99f28903f26b67ef77b12ef4b13cfa07b9ab6995a38471"
       },
       {
         "path": "tools/factory/intake.py",
-        "sha256": "0c1e3c146aeac714074abf975bd729928b26e8e36f08da74ebd3e0951c7d8db1"
+        "sha256": "002730b82e965e2ef2d70d5cd51855e01e8052f940a40cb591f2c26a26a5a7b9"
+      },
+      {
+        "path": "tools/factory/licensed-copy-operators.json",
+        "sha256": "0559c7b769660eff9a23f03de6619b9084a6dc0e8ce4d0ca511d868da38bfff9"
+      },
+      {
+        "path": "tools/factory/licensed_copy.py",
+        "sha256": "020549331fc45f0d08817cb55ab628a20d02b3db00f35e91aef9a25fe56b0d23"
       },
       {
         "path": "tools/factory/ownership.py",
@@ -74,11 +82,11 @@
       },
       {
         "path": "tools/factory/provenance.py",
-        "sha256": "0c2a5876b5607229bf78d3621086601eb2ed86b6cd173a9736568c902d936339"
+        "sha256": "38dfa1883967854b3b19e2a4a888acbaead999cba92be70dbc083087da7b687c"
       },
       {
         "path": "tools/factory/recipe/engine-gate.py",
-        "sha256": "39e7a14d62277dd1fdd3d3d20ebe23162f578a06cba75716127c963457ccd84e"
+        "sha256": "760665b2a05fbdaf720bddfd51e6bc3d1dfaf11568de3f8cbbff6f9a74e97181"
       },
       {
         "path": "tools/factory/recipe/map-overlay.py",
@@ -86,7 +94,7 @@
       },
       {
         "path": "tools/factory/recipe/validate.sh",
-        "sha256": "b43676bd3264d4475d8d5dd3ebf0f71c3c73ecebdaee36ba3829d023908013c9"
+        "sha256": "c28695c10c0b4e966b895d9cd7bb0ac36a1b02dd6a7778d57257093023d2cff1"
       },
       {
         "path": "tools/factory/recipe/validate.yml",
@@ -102,7 +110,7 @@
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "ee543d0206e14be7096edfe78b329d4a81204fbf14f61f27e8f1c396b308e6ae"
+    "digest": "efd548dfbfea9f9546883c2603583089a63918a50712c13a1f147e50e36ae5a8"
   },
   "generated": [
     {
@@ -111,11 +119,11 @@
     },
     {
       "path": "RulesFactory.Packages.g.props",
-      "sha256": "361119c24fa0c2a1084006424a049b63604183a9c03b5cd347b86ed7c6bfdbcb"
+      "sha256": "81c30a76d84a3d10c90fe7e96894ecb7742c160ed2ee040bed3dfdff86682e45"
     },
     {
       "path": "backlog/README.md",
-      "sha256": "07d984dc942525b02bce5d54d4d390ab7097d68b7b31b9206f831312340a7ce6"
+      "sha256": "ace38e9c68733bf550243aaede36d52eefd9fa376e5f9cbe2a1ae419995b00ad"
     },
     {
       "path": "corpus/hoyle.txt",
@@ -123,15 +131,15 @@
     },
     {
       "path": "scripts/engine-gate.py",
-      "sha256": "39e7a14d62277dd1fdd3d3d20ebe23162f578a06cba75716127c963457ccd84e"
+      "sha256": "760665b2a05fbdaf720bddfd51e6bc3d1dfaf11568de3f8cbbff6f9a74e97181"
     },
     {
       "path": "scripts/factory/generate.py",
-      "sha256": "17d9230d51a517b954d74a64d8f9deb9ee86dc0807d9182e0e17dcd611f9d1b6"
+      "sha256": "b29436046ecc4bf5cc99f28903f26b67ef77b12ef4b13cfa07b9ab6995a38471"
     },
     {
       "path": "scripts/factory/intake.py",
-      "sha256": "0c1e3c146aeac714074abf975bd729928b26e8e36f08da74ebd3e0951c7d8db1"
+      "sha256": "002730b82e965e2ef2d70d5cd51855e01e8052f940a40cb591f2c26a26a5a7b9"
     },
     {
       "path": "scripts/factory/ownership.py",
@@ -139,7 +147,7 @@
     },
     {
       "path": "scripts/factory/provenance.py",
-      "sha256": "0c2a5876b5607229bf78d3621086601eb2ed86b6cd173a9736568c902d936339"
+      "sha256": "38dfa1883967854b3b19e2a4a888acbaead999cba92be70dbc083087da7b687c"
     },
     {
       "path": "scripts/map-overlay.py",
@@ -147,35 +155,35 @@
     },
     {
       "path": "scripts/validate.sh",
-      "sha256": "ee72df420da2e0aaf1be4d038b3857f3d4f705ea992f1936cfbed887ff79f59b"
+      "sha256": "60fc4ef99c57292143043dac49462e681bcbd65d361d80c326dc30787f34cf84"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Contracts.g.cs",
-      "sha256": "02af35063f6c657fcddf6c065abefb6faf2457fd692a16c0be7a061d78b9aed9"
+      "sha256": "bc5eae72b6423e9b40a7cec76314f17f65f2cb04f3c03f62bcb0a2128bde80e6"
     },
     {
       "path": "src/HoyleBackgammon/Generated/MapEntries.g.cs",
-      "sha256": "cce01c40f36156a782cb79b6abd2cc994b8997e3334c7f266c1802317441bc1e"
+      "sha256": "c63085c3c40cbda823141ae06f603a3c5a12982108794224672629fc4349c332"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Provenance.g.cs",
-      "sha256": "9b1a935f35132cc3d4d606269e721ba5f7431a7a5b7f7234cbd33f30ae36cb9e"
+      "sha256": "977ce82c1b79f7b4be495d624c5f2a08e158f3e476b6bc9b77ae2761740adee5"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Registry.g.cs",
-      "sha256": "29a778b85e9274b2524c5c5bcbc7e31ce3753ceb6b410612b2c3ccf33fb667ea"
+      "sha256": "339b92984ebebf2994640e907552d610a5613defde71b88c38c062572a14e917"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Requests.g.cs",
-      "sha256": "936d96014f7ea27a793e37b125dc42e959873c67c2be43843e65c1c55e3426ba"
+      "sha256": "d44df452d780215916fe976352f693120e67126c4e013cfabdba5ad7dce0ff2d"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/CorrespondenceTests.g.cs",
-      "sha256": "57eaa77de30a83e2072f4df9dd54fc5efea285e773057bbcaab4dc563d00eba0"
+      "sha256": "99ce31837410e7d37c2403186a60f1b6f4bb2e680be171c39eb8176b17a72df7"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/ProvenanceTests.g.cs",
-      "sha256": "cc4f80bddb69d676a976fdb2a839a553d9379def9aee2c8ae5cd4f8266432bf6"
+      "sha256": "c4d208075ab6cb8a1afd2bbccc9c7416e0dd881c37ef3813f281ede34f92b9bf"
     }
   ],
   "managed": [
@@ -244,7 +252,7 @@
     },
     {
       "path": "src/HoyleBackgammon/packages.lock.json",
-      "sha256": "4032648a5d4dea50591c5b77d502ef6f4d762ff0beab80d734cbee38aecf3bbd"
+      "sha256": "389f2bbaf63ef337176bd188aebddf9d6f8b7effbf3f2e3b6c756c2b9a54572d"
     },
     {
       "path": "src/Tabletop.Dice/Tabletop.Dice.csproj",

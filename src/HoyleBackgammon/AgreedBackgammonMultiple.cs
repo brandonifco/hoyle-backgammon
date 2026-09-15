@@ -9,7 +9,7 @@ namespace HoyleBackgammon;
 /// <remarks>
 /// <see cref="MapEntries.AgreedBackgammonMultiple"/> is a delegated standard, not a gap: "the
 /// loser pays either thrice or four times (as may have been agreed) the amount of the single
-/// stake." The corpus names the decider, so the engine owes the figure the four things a
+/// stake." The corpus vests the figure in an agreement, so the engine owes it the four things a
 /// method owes any condition no computation settles — demand it, attribute it, record it
 /// alongside the outcome, and never infer it. This type is the demand and the attribution;
 /// <see cref="StakeDue.Agreement"/> is the record alongside the outcome. Shaped like
@@ -23,9 +23,19 @@ namespace HoyleBackgammon;
 /// gave the engine the means to do and threw the bound away with it. See
 /// <c>rules-factory/docs/decisions/0005</c> and finding 9 in <c>MAP-FINDINGS.md</c>.
 /// </para>
+/// <para>
+/// Who may make the agreement is the map's to say, not the engine's:
+/// <see cref="MapEntry.AssertedBy"/> on <see cref="MapEntries.AgreedBackgammonMultiple"/>
+/// (rules-factory decision 0025). Since map 5.0.0 it is <c>caller</c>, because "(as may have
+/// been agreed)" names nobody, so any party the caller names is accepted. A map that named the
+/// parties would restrict <see cref="AgreedBy"/> to them.
+/// </para>
 /// </remarks>
 /// <param name="Multiple">The figure agreed: <see cref="Thrice"/> or <see cref="FourTimes"/>.</param>
-/// <param name="AgreedBy">Who is answerable for it. Free text; the engine does not parse it.</param>
+/// <param name="AgreedBy">
+/// Who is answerable for it. Free text where the map's <c>assertedBy</c> is <c>caller</c>;
+/// otherwise one of the parties it names, ignoring case and spacing.
+/// </param>
 /// <param name="Justification">
 /// Where the agreement is recorded, when the parties can cite something — a club's standing
 /// terms, a match agreement. Null when they cannot, which is the ordinary case for two people
@@ -43,7 +53,7 @@ public sealed record AgreedBackgammonMultiple(
     /// <summary>The agreed multiple, checked against the bound the corpus states.</summary>
     public int Multiple { get; } = CheckMultiple(Multiple);
 
-    /// <summary>Who agreed it, checked to be non-empty.</summary>
+    /// <summary>Who agreed it, checked to be non-empty and to be a party the map lets assert it.</summary>
     public string AgreedBy { get; } = CheckAgreedBy(AgreedBy);
 
     private static int CheckMultiple(int multiple)
@@ -63,8 +73,23 @@ public sealed record AgreedBackgammonMultiple(
     private static string CheckAgreedBy(string agreedBy)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(agreedBy);
-        return agreedBy;
+        var assertedBy = MapEntries.AgreedBackgammonMultiple.AssertedBy;
+        if (assertedBy.Contains(Caller) || assertedBy.Any(party => Normalised(party) == Normalised(agreedBy)))
+        {
+            return agreedBy;
+        }
+
+        throw new ArgumentException(
+            $"'{agreedBy}' is not a party the map lets assert the multiple: {string.Join(", ", assertedBy)} "
+            + $"[{MapEntries.AgreedBackgammonMultiple.Locator}].",
+            nameof(agreedBy));
     }
+
+    /// <summary>The map's <c>assertedBy</c> value for a corpus that names nobody (rules-factory decision 0025).</summary>
+    private const string Caller = "caller";
+
+    private static string Normalised(string party) =>
+        string.Join(' ', party.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
     /// <inheritdoc/>
     public override string ToString() =>

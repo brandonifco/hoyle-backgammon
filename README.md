@@ -9,7 +9,7 @@ The corpus is the Backgammon chapter of *Hoyle's Games Modernized* (1909), Proje
 eBook 39445 — 8 KB of a 740 KB public-domain text, pinned in `corpus/hoyle.txt` and hashed on
 every validation run. The specification is the map in the package
 [`RulesFactory.Maps.HoyleBackgammon`](https://www.nuget.org/packages/RulesFactory.Maps.HoyleBackgammon)
-4.0.0, thirty-three entries covering that chapter. It is referenced, never copied, and the engine
+5.0.0, thirty-three entries covering that chapter. It is referenced, never copied, and the engine
 adds only its own build facts on top
 ([rules-factory decision 0015](https://github.com/brandonifco/rules-factory/blob/main/docs/decisions/0015-a-map-is-published-as-a-versioned-package.md)).
 
@@ -116,8 +116,17 @@ off and a man in the winner's home table (finding 17, rules-factory#102). The en
 him a backgammon; it declines him now, as it declines the man up. That changes what a replayed game
 returns, so the ruleset is version 3 ([decision 0005](docs/decisions/0005-map-4-0-0-is-ruleset-version-three.md)).
 
+**What 5.0.0 added.** No rule's answer changed, so the ruleset stays version 3. The package carries
+`LICENCE.txt` (rules-factory decision 0023). `agreed-backgammon-multiple` records who asserts it,
+`assertedBy: ["caller"]`, because "(as may have been agreed)" names nobody (decision 0025); the
+generated `MapEntry.AssertedBy` carries it, and `AgreedBackgammonMultiple` checks its `AgreedBy`
+against that rather than against the engine's own reading. `opening-roll` and `throw-two-dice`
+declare their `draws`, one die per player per attempt and two dice per throw, which is what the
+engine already drew. The manifest declares its pointer phrases (decision 0026). The seeded replay
+renders byte for byte as before apart from the map version in its first line.
+
 **What the engine stopped declining.** "Say what a backgammon pays" used to be on this list.
-The corpus does not fail to say: it says thrice or four times, as the players agreed. That is
+The corpus does not fail to say: it says thrice or four times, as may have been agreed. That is
 a delegated standard, `agreed-backgammon-multiple`, and the engine now demands the figure,
 attributes it and records it alongside the outcome instead of declining -- keeping the bound
 the corpus states, which declining threw away. `Outcome.Pays(GameValue)` was removed with it.
@@ -193,8 +202,8 @@ kinds of file (rules-factory decision 0018):
 Everything else is hand-written and the factory never touches it: `src/Tabletop.Dice`, the rules
 in `src/HoyleBackgammon`, the handlers, the hand-written tests, the docs.
 
-**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.2.1
-(tag `factory/v0.2.1`, commit `b910e2f`, clean) from `RulesFactory.Maps.HoyleBackgammon` 4.0.0.
+**Provenance.** `provenance.json` records the run. This tree was produced by rules-factory 0.4.0
+(tag `factory/v0.4.0`, commit `f0da05f`, clean) from `RulesFactory.Maps.HoyleBackgammon` 5.0.0.
 The generated `ProvenanceTests` assert the copy embedded in the assembly is the file. To check the
 record against the tree, from a rules-factory checkout at that tag:
 

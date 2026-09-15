@@ -190,7 +190,7 @@ public class SeededGameReplayTests
     /// its literals: if this changes, the engine plays this seed and these decisions differently,
     /// which is a decision about the ruleset version and not a number to update until green.
     /// </summary>
-    private const string RecordedReplaySha256 = "7d26993f2cfc421ea76772fd9a092d4296f6ab759c53289bbaf1b8785a947cc4";
+    private const string RecordedReplaySha256 = "606eb92458af7754b365c76b3d3eba436cd919a2c7db4d1c593b9a65e8500b9a";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -217,16 +217,17 @@ public class SeededGameReplayTests
         Assert.Equal(RecordedReplaySha256, Convert.ToHexString(SHA256.HashData(recorded)).ToLowerInvariant());
 
         // Two runs are comparable only under the same identity: ruleset hoyle-1909-backgammon
-        // version 3, from map 4.0.0. The identity does not carry the map version; the embedded
-        // provenance does.
+        // version 3, from map 5.0.0. The identity does not carry the map version; the embedded
+        // provenance does. Map 5.0.0 changed only that line of the rendering: with it read as
+        // 4.0.0, the game renders to the hash pinned under map 4.0.0, 7d26993f...a947cc4.
         Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
         Assert.Equal(3, Game.Identity.Ruleset.Version);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
         var map = provenance.RootElement.GetProperty("map");
         Assert.Equal("RulesFactory.Maps.HoyleBackgammon", map.GetProperty("packageId").GetString());
-        Assert.Equal("4.0.0", map.GetProperty("version").GetString());
+        Assert.Equal("5.0.0", map.GetProperty("version").GetString());
         Assert.StartsWith(
-            "identity hoyle-1909-backgammon v3 schema 1 map RulesFactory.Maps.HoyleBackgammon 4.0.0\n",
+            "identity hoyle-1909-backgammon v3 schema 1 map RulesFactory.Maps.HoyleBackgammon 5.0.0\n",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
     }
