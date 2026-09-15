@@ -123,7 +123,15 @@
       },
       {
         "test": "SeededGameReplayTests.A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions",
-        "mutation": "Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game (sixty-five turns) was untouched and its replay from the same seed and decisions was not; this test went red at the byte comparison. It went red too with Game.Identity's ruleset at version 2, and under LegalPlays.For offering partial plays (the pinned SHA-256 of the recording). Reading the dice from a shared generator instead of the caller's source turned it red as well, earlier, the recorded game itself declining."
+        "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id."
+      },
+      {
+        "test": "SeededGameReplayTests.The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record",
+        "mutation": "Named beside the seeded replay whose bytes it defines (docs/decisions/0006). GameRecordJson wrote C0 controls other than the five named escapes as themselves (the `case < ' '` arm removed); this test went red and the seeded replay did not. It went red too with object members in reverse order, with the identity left out, with the replay schema at 1, with Game.Identity's ruleset at version 2, and with a move's authority written as its MoveKind."
+      },
+      {
+        "test": "IdentityTests.The_replay_schema_is_version_two",
+        "mutation": "Named beside the seeded replay whose schema it pins (docs/decisions/0006). Game.Identity's replay schema set back to 1 (`new ReplaySchemaVersion(1)`); this test went red, with both SeededGameReplayTests."
       }
     ]
   },

@@ -15,7 +15,14 @@ namespace HoyleBackgammon;
 /// <param name="Position">The position his turn left behind.</param>
 public sealed record Turn(Player Player, DiceThrow? Thrown, Play? Play, Position Position);
 
-/// <summary>A finished game.</summary>
+/// <summary>A finished game, with the replay identity and the map it was played under.</summary>
+/// <remarks>
+/// Two records are comparable only when <see cref="Identity"/> and <see cref="Map"/> agree.
+/// <see cref="ToCanonicalJson"/> is the record as bytes, the engine's own and the only rendering a
+/// replay should hash (<c>docs/decisions/0006</c>).
+/// </remarks>
+/// <param name="Identity">The replay identity the game was played under, <see cref="Game.Identity"/>.</param>
+/// <param name="Map">The map package the engine was produced from, <see cref="MapPackage.FromProvenance"/>.</param>
 /// <param name="Start">The position the game began from, and who asserted it.</param>
 /// <param name="OpeningRoll">
 /// The throw for the right to begin, or null when the previous game settled who opens.
@@ -26,13 +33,25 @@ public sealed record Turn(Player Player, DiceThrow? Thrown, Play? Play, Position
 /// <param name="Value">Whether the win was a hit, a gammon or a backgammon.</param>
 /// <param name="Next">Who throws first in the game after this one.</param>
 public sealed record GameRecord(
+    ReplayCompatibilityIdentity Identity,
+    MapPackage Map,
     AssertedPosition Start,
     OpeningRoll? OpeningRoll,
     bool OpeningThrowAdopted,
     ImmutableArray<Turn> Turns,
     Player Winner,
     GameValue Value,
-    NextOpening Next);
+    NextOpening Next)
+{
+    /// <summary>
+    /// The record in its canonical serialisation, replay schema 2: RFC 8785 canonical JSON, UTF-8
+    /// without a byte-order mark, every field of the record including <see cref="Identity"/> and
+    /// <see cref="Map"/>. The same game gives the same bytes on every run, framework and platform
+    /// (<c>docs/decisions/0006</c> defines the shape).
+    /// </summary>
+    /// <returns>The bytes.</returns>
+    public byte[] ToCanonicalJson() => GameRecordJson.Serialise(this);
+}
 
 /// <summary>
 /// Plays one game through, from a position somebody asserted.
@@ -41,9 +60,13 @@ public static class Game
 {
     /// <summary>
     /// The engine's replay identity: which ruleset, which replay schema, which pinned corpus
-    /// and which generator. Two runs are comparable only if these agree.
+    /// and which generator. Two runs are comparable only if these agree, and every
+    /// <see cref="GameRecord"/> carries it.
     /// </summary>
     /// <remarks>
+    /// The replay schema is version 2 since <see cref="GameRecord"/> carried its identity and map and
+    /// gained a canonical serialisation; no rule's answer changed, so the ruleset did not move
+    /// (<c>docs/decisions/0006</c>).
     /// The ruleset is version 3 from <c>RulesFactory.Maps.HoyleBackgammon</c> 4.0.0 on, which
     /// makes a win against a loser with nothing off and a man in the winner's home table decline
     /// where version 2 valued it a backgammon (<c>docs/decisions/0005</c>). Version 2 began with
@@ -52,7 +75,7 @@ public static class Game
     /// </remarks>
     public static ReplayCompatibilityIdentity Identity { get; } = new(
         ruleset: new RulesetVersion("hoyle-1909-backgammon", 3),
-        replaySchema: new ReplaySchemaVersion(1),
+        replaySchema: new ReplaySchemaVersion(2),
         sourceBaselines: [MapEntries.Baseline],
         randomAlgorithm: RandomAlgorithmId.Pcg32SetSeq64XshRr32);
 
@@ -169,6 +192,8 @@ public static class Game
             {
                 return Outcome.ValueOf(position, winner).Match(
                     value => Resolution<GameRecord>.FromValue(new GameRecord(
+                        Identity,
+                        MapPackage.FromProvenance,
                         start, roll, adopted, turns.ToImmutable(), winner, value, Outcome.Next(value))),
                     Resolution<GameRecord>.FromUnresolved);
             }

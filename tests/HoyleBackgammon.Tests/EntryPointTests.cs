@@ -186,11 +186,18 @@ public class SeededGameReplayTests
     private const ulong Seed = 20260914UL;
 
     /// <summary>
-    /// The SHA-256 of the recorded game's rendering. A literal, as <see cref="IdentityTests"/> keeps
-    /// its literals: if this changes, the engine plays this seed and these decisions differently,
-    /// which is a decision about the ruleset version and not a number to update until green.
+    /// The SHA-256 of the recorded game's canonical serialisation, <see cref="GameRecord.ToCanonicalJson"/>.
+    /// A literal, as <see cref="IdentityTests"/> keeps its literals: if this changes, the engine plays this
+    /// seed and these decisions differently or writes them differently, which is a decision about the
+    /// ruleset version or the replay schema and not a number to update until green.
     /// </summary>
-    private const string RecordedReplaySha256 = "606eb92458af7754b365c76b3d3eba436cd919a2c7db4d1c593b9a65e8500b9a";
+    /// <remarks>
+    /// Re-pinned from <c>606eb924...e8500b9a</c> when the record gained its own serialisation (replay
+    /// schema 2, <c>docs/decisions/0006</c>). The game did not change: the test's former rendering, run
+    /// over the new record with the schema read as 1, still hashes to the old literal, 65 turns and a
+    /// gammon for White. Only the bytes did, so the ruleset stays at version 3.
+    /// </remarks>
+    private const string RecordedReplaySha256 = "878936f1b49d970059f7231cecd9feb80ae93d27ea77d2cc8b5498100604da3d";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -204,63 +211,88 @@ public class SeededGameReplayTests
         var recorder = new RecordingDecider();
         var firstSource = new CountingSource(Pcg32.FromSeed(Seed, stream: 1));
         var first = Assert.IsType<Resolution<GameRecord>.Resolved>(Game.Play(start, firstSource, recorder)).Value;
-        byte[] recorded = Render(first);
+        byte[] recorded = first.ToCanonicalJson();
 
         // The replay knows nothing but the seed and the recorded decisions.
         var script = new ScriptedDecider(recorder.Decisions);
         var replaySource = new CountingSource(Pcg32.FromSeed(Seed, stream: 1));
         var replay = Assert.IsType<Resolution<GameRecord>.Resolved>(Game.Play(start, replaySource, script)).Value;
 
-        Assert.Equal(recorded, Render(replay));
+        Assert.Equal(recorded, replay.ToCanonicalJson());
         Assert.Equal(recorder.Decisions.Count, script.Consumed);
         Assert.Equal(firstSource.Drawn, replaySource.Drawn);
         Assert.Equal(RecordedReplaySha256, Convert.ToHexString(SHA256.HashData(recorded)).ToLowerInvariant());
 
-        // Two runs are comparable only under the same identity: ruleset hoyle-1909-backgammon
-        // version 3, from map 5.0.0. The identity does not carry the map version; the embedded
-        // provenance does. Map 5.0.0 changed only that line of the rendering: with it read as
-        // 4.0.0, the game renders to the hash pinned under map 4.0.0, 7d26993f...a947cc4.
-        Assert.Equal("hoyle-1909-backgammon", Game.Identity.Ruleset.Id);
-        Assert.Equal(3, Game.Identity.Ruleset.Version);
+        // Two runs are comparable only under the same identity, and the record carries it: ruleset
+        // hoyle-1909-backgammon version 3, replay schema 2, from map 5.0.0. The map is the one the
+        // embedded provenance names, not a constant of the engine's.
+        Assert.Equal(Game.Identity, first.Identity);
+        Assert.Equal("hoyle-1909-backgammon", first.Identity.Ruleset.Id);
+        Assert.Equal(3, first.Identity.Ruleset.Version);
+        Assert.Equal(2, first.Identity.ReplaySchema.Version);
+        Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "5.0.0"), first.Map);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
         var map = provenance.RootElement.GetProperty("map");
-        Assert.Equal("RulesFactory.Maps.HoyleBackgammon", map.GetProperty("packageId").GetString());
-        Assert.Equal("5.0.0", map.GetProperty("version").GetString());
+        Assert.Equal(map.GetProperty("packageId").GetString(), first.Map.PackageId);
+        Assert.Equal(map.GetProperty("version").GetString(), first.Map.Version);
         Assert.StartsWith(
-            "identity hoyle-1909-backgammon v3 schema 1 map RulesFactory.Maps.HoyleBackgammon 5.0.0\n",
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":3},",
+            Encoding.UTF8.GetString(recorded),
+            StringComparison.Ordinal);
+        Assert.Contains(
+            "\"map\":{\"packageId\":\"RulesFactory.Maps.HoyleBackgammon\",\"version\":\"5.0.0\"}",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// The game as bytes: the replay identity and the map it was produced from, then every field of
-    /// the record, in order. <see cref="GameRecord"/> has no serialisation of its own, so this is
-    /// the test's, built only from public members.
-    /// </summary>
-    private static byte[] Render(GameRecord record)
+    [Fact]
+    public void The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record()
     {
-        using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
-        var map = provenance.RootElement.GetProperty("map");
-        var identity = Game.Identity;
-        var text = new StringBuilder();
-        text.Append($"identity {identity.Ruleset.Id} v{identity.Ruleset.Version} schema {identity.ReplaySchema.Version} ")
-            .Append($"map {map.GetProperty("packageId").GetString()} {map.GetProperty("version").GetString()}\n");
-        foreach (var baseline in identity.SourceBaselines)
-        {
-            text.Append($"baseline {baseline.SourceId} {baseline.ContentHash} {baseline.HashDerivation}\n");
-        }
+        // A record built by hand, so every field and every escape is on the page: members sorted by
+        // name, no whitespace, a suspended turn (no throw, moves null) beside a turn with nothing
+        // playable (moves empty) and one with a hit, the justification null, and an asserter whose
+        // name needs a quote, a backslash, a newline, a unit separator and a non-ASCII letter.
+        var position = Setup.StartingPositionFromCorpus();
+        var record = new GameRecord(
+            Game.Identity,
+            new MapPackage("Some.Map", "1.2.3"),
+            new AssertedPosition(position, AssertedBy: "Ann \"A\\B\"\n\u001fé"),
+            new OpeningRoll([new DiceThrow(2, 2), new DiceThrow(5, 3)], Player.White),
+            OpeningThrowAdopted: true,
+            [
+                new Turn(Player.Black, null, null, position),
+                new Turn(Player.White, new DiceThrow(6, 6), new Play([], position), position),
+                new Turn(Player.Black, new DiceThrow(5, 3), new Play([new Move(8, 3, 5, MoveKind.Ordinary, TakesUpBlot: true)], position), position),
+            ],
+            Player.White,
+            GameValue.Gammon,
+            NextOpening.ThrowAgainForTheRight);
 
-        text.Append($"generator {identity.RandomAlgorithm?.Name}\n")
-            .Append($"start {record.Start.Position} asserted-by {record.Start.AssertedBy} justified-by {record.Start.Justification}\n")
-            .Append($"opening {string.Join(" ", record.OpeningRoll?.Attempts.Select(a => a.ToString()) ?? [])} ")
-            .Append($"opener {record.OpeningRoll?.Opener} adopted {record.OpeningThrowAdopted}\n");
-        foreach (var turn in record.Turns)
-        {
-            text.Append($"turn {turn.Player} {turn.Thrown?.ToString() ?? "suspended"} {turn.Play?.ToString() ?? "-"} => {turn.Position}\n");
-        }
+        string men = "[0,0,0,0,0,0,5,0,3,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,2,0]";
+        string board = $"{{\"Black\":{men},\"White\":{men}}}";
+        string expected =
+            "{\"identity\":{\"randomAlgorithm\":\"pcg_setseq_64_xsh_rr_32\",\"replaySchema\":2,"
+            + "\"ruleset\":{\"id\":\"hoyle-1909-backgammon\",\"version\":3},"
+            + "\"sourceBaselines\":[{\"asOf\":null,\"contentHash\":\"5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e\","
+            + "\"hashDerivation\":\"gutenberg-plain-text-including-boilerplate\",\"sourceId\":\"hoyle-1909\"}]},"
+            + "\"map\":{\"packageId\":\"Some.Map\",\"version\":\"1.2.3\"},"
+            + "\"next\":\"ThrowAgainForTheRight\","
+            + "\"openingRoll\":{\"attempts\":[[2,2],[5,3]],\"opener\":\"White\"},"
+            + "\"openingThrowAdopted\":true,"
+            + $"\"start\":{{\"assertedBy\":\"Ann \\\"A\\\\B\\\"\\n\\u001fé\",\"justification\":null,\"position\":{board}}},"
+            + "\"turns\":["
+            + $"{{\"moves\":null,\"player\":\"Black\",\"position\":{board},\"thrown\":null}},"
+            + $"{{\"moves\":[],\"player\":\"White\",\"position\":{board},\"thrown\":[6,6]}},"
+            + "{\"moves\":[{\"authority\":\"move-by-pip\",\"die\":5,\"from\":8,\"kind\":\"Ordinary\",\"takesUpBlot\":true,\"to\":3}],"
+            + $"\"player\":\"Black\",\"position\":{board},\"thrown\":[5,3]}}"
+            + "],"
+            + "\"value\":\"Gammon\",\"winner\":\"White\"}";
 
-        text.Append($"winner {record.Winner} value {record.Value} next {record.Next}\n");
-        return Encoding.UTF8.GetBytes(text.ToString());
+        byte[] bytes = record.ToCanonicalJson();
+
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes));
+        Assert.NotEqual(0xEF, bytes[0]);
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), bytes);
     }
 
     /// <summary>Adopts the opening throw and takes the middle play offered, recording each decision.</summary>

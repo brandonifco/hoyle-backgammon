@@ -165,6 +165,12 @@ The replay identity is ruleset `hoyle-1909-backgammon` version 3 since map 4.0.0
 map 3.0.0, whose corrections made some games decline where version 1 finished them
 ([decision 0004](docs/decisions/0004-map-3-0-0-is-ruleset-version-two.md)).
 
+Every `GameRecord` carries that identity and the map package it was played under (`Identity`,
+`Map`, the map read from the embedded provenance), and `GameRecord.ToCanonicalJson()` is the
+record as bytes: RFC 8785 canonical JSON, replay schema 2
+([decision 0006](docs/decisions/0006-a-game-record-carries-its-identity-and-serialises-itself.md)).
+A replay hashes those bytes, not a rendering of its own.
+
 Same seed, same ordered decisions, same game. The draws are accounted for exactly: two per
 pair of dice thrown, none for a player whose play is wholly suspended (he does not throw),
 none for an adopted opening throw (it re-uses the deciding pair). `DeterminismTests` asserts
