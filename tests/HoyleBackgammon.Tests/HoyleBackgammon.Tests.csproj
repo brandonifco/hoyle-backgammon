@@ -17,4 +17,18 @@
     <ProjectReference Include="../../src/HoyleBackgammon/HoyleBackgammon.csproj" />
   </ItemGroup>
 
+  <!-- CitationTests reads each entry's evidence, which no generated type carries, from the map
+       the engine was built from: the restored package's corpus-map.json, found through the
+       RulesFactoryMap item the package gives the engine project (the same item
+       scripts/validate.sh reads), and copied beside the test assembly. -->
+  <Target Name="CopyRulesFactoryMap" BeforeTargets="AssignTargetPaths">
+    <MSBuild Projects="../../src/HoyleBackgammon/HoyleBackgammon.csproj" Targets="RulesFactoryMapItem" Properties="TargetFramework=$(TargetFramework)">
+      <Output TaskParameter="TargetOutputs" ItemName="_RulesFactoryMap" />
+    </MSBuild>
+    <Error Condition="'@(_RulesFactoryMap)' == ''" Text="the engine project has no RulesFactoryMap item, so CitationTests has no map to read" />
+    <ItemGroup>
+      <None Include="@(_RulesFactoryMap)" Link="rules-factory-map/corpus-map.json" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
 </Project>

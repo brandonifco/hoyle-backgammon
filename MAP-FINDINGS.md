@@ -34,7 +34,12 @@ with what was accepted appended.
 **A third round came with `RulesFactory.Maps.HoyleBackgammon` 3.0.0**, the blind second mapping
 (`rules-factory/examples/hoyle-backgammon/blind-mapping/`, resolution row 52). It finished finding 4:
 the gammon/backgammon overlap that finding recorded as a silent ordering is now part of
-`game-value`'s question. Finding 17 is what the engine found consuming that version, and is open.
+`game-value`'s question. Finding 17 is what the engine found consuming that version.
+
+**A fourth round came with 4.0.0** (rules-factory#102, #103), and accepted finding 17: `game-value`'s
+question now names both overlap cases. That leaves no finding open. 4.0.0 is also the first map
+this engine was *produced* from, by rules-factory 0.2.1 (see README.md); nothing in producing it
+changed a finding.
 
 ---
 
@@ -514,3 +519,14 @@ pins that behaviour. Widening the decline here would be the engine correcting it
 and has a man up *or in the winner's home table*. If the map instead means the ordering to stand
 for the second arm, it should say why that arm differs from the first. Once a version names both,
 the engine's decline widens to match, and that theory becomes the decline's test.
+
+**Accepted; the map is corrected** (`RulesFactory.Maps.HoyleBackgammon` 4.0.0, rules-factory#102
+and #103). `game-value`'s question now reads "Nor are they disjoint, in two cases": a loser who has
+borne off nothing and has a man up, *or a man in the winner's home table*, answers both conditions,
+and the corpus does not say which result he suffers. The note records that #102, this
+finding, added the second case. The engine's decline widened with it:
+`Outcome.ValueOf` declines both losers with `RequiresInterpretation`, and
+`GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon`
+is the decline's test, named in the overlay. `GameValueTests.A_man_in_the_winners_home_table_makes_it_a_backgammon`
+now uses a loser with two men off, who is a backgammon and nothing else. A game that ended the
+old way now declines, so the ruleset is version 3 (`docs/decisions/0005`).

@@ -240,7 +240,7 @@
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",
-      "sha256": "4e79b9ad93122e35ee38f30c78653960841dd63826e5d5459b4f0487967adddf"
+      "sha256": "b2d7e7db89db6ee9682db2efe870890c571989941715e7deffc0596bd18bc967"
     },
     {
       "path": "src/HoyleBackgammon/packages.lock.json",
@@ -256,7 +256,7 @@
     },
     {
       "path": "tests/HoyleBackgammon.Tests/HoyleBackgammon.Tests.csproj",
-      "sha256": "20566c233da5633ebca2251d17711d03c0f3c88d2bb3b2e5ab8bf44d5c535447"
+      "sha256": "c73f5d12e636eec71edb6e2277e568064041262f88eae4c0b27c6819c718e1b1"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/packages.lock.json",
