@@ -236,7 +236,7 @@
     },
     {
       "path": "corpus-map.overlay.json",
-      "sha256": "d6f17effbf609144e963f2fc1e910e9eb0d8181894468f20b5a5337701a86a88"
+      "sha256": "94276b497a48967c9f0114bdf66f485dee9ca28c018d77f13651d730d65af86a"
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",
