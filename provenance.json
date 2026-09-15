@@ -10,13 +10,13 @@
   },
   "map": {
     "packageId": "RulesFactory.Maps.HoyleBackgammon",
-    "version": "5.0.0",
-    "nupkgSha256": "ff9207e96d2218ae1d4f7a25d44a2346efbbba521bf46791a067eb2e92d077cd",
+    "version": "6.0.0",
+    "nupkgSha256": "50f0381718d77ccf96ebe652db2235ba11ec079707a9bd4a8c5ad049e4e053a8",
     "files": [
       {
         "role": "map",
         "path": "map/corpus-map.json",
-        "sha256": "6cf722b6532d1a333a830783365f7b28840219a1ae4b9b099688262896005078"
+        "sha256": "384814cfc06a4b293ede04d11c70ceb046b82370d1487b66080a5f01c08ecc67"
       },
       {
         "role": "manifest",
@@ -119,11 +119,11 @@
     },
     {
       "path": "RulesFactory.Packages.g.props",
-      "sha256": "81c30a76d84a3d10c90fe7e96894ecb7742c160ed2ee040bed3dfdff86682e45"
+      "sha256": "aa0446f78119f71b4510643f6264cc6f46b61cf316b024b7deade9fcafd24fd9"
     },
     {
       "path": "backlog/README.md",
-      "sha256": "ace38e9c68733bf550243aaede36d52eefd9fa376e5f9cbe2a1ae419995b00ad"
+      "sha256": "f434fe262dc257cd517491647c6e170256baedb66395fd1c8d9b5edb00337d6f"
     },
     {
       "path": "corpus/hoyle.txt",
@@ -159,31 +159,31 @@
     },
     {
       "path": "src/HoyleBackgammon/Generated/Contracts.g.cs",
-      "sha256": "bc5eae72b6423e9b40a7cec76314f17f65f2cb04f3c03f62bcb0a2128bde80e6"
+      "sha256": "9710b3d7cfa49788847373f54a4cf3624e04e86fd8b6e1b6ed91ff29116873ef"
     },
     {
       "path": "src/HoyleBackgammon/Generated/MapEntries.g.cs",
-      "sha256": "c63085c3c40cbda823141ae06f603a3c5a12982108794224672629fc4349c332"
+      "sha256": "dd03bb0e1c9694128657f11e3c25d9e2b36fafe303a32ab2f53fc3191afb28d2"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Provenance.g.cs",
-      "sha256": "977ce82c1b79f7b4be495d624c5f2a08e158f3e476b6bc9b77ae2761740adee5"
+      "sha256": "617124709f4809d38a4c6e7629f90634c9d37d95b8c271dcdbac0d1fed094c1b"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Registry.g.cs",
-      "sha256": "339b92984ebebf2994640e907552d610a5613defde71b88c38c062572a14e917"
+      "sha256": "b42d05e88a1a7587a7eb65e0de1b3f8d2a7539ad9f869c6831b033cbfd775d3f"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Requests.g.cs",
-      "sha256": "d44df452d780215916fe976352f693120e67126c4e013cfabdba5ad7dce0ff2d"
+      "sha256": "55dcfa46e0ebf73be20ddef888d5832d6f95f6683eb1a6e63158998021f153cd"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/CorrespondenceTests.g.cs",
-      "sha256": "99ce31837410e7d37c2403186a60f1b6f4bb2e680be171c39eb8176b17a72df7"
+      "sha256": "9f26e313bc924ae765fac6d9d075f7fd7b1d36aa62d21b0b31be590686e7000d"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/ProvenanceTests.g.cs",
-      "sha256": "c4d208075ab6cb8a1afd2bbccc9c7416e0dd881c37ef3813f281ede34f92b9bf"
+      "sha256": "4baa5271a08c6a4dc199555b08a18a6a679a1fc821b1c896599023d9c9ebdddd"
     }
   ],
   "managed": [
@@ -252,7 +252,7 @@
     },
     {
       "path": "src/HoyleBackgammon/packages.lock.json",
-      "sha256": "389f2bbaf63ef337176bd188aebddf9d6f8b7effbf3f2e3b6c756c2b9a54572d"
+      "sha256": "e013a1af3c627a49707c361735cae43867f56b1eb45087cd9ddef421fe11fe09"
     },
     {
       "path": "src/Tabletop.Dice/Tabletop.Dice.csproj",

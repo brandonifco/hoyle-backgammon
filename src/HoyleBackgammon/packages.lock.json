@@ -4,9 +4,9 @@
     "net10.0": {
       "RulesFactory.Maps.HoyleBackgammon": {
         "type": "Direct",
-        "requested": "[5.0.0, 5.0.0]",
-        "resolved": "5.0.0",
-        "contentHash": "N40/HqDq1odJZpMucU1CsUeHoYYDRiqTNdbYnfkyrfUaYujyOXXIgcY3UOtm5Eyh5Pybva0K2oWfo7uKvooiSw=="
+        "requested": "[6.0.0, 6.0.0]",
+        "resolved": "6.0.0",
+        "contentHash": "cl4jD9ybRKUS5mE8pRWtQNUSqWdnyLASDvtML+D9ZKGzpbw3dUtS4+oCInEZI8OaNnCskXiFh1HI+kPoF4LSnA=="
       },
       "RulesKernel": {
         "type": "Direct",
@@ -33,9 +33,9 @@
     "net8.0": {
       "RulesFactory.Maps.HoyleBackgammon": {
         "type": "Direct",
-        "requested": "[5.0.0, 5.0.0]",
-        "resolved": "5.0.0",
-        "contentHash": "N40/HqDq1odJZpMucU1CsUeHoYYDRiqTNdbYnfkyrfUaYujyOXXIgcY3UOtm5Eyh5Pybva0K2oWfo7uKvooiSw=="
+        "requested": "[6.0.0, 6.0.0]",
+        "resolved": "6.0.0",
+        "contentHash": "cl4jD9ybRKUS5mE8pRWtQNUSqWdnyLASDvtML+D9ZKGzpbw3dUtS4+oCInEZI8OaNnCskXiFh1HI+kPoF4LSnA=="
       },
       "RulesKernel": {
         "type": "Direct",
