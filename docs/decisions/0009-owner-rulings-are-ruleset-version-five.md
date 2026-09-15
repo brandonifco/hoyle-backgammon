@@ -3,6 +3,30 @@
 **Status:** accepted, 2026-09-15. Supersedes [decision 0008](0008-map-6-0-0-is-ruleset-version-four.md)
 where it declines the second parts of two questions. The rest of 0008 stands.
 
+> **Amendment, 2026-09-15: the rulings are held in the overlay (rules-factory 0.6.0, decision 0027).**
+> The factory gained the carrier this record's last paragraph asked for, and the rulings moved into it
+> with no change of behaviour.
+>
+> - **`corpus-map.overlay.json`** holds both rulings, on `must-play-whole-throw` and
+>   `bearing-off-eligible`. Each has its `id`, the `span` of the entry's question it answers (the
+>   sentences from "Nor does it say …" to the end), a one-line `answer`, `ruledBy`, `ruledOn`, this
+>   record, and the tests that show it. Beside each is `declines`, quoting the question's first part
+>   with the tests that show the decline. Together the spans cover each question, and `factory produce`
+>   and the gate check that they do. Neither key reaches the merged map.
+> - **The hand-written `OwnerRuling.cs` is gone.** `factory produce` writes
+>   `src/HoyleBackgammon/Generated/Rulings.g.cs` from the overlay: the record
+>   `OwnerRuling(Id, EntryId, Span, Answer, RuledBy, RuledOn, Record)` and `OwnerRulings`, with
+>   `MustPlayWholeThrow2`, `BearingOffEligible2` and `All`. `OwnerRulings.cs` keeps this record's
+>   names, `APlayIsThePositionItReaches` and `BearingOffBeginsWithinTheThrow`, as aliases. `Entry`
+>   (a `MapEntry`) became `EntryId` (its id), and `Ruling` became `Answer`.
+> - **`QuestionPart` stays, derived** from the number after the slash in the id, on a partial of the
+>   generated record. The overlay names a part by its span, and that is what the factory checks. The
+>   number is kept because replay schema 3 records `questionPart`, so the record's bytes, and the
+>   pinned replay hash, did not change. The ruleset stays version 5 and the replay schema 3.
+> - Where this record says the factory has no carrier and no check sees the rulings (Context, *What
+>   the factory offers for this*, and the last Consequence), that is no longer so. What the factory
+>   still cannot check is listed in rules-factory 0027 § 7.
+
 ## Context
 
 `RulesFactory.Maps.HoyleBackgammon` 6.0.0 records two questions that the corpus does not settle.

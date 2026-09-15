@@ -127,7 +127,7 @@ public class MustPlayWholeThrowEntryPointTests
         Assert.Equal([OwnerRulings.APlayIsThePositionItReaches, OwnerRulings.BearingOffBeginsWithinTheThrow], play.Rulings.ToArray());
         var ruling = play.Rulings[0];
         Assert.Equal("must-play-whole-throw/2", ruling.Id);
-        Assert.Equal(EntryPoints.MustPlayWholeThrow.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(EntryPoints.MustPlayWholeThrow.Id, ruling.EntryId);
         Assert.Equal(2, ruling.QuestionPart);
         Assert.Equal("Brandon", ruling.RuledBy);
         Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);
@@ -168,7 +168,7 @@ public class MustPlayWholeThrowEntryPointTests
         var ruling = Assert.Single(play.Rulings);
         Assert.Same(OwnerRulings.BearingOffBeginsWithinTheThrow, ruling);
         Assert.Equal("bearing-off-eligible/2", ruling.Id);
-        Assert.Equal(EntryPoints.BearingOffEligible.Registered.Locator, ruling.Entry.Locator);
+        Assert.Equal(EntryPoints.BearingOffEligible.Id, ruling.EntryId);
         Assert.Equal(2, ruling.QuestionPart);
         Assert.Equal("Brandon", ruling.RuledBy);
         Assert.Equal(new DateOnly(2026, 9, 15), ruling.RuledOn);

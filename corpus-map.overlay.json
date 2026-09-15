@@ -342,6 +342,30 @@
         "test": "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on",
         "mutation": "Seed 20260913 with the first play offered, which declined under ruleset 4 (docs/decisions/0008) and finishes under ruleset 5, naming both owner's rulings on its one turn that relies on them (docs/decisions/0009); replaces A_game_that_finished_under_ruleset_three_declines_citing_page_275. Ruleset 4's decline of orders under different rules restored; this test went red. So did ruleset 4's decline of bearing off within the throw. must-play-whole-throw/2 never named; red. bearing-off-eligible/2 never named; red. Named whatever the start; red. BearingOff.HasWon holding once any man was off; red."
       }
+    ],
+    "rulings": [
+      {
+        "id": "must-play-whole-throw/2",
+        "span": "Nor does it say what a play of the whole throw is: the position the numbers reach, or the moves in the order they are made. Where two orders use the same numbers and reach the same position, the text does not say whether they are one play or two, which matters where the rule that permits a move differs between the orders (with the last man outside on the eight point and deuce-ace thrown, 8/6 6/5 and 8/7 7/5 both leave that man on the five point, but the first plays the ace after every man is home and the second does not; see bearing-off-eligible's question).",
+        "answer": "One play: orders of the same numbers that reach the same position are offered once, crediting the rules of the first order found.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+        "tests": [
+          "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_are_one_play_naming_the_owners_ruling",
+          "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+        ]
+      }
+    ],
+    "declines": [
+      {
+        "span": "An unplayable part is lost and the whole must be played 'if it is possible'. The text does not say what happens when either die alone is playable but not both -- a case every modern ruleset settles explicitly.",
+        "tests": [
+          "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it",
+          "WholeThrowTests.The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+          "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_declines_citing_page_275"
+        ]
+      }
     ]
   },
   "bearing-off-eligible": {
@@ -366,6 +390,28 @@
       {
         "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling",
         "mutation": "This entry's question's second part, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's: the number left bears off (docs/decisions/0009). Resolved through EntryPoints.MustPlayWholeThrow because it is a question about a throw. Replaces A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible (docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry where a player not eligible at the start of the throw played a move under bearing off); this test went red. LegalPlays.For never named bearing-off-eligible/2 (`!eligibleAtStart && false`); red. It named it whatever the start (`(eligibleAtStart || true)`); red."
+      }
+    ],
+    "rulings": [
+      {
+        "id": "bearing-off-eligible/2",
+        "span": "Nor does it say when within a throw the stage begins. If a man played with the first number of a throw is the last to come home, the text does not say whether the number left is played under this stage ('each throw entitles the player either to move forward a man or men ... or to remove men'), or as an ordinary move because the throw began before the stage was reached. On the first reading, with his last man outside on the nine point and six-trois thrown, 9/3 then bearing that man off with the trois is a legal play, and so is 9/6 then bearing him off with the six; on the second reading neither is. The quatre-trois example weighs both numbers against a distribution already home, so it does not decide the case.",
+        "answer": "Yes: once a player's first number brings his last man home, the number left bears off.",
+        "ruledBy": "Brandon",
+        "ruledOn": "2026-09-15",
+        "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+        "tests": [
+          "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling"
+        ]
+      }
+    ],
+    "declines": [
+      {
+        "span": "The stage begins 'when either player has succeeded in getting all his men into his home table', and the chapter never says whether it lasts. If one of his men is hit after he has begun to bear off and then re-enters, the text does not say whether he may go on bearing off the men still at home or must first bring every man home again.",
+        "tests": [
+          "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle",
+          "BearingOffEligibilityTests.The_decline_is_only_where_the_question_arises"
+        ]
       }
     ]
   },

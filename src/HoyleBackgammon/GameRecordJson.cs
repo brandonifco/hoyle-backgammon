@@ -149,7 +149,7 @@ internal static class GameRecordJson
             ? ruled.Rulings.Select(r => (object?)new Obj
             {
                 ["id"] = r.Id,
-                ["entry"] = r.Entry.Id,
+                ["entry"] = r.EntryId,
                 ["questionPart"] = r.QuestionPart,
                 ["ruledBy"] = r.RuledBy,
                 ["ruledOn"] = r.RuledOn.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
