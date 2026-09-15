@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""The map this engine is built from: the factory's package, plus this engine's overlay.
+"""The map this engine is built from: the factory's map package, plus this engine's overlay.
 
-rules-factory decision 0015 publishes the map as the NuGet package
-RulesFactory.Maps.HoyleBackgammon. The engine references it and never copies it. What the engine
-owns is corpus-map.overlay.json, `{ "<entry id>": { "status", "implementedIn", "tests" } }`:
-the build facts only the engine can know. corpus-map.json in this repository is
-merge(package, overlay), committed because every other step of scripts/validate.sh reads it,
-and checked here to be exactly that.
+Emitted by rules-factory tools/factory (the gate recipe, #3). Rewritten by every `factory
+produce`; do not edit it here.
+
+rules-factory decision 0015 publishes a map as a NuGet package, which the engine references and
+never copies. What the engine owns is corpus-map.overlay.json,
+`{ "<entry id>": { "status", "implementedIn", "tests" } }`: the build facts only the engine can
+know. Every other byte of meaning is the package's.
 
 merge(package, overlay), as 0015 defines it -- each rule is also a failure below:
 
@@ -17,19 +18,20 @@ merge(package, overlay), as 0015 defines it -- each rule is also a failure below
      upstream's;
   4. an entry the overlay does not name is upstream's verbatim, and so are the entry order and
      the top-level fields;
-  5. the committed corpus-map.json equals the merge as parsed JSON.
+  5. if the engine commits a materialised corpus-map.json, it equals the merge as parsed JSON
+     (`check --map`; an engine produced by the factory commits none, and its gate merges into a
+     scratch file instead).
 
 (Rule 6, the consumer-phase checks on the merge, is the package's own tools/check-map.py
 --phase consumer, which scripts/validate.sh runs.)
 
 Where the overlay's fields land inside an entry is serialisation, not meaning: they are placed,
-in the order status, implementedIn, tests, where upstream's `status` was. That keeps
-`merge --out` byte-identical to the committed file, so a regenerated map diffs only where the
-overlay changed.
+in the order status, implementedIn, tests, where upstream's `status` was.
 
   map-overlay.py merge --package-map P --overlay O --out corpus-map.json
-  map-overlay.py check --package-map P --package-id ID --package-version V
-                       --overlay O --map corpus-map.json --manifest corpus-manifest.json
+  map-overlay.py check --package-map P --overlay O [--map corpus-map.json]
+
+Standard library only.
 """
 import argparse
 import json
@@ -52,7 +54,7 @@ def merge(package, overlay):
     problems = []
     if not isinstance(overlay, dict):
         return None, ["the overlay is not an object of entry id -> owned fields"]
-    ids = [e.get("id") for e in package.get("entries", [])]
+    ids = [e.get("id") for e in package.get("entries", []) if isinstance(e, dict)]
     for entry_id, item in overlay.items():
         if entry_id not in ids:
             problems.append(f"overlay names {entry_id!r}, which the package map has no entry for "
@@ -69,7 +71,6 @@ def merge(package, overlay):
     if problems:
         return None, problems
 
-    merged = {key: value for key, value in package.items() if key != "entries"}
     merged_entries = []
     for entry in package.get("entries", []):
         item = overlay.get(entry.get("id"))
@@ -87,11 +88,7 @@ def merge(package, overlay):
         if not placed:
             out.update({k: item[k] for k in OWNED if k in item})
         merged_entries.append(out)
-    # Keep the package's top-level key order, with entries where the package had them.
-    result = {}
-    for key in package:
-        result[key] = merged_entries if key == "entries" else merged[key]
-    return result, []
+    return {key: (merged_entries if key == "entries" else value) for key, value in package.items()}, []
 
 
 def canonical(document):
@@ -99,68 +96,43 @@ def canonical(document):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="merge(package map, corpus-map.overlay.json) under 0015")
     sub = parser.add_subparsers(dest="command", required=True)
-    m = sub.add_parser("merge")
+    m = sub.add_parser("merge", help="write the merge; exit 1 when the overlay breaks a rule")
     m.add_argument("--package-map", required=True)
     m.add_argument("--overlay", required=True)
     m.add_argument("--out", required=True)
-    c = sub.add_parser("check")
-    for flag in ("--package-map", "--package-id", "--package-version", "--overlay", "--map", "--manifest"):
-        c.add_argument(flag, required=True)
+    c = sub.add_parser("check", help="check the overlay, and a committed materialised map if given")
+    c.add_argument("--package-map", required=True)
+    c.add_argument("--overlay", required=True)
+    c.add_argument("--map")
     args = parser.parse_args(argv)
 
-    package = load(args.package_map)
-    overlay = load(args.overlay)
+    try:
+        package = load(args.package_map)
+        overlay = load(args.overlay)
+    except (OSError, ValueError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
     merged, problems = merge(package, overlay)
 
-    if args.command == "merge":
-        if problems:
-            for p in problems:
-                print(f"error: {p}", file=sys.stderr)
-            return 1
-        pathlib.Path(args.out).write_text(serialise(merged), encoding="utf-8")
-        return 0
-
-    manifest = load(args.manifest)
-    pins = [p for p in manifest.get("maps", []) if p.get("path") == "corpus-map.json"]
-    if len(pins) != 1:
-        problems.append("corpus-manifest.json does not declare corpus-map.json exactly once")
-    else:
-        pin = pins[0]
-        upstream = pin.get("upstream") or {}
-        if upstream.get("package") != args.package_id or upstream.get("version") != args.package_version:
-            problems.append(f"corpus-manifest.json says the map comes from "
-                            f"{upstream.get('package')}@{upstream.get('version')}, but the restored "
-                            f"package is {args.package_id}@{args.package_version}")
-        if pin.get("overlay") != pathlib.Path(args.overlay).name:
-            problems.append(f"corpus-manifest.json names overlay {pin.get('overlay')!r}, the gate "
-                            f"merged {pathlib.Path(args.overlay).name!r}")
-
-    if merged is not None:
+    if merged is not None and args.command == "check" and args.map:
         committed = load(args.map)
         if canonical(committed) != canonical(merged):
             differing = [e.get("id") for e, n in zip(committed.get("entries", []), merged["entries"])
                          if canonical(e) != canonical(n)]
-            if len(committed.get("entries", [])) != len(merged["entries"]):
-                differing.append(f"(entry count {len(committed.get('entries', []))} vs "
-                                 f"{len(merged['entries'])})")
-            top = [k for k in set(committed) | set(merged)
-                   if k != "entries" and canonical(committed.get(k)) != canonical(merged.get(k))]
-            problems.append(
-                "corpus-map.json is not merge(package, overlay). Differing top-level fields: "
-                f"{', '.join(sorted(top)) or 'none'}; differing entries: "
-                f"{', '.join(map(str, differing)) or 'none'}. Edit the overlay, not the map, and "
-                "regenerate with: scripts/map-overlay.py merge --package-map <restored map> "
-                "--overlay corpus-map.overlay.json --out corpus-map.json")
+            problems.append(f"{args.map} is not merge(package, overlay); differing entries: "
+                            f"{', '.join(map(str, differing)) or 'none (top-level fields or entry count)'}. "
+                            "Edit the overlay, not the map, and regenerate it with `map-overlay.py merge`.")
 
     for p in problems:
         print(f"error: {p}", file=sys.stderr)
     if problems:
         return 1
-    print(f"     corpus-map.json = merge({args.package_id}@{args.package_version}, "
-          f"{pathlib.Path(args.overlay).name}): {len(overlay)} of {len(package['entries'])} entries "
-          f"overlaid on {', '.join(OWNED)} only; every other byte of meaning is the package's")
+    if args.command == "merge":
+        pathlib.Path(args.out).write_text(serialise(merged), encoding="utf-8")
+    print(f"     merge(package, {pathlib.Path(args.overlay).name}): {len(overlay)} of "
+          f"{len(package.get('entries', []))} entries overlaid on {', '.join(OWNED)} only")
     return 0
 
 
