@@ -463,8 +463,15 @@ public class SeededGameReplayTests
     /// <c>valueRulings</c>, which is <c>[]</c> for a gammon the corpus names. Previous pin
     /// <c>b02846a9...6bb316a2</c>.
     /// </para>
+    /// <para>
+    /// Re-pinned for map 7.0.0 on RulesKernel 1.0.0 (issue #20). The game is move for move the same; the
+    /// only bytes that differ are the record's <c>map.version</c>, <c>6.0.0</c> to <c>7.0.0</c>. Map 7.0.0
+    /// carries the same map and manifest bytes as 6.0.0 plus the verification record rules-factory
+    /// decision 0048 requires. The identity's canonical form is unchanged by the type's rename to
+    /// <c>EngineIdentity</c>. Previous pin <c>24af54b1...a24ba274</c>.
+    /// </para>
     /// </remarks>
-    private const string RecordedReplaySha256 = "24af54b1bd433e2ba9bb12f2a9e3ecc5bf660290a9d415e4eb9087dda24ba274";
+    private const string RecordedReplaySha256 = "4574a20828754cb4ea5be3259902c4a53a366a4829d593234f3bcd62cb696e69";
 
     [Fact]
     public void A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions()
@@ -492,15 +499,15 @@ public class SeededGameReplayTests
 
         // Two runs are comparable only under the same identity, and the record carries it: ruleset
         // hoyle-1909-backgammon version 6 (Brandon's rulings of 2026-09-15 on map 6.0.0's open questions,
-        // docs/decisions/0009 and 0010), replay schema 4, from map 6.0.0. The map is the one the embedded provenance
+        // docs/decisions/0009 and 0010), replay schema 4, from map 7.0.0. The map is the one the embedded provenance
         // names, not a constant of the engine's.
         Assert.Equal(Game.Identity, first.Identity);
         Assert.Equal("hoyle-1909-backgammon", first.Identity.Ruleset.Id);
         Assert.Equal(6, first.Identity.Ruleset.Version);
         Assert.Equal(4, first.Identity.ReplaySchema.Version);
-        Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "6.0.0"), first.Map);
+        Assert.Equal(new MapPackage("RulesFactory.Maps.HoyleBackgammon", "7.0.0"), first.Map);
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
-        var map = provenance.RootElement.GetProperty("map");
+        var map = Assert.Single(provenance.RootElement.GetProperty("maps").EnumerateArray());
         Assert.Equal(map.GetProperty("packageId").GetString(), first.Map.PackageId);
         Assert.Equal(map.GetProperty("version").GetString(), first.Map.Version);
         Assert.StartsWith(
@@ -508,7 +515,7 @@ public class SeededGameReplayTests
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
         Assert.Contains(
-            "\"map\":{\"packageId\":\"RulesFactory.Maps.HoyleBackgammon\",\"version\":\"6.0.0\"}",
+            "\"map\":{\"packageId\":\"RulesFactory.Maps.HoyleBackgammon\",\"version\":\"7.0.0\"}",
             Encoding.UTF8.GetString(recorded),
             StringComparison.Ordinal);
 
