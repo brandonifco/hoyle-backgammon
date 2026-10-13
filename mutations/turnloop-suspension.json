@@ -1,0 +1,22 @@
+[
+  {
+    "test": "TurnLoopSuspensionTests.A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "new(TurnPhase.Turn, state.Position, state.ToMove!.Value.Adversary(), state.Option, null, null);",
+        "new": "new(TurnPhase.Turn, state.Position, state.ToMove!.Value.Adversary(), null, null, null);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopSuspensionTests.A_pass_hands_the_turn_to_the_adversary_on_the_same_position",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "new(TurnPhase.Turn, state.Position, state.ToMove!.Value.Adversary(), state.Option, null, null);",
+        "new": "new(TurnPhase.Turn, state.Position, state.ToMove, state.Option, null, null);"
+      }
+    ]
+  }
+]

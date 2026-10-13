@@ -12,6 +12,18 @@
     {
       "test": "OpeningThrowerOptionTests.Or_he_may_throw_again_with_both_dice",
       "mutation": "The same mutation, the option inverted; this test went red."
+    },
+    {
+      "test": "TurnLoopSuspensionTests.A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+      "mutation": "TurnLoop.Pass dropped the outstanding option (`state.Option` replaced by null in the state it returns); this test went red at the option's first assertion after the pass (mutations/turnloop-suspension.json)."
+    },
+    {
+      "test": "TurnLoopPurityTests.Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+      "mutation": "AdoptionDecision.Apply spent the option in place on the state it was read from (TurnState.Option made settable, and cleared there once the next state was built), the shape of the loop's own `optionOutstanding = false`; this test went red because the adoption state no longer equalled its fresh copy (mutations/turnloop-purity.json)."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds",
+      "mutation": "Game.Play answered the option with the opposite of what its decider said (`adoption.Apply(!adopted)`) while recording what the decider said; this test went red against a driver that does not, over a thousand seeds with a decider that adopts at random (mutations/turnloop-equivalence.json)."
     }
   ]
 }

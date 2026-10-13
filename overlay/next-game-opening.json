@@ -16,6 +16,10 @@
     {
       "test": "DeterminismTests.The_winner_of_a_hit_opens_the_next_game_without_a_roll_for_the_right",
       "mutation": "Game.Play rolled for the right to begin even when an opener was supplied; this test went red."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver",
+      "mutation": "TurnLoop.Begin with an opener left an opening option outstanding for him (`new OutstandingOption(first, new DiceThrow(2, 1))`) with no roll behind it, so the decider was asked a question the loop never asked; this test went red for both openers (mutations/turnloop-equivalence.json)."
     }
   ]
 }

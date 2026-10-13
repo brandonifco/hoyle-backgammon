@@ -1,0 +1,32 @@
+[
+  {
+    "test": "TurnLoopChosenOutcomeTests.Applying_each_of_the_twenty_one_throws_gives_the_state_sampling_it_gives_in_either_order_drawn",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "state.Option, Canonical(thrown), null);",
+        "new": "state.Option, thrown, null);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChosenOutcomeTests.Applying_each_of_the_thirty_opening_throws_gives_the_state_sampling_it_gives_whatever_ties_came_before",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "var opener = Opening.OpenerOf(deciding);",
+        "new": "var opener = Opening.OpenerOf(deciding).Adversary();"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChosenOutcomeTests.An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": " || outcome.First > Faces || outcome.Second > Faces",
+        "new": ""
+      }
+    ]
+  }
+]

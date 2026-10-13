@@ -12,6 +12,22 @@
     {
       "test": "FullTableSuspensionTests.A_point_held_by_the_entering_players_own_men_does_not_make_the_table_full",
       "mutation": "Movement.IsWhollySuspended counted a point as full on two men of either side -- the literal reading 0006 rejected; this test went red."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.Both_players_wholly_suspended_declines_the_same_way_in_every_driver",
+      "mutation": "TurnLoop.Next never looked for the adversary being suspended too (`return false` for `return Movement.IsWhollySuspended(state.Position, toMove.Adversary())`), and passed a turn nobody can play; this test went red because Game.Play reached its runaway guard instead of declining (mutations/turnloop-equivalence.json)."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did",
+      "mutation": "TurnLoop.Pass left the side to move as it was, so the suspended player was passed to again and again; this test went red (Game.Play reached its runaway guard) (mutations/turnloop-equivalence.json)."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none",
+      "mutation": "Game.Play's guard let one turn more than its limit through (`turn <= turnLimit` for `turn < turnLimit`); this test went red at the limit one short of a game's length, in a game that forfeits turns to suspension as well as one that does not (mutations/turnloop-equivalence.json)."
+    },
+    {
+      "test": "TurnLoopSuspensionTests.A_pass_hands_the_turn_to_the_adversary_on_the_same_position",
+      "mutation": "TurnLoop.Pass left the side to move as it was (`state.ToMove` for `state.ToMove!.Value.Adversary()`); this test went red (mutations/turnloop-suspension.json)."
     }
   ]
 }

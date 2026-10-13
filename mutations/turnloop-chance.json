@@ -1,0 +1,72 @@
+[
+  {
+    "test": "TurnLoopChanceTests.A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "higher == lower ? 1 : 2",
+        "new": "higher == lower ? 2 : 1"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.The_opening_roll_lists_only_the_non_tied_throws_renormalised_over_thirty",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "if (white != black)",
+        "new": "if (white >= 1)"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.The_sampled_frequencies_of_a_throw_agree_with_the_listed_probabilities_over_a_fixed_seed",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "var thrown = Opening.Throw(source);",
+        "new": "var first = Opening.Throw(source).First; var thrown = new DiceThrow(first, first);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.The_sampled_frequencies_of_the_opening_roll_agree_with_the_listed_probabilities_over_a_fixed_seed",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/Rules/Opening.cs",
+        "old": "if (attempt.First != attempt.Second)",
+        "new": "if (attempt.First > 0)"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.Sampling_a_throw_takes_two_draws_in_throw_order_and_keeps_the_order_drawn",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "var thrown = Opening.Throw(source);",
+        "new": "var t = Opening.Throw(source); var thrown = new DiceThrow(t.Second, t.First);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.Sampling_the_opening_roll_throws_again_on_a_tie_and_gives_the_deciding_pair_the_option",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "var opener = Opening.OpenerOf(deciding);",
+        "new": "var opener = Player.White;"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopChanceTests.Sampling_needs_a_generator",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "ArgumentNullException.ThrowIfNull(source);",
+        "new": "source ??= Pcg32.FromSeed(0UL, 1UL);"
+      }
+    ]
+  }
+]
