@@ -1,0 +1,117 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "win-condition",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "tested",
+      "tests": [
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not"
+      ]
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "no collection is read; the winner is found from a position"
+    },
+    "exact-min-max": {
+      "outcome": "tested",
+      "tests": [
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not"
+      ]
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records",
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus sentence behind this entry holds no disjunction that the step surface implements"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the entry reads the count of men borne off and does no arithmetic on a caller value"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "a finished game has a winner; whether its value is declined belongs to game-value"
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "must-play-whole-throw",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list",
+        "Game_Play_as_a_client_of_the_step_surface_gives_the_bytes_the_loop_it_replaced_gave_over_a_thousand_seeds"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "tested",
+      "tests": [
+        "The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list"
+      ]
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "LegalPlays.For never returns an empty list and is unchanged here; the decision offers its list as it is"
+    },
+    "exact-min-max": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing"
+      ]
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus sentence behind this entry holds no disjunction that the step surface implements"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+        "The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "LegalPlays.For is unchanged by this change and the decision does no arithmetic on its plays"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "LegalPlays.For has not declined since ruleset 6, so the step surface's mapping of its decline to an UnresolvedDecision is an arm no test can reach; it passes the result through unchanged"
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing"
+      ]
+    }
+  }
+}

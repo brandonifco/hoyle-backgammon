@@ -1,0 +1,110 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "game-value",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "not-applicable",
+      "reason": "the counts that make a gammon belong to Outcome.ResultOf, which this change does not touch"
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "no collection is read; the value is found from a finished position"
+    },
+    "exact-min-max": {
+      "outcome": "not-applicable",
+      "reason": "the thresholds of a gammon and a backgammon belong to Outcome.ResultOf, which this change does not touch"
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the exclusive choice between results belongs to Outcome.ResultOf, which this change does not touch"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the entry reads counts of men and does no arithmetic on a caller value"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records",
+        "A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "the terminal decision passes Outcome.ResultOf through unchanged, so any decline keeps its own classification; no game reaches one under ruleset 6"
+    },
+    "sentinel-wraparound": {
+      "outcome": "not-applicable",
+      "reason": "no counter, index or wraparound value reaches this entry; the only index offered is bounds-checked elsewhere"
+    }
+  }
+}

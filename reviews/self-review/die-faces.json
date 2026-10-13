@@ -1,0 +1,110 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "die-faces",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "not-applicable",
+      "reason": "the faces of a die depend on no other entry"
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "tested",
+      "tests": [
+        "A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities",
+        "The_opening_roll_lists_only_the_non_tied_throws_renormalised_over_thirty"
+      ]
+    },
+    "empty-collections": {
+      "outcome": "tested",
+      "tests": [
+        "A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities"
+      ]
+    },
+    "exact-min-max": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+        "A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus sentence behind this entry holds no disjunction that the step surface implements"
+    },
+    "idempotence": {
+      "outcome": "not-applicable",
+      "reason": "listing the outcomes repeats the same shared immutable table, which P1 reads twice per state"
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "not-applicable",
+      "reason": "no intermediate state is built from a face; an invalid face is refused before one is"
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the outcome table is built from six faces by constant loops, with no caller arithmetic"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "not-applicable",
+      "reason": "the faces of a die do not depend on a phase of the game"
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "a face outside one to six is an argument error and never a rules decline"
+    },
+    "sentinel-wraparound": {
+      "outcome": "not-applicable",
+      "reason": "default(DiceThrow) holds faces 0 and 0, which H3 refuses; no other sentinel exists"
+    }
+  }
+}

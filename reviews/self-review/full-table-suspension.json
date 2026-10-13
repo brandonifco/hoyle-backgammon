@@ -1,0 +1,127 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "full-table-suspension",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "tested",
+      "tests": [
+        "Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none"
+      ]
+    },
+    "count-semantics": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did",
+        "Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none"
+      ]
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "no collection is read; the suspension is a property of a position"
+    },
+    "exact-min-max": {
+      "outcome": "tested",
+      "tests": [
+        "Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none"
+      ]
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did",
+        "Both_players_wholly_suspended_declines_the_same_way_in_every_driver",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus sentence behind this entry holds no disjunction that the step surface implements"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "Both_players_wholly_suspended_declines_the_same_way_in_every_driver",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did",
+        "Both_players_wholly_suspended_declines_the_same_way_in_every_driver"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the entry compares counts of men and does no arithmetic on a caller value"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Both_players_wholly_suspended_declines_the_same_way_in_every_driver",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "A_pass_hands_the_turn_to_the_adversary_on_the_same_position",
+        "A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "tested",
+      "tests": [
+        "Both_players_wholly_suspended_declines_the_same_way_in_every_driver"
+      ]
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none"
+      ]
+    }
+  }
+}
