@@ -22,14 +22,44 @@ permissions:
 
 jobs:
   validate:
-    # A fixed release, not ubuntu-latest: that alias moves, and the toolchain under it with it.
-    runs-on: ubuntu-24.04
+    # The hosted default is a fixed release, not ubuntu-latest: that alias moves, and the toolchain
+    # under it with it.
+    # The runner is a repository variable's JSON label or list of labels (decisions 0079, 0080).
+    # FACTORY_RUNS_ON_TRUSTED takes only a run the owner started on a commit of this repository,
+    # and a dispatcher outside this file checks that again before any runner exists for it;
+    # FACTORY_RUNS_ON takes every run and is for private repositories alone. Neither set, the
+    # hosted ubuntu-24.04. A malformed value fails the workflow, and an offline runner is waited
+    # for, never replaced by a hosted one.
+    runs-on: ${{ fromJSON(github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event.pull_request.head.repo.full_name || !github.event.pull_request && github.repository) == github.repository && vars.FACTORY_RUNS_ON_TRUSTED || vars.FACTORY_RUNS_ON || '"ubuntu-24.04"') }}
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # The accidental-publication guardrail (docs/decisions/0068). An engine produced from a
+      # corpus whose manifest declares `distribution: private` records that in provenance.json,
+      # and this repository must not be public. GitHub already knows whether it is, so the check
+      # costs nothing here -- and it lives here alone: ./scripts/validate.sh must pass with no
+      # network and no GitHub, so verification never depends on either.
+      #
+      # This is not a security mechanism. It cannot unpublish anything; it fails the build so a
+      # person finds out.
+      - name: Refuse a private engine in a public repository
+        env:
+          REPOSITORY_IS_PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          distribution="$(python3 -c 'import json;print(json.load(open("provenance.json")).get("distribution","public"))')"
+          echo "provenance distribution: $distribution; repository private: ${REPOSITORY_IS_PRIVATE:-unknown}"
+          if [[ "$distribution" != "private" ]]; then
+            exit 0
+          fi
+          if [[ "$REPOSITORY_IS_PRIVATE" == "false" ]]; then
+            echo "::error::provenance.json records distribution private, and GitHub reports this repository as public. This engine is produced from licensed material that may not be publicly distributed (docs/decisions/0068). Make the repository private, or re-produce it from a corpus whose licence permits publishing."
+            exit 1
+          fi
+          echo "a private engine in a repository GitHub does not report as public"
 
       - name: Read the pinned SDK version
         id: sdk

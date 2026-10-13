@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "StakeTests.A_hit_pays_the_single_stake",
+      "mutation": "Outcome.Pays paid a hit double; this test went red."
+    },
+    {
+      "test": "StakeTests.An_agreement_does_not_change_what_a_hit_or_a_gammon_pays",
+      "mutation": "Outcome.Pays paid a hit the agreed multiple less two, so it varied with the agreement; this test went red."
+    }
+  ]
+}

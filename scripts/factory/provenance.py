@@ -19,24 +19,31 @@ The fields, and where each comes from:
   * `map` -- the package id and version from its nuspec, the SHA-256 of the `.nupkg` bytes,
     and the SHA-256 of the map, manifest and consumer checker at the paths the package's
     props name (`map/corpus-map.json`, `map/corpus-manifest.json`, `tools/check-map.py`).
-  * `corpus` -- sourceId, contentHash, hashDerivation and asOf of the one corpus, with
-    `recomputed: true`: intake derived contentHash from the corpus bytes under
-    hashDerivation and it matched; it was not copied from the map.
-  * `licensedCopyException` -- present only when the corpus is a licensed `local-copy` one that
-    intake admitted under the licensed-copy exception (decision 0022): `{operator, corpus}`, the
-    allowlisted GitHub login `gh` was authenticated as and the corpus's sourceId. Absent otherwise,
-    so no other record changes. Such an engine has no `corpus/` file (its bytes are never
-    committed), so recompute re-produces from the file the manifest's `envVar` names, and only
-    under the exception: the field is compared like any other, so a different operator, or a
-    re-produce without the exception, is a named mismatch.
+  * `corpora` -- one entry per corpus the map cites, **sorted by `sourceId`**: its
+    sourceId, contentHash, hashDerivation, asOf, the `corpus/` path the engine carries it at,
+    and `principal: true` on the one the map's envelope names and its `baseline` stamps. Each
+    carries `recomputed: true`: rules-corpus built the corpus from the bytes in hand and the build
+    definition beside them, and the baseline it computed matched; it was not copied across from
+    the manifest (rulescorpus.py, #558). The engine carries that definition and its expectation in
+    `corpus/` beside the corpus, so the recompute below builds it again. A map may cite
+    several corpora (0039), so this is a collection and not one object -- an engine built from a
+    map whose rules cross two served documents depends on both, and a record naming one of them
+    would asserts a correspondence it only half-checked.
   * `kernel` -- the RulesKernel version the engine references.
   * `packs` -- `[]`: no rule packs exist yet, and the empty list says so rather than omitting it.
   * `recipes` -- every file under `tools/factory/` (the factory's templates are its Python
-    modules), `__pycache__` and `*.pyc` excluded, and `tools/check-map.py` beside it (the
-    checker intake runs decides whether there is any output, so it is factory code too, and a
-    factory without it is refused), each with its SHA-256, sorted by
+    modules) and `tools/check-map.py` beside it (the checker intake runs decides whether there
+    is any output, so it is factory code too, and a factory without it is refused), each with
+    its SHA-256, sorted by
     repository-relative POSIX path in ascending byte order; and `digest`, the SHA-256 of the
     UTF-8 text made of one line `<sha256>  <path>\\n` per file in that order (`sha256sum` format).
+    Every one of those files is in the commit `factory.commit` names, or the run is refused
+    (`require_intact`, #232): a symlink under `tools/factory` would be hashed through to bytes
+    git does not hold (and a symlinked directory's contents not hashed at all, because `os.walk`
+    will not follow it), and a git-ignored file would be hashed while `git status` -- which is
+    all `dirty` is -- called the tree clean. Ignored bytecode is refused with the rest, and is
+    the case that matters most, because a `.pyc` is what Python runs (#373); `__main__.py` sets
+    `sys.dont_write_bytecode` so a run leaves none behind for the next one to trip over.
   * `generated` -- `[{path, sha256}]`, sorted by path, for every file `produce` wrote on this
     run under the engine directory whose ownership class (ownership.py, decision 0018) is
     generated, except `provenance.json` itself. Managed and engine-owned files are not listed
@@ -60,12 +67,15 @@ The fields, and where each comes from:
     next `produce` reads the adoptions back from here. No hash: every engine-owned file is a
     build input, hashed once in `buildInputs`.
   * `buildInputs` -- `[{path, sha256}]`, sorted by path in ascending byte order, for every file
-    under the engine directory that the .NET build reads as configuration and that the engine
-    owns, as it stands when `produce` finishes. The rule is `is_build_input`, its only
+    under the engine directory that the .NET build reads as configuration -- or that the agent
+    rails read as configuration, which is `.github/agent-policy.json` and nothing else (decision
+    0029) -- and that the engine owns, as it stands when `produce` finishes. The rule is `is_build_input`, its only
     definition: at any depth, with `bin`, `obj`, `.git` and `.vs` pruned, a file named
     `global.json`, `NuGet.config` (any case, as NuGet finds it), `packages.lock.json`,
-    `Directory.Build.rsp`, `.editorconfig`, `.globalconfig` or `corpus-map.overlay.json`, or
-    ending in `.props`, `.targets`, `.sln`, `.slnx`, `.csproj`, `.fsproj` or `.vbproj`; minus
+    `Directory.Build.rsp`, `.editorconfig`, `.globalconfig` or `agent-policy.json`, or
+    ending in `.props`, `.targets`, `.sln`, `.slnx`, `.csproj`, `.fsproj` or `.vbproj`; plus every
+    `overlay/<entry id>.json`, the engine's evidence for one entry (#247), which is covered by path
+    because its name is the entry's; minus
     `provenance.json` and every file already in `generated` or `managed` (RulesFactory.Packages.g.props
     and a managed global.json are the factory's, and are listed there, once). The section does
     not say the factory wrote these files: some are the engine-owned scaffold (or an adopted
@@ -109,7 +119,7 @@ What a match proves, and what it does not. The record carries two different guar
     generated files are exactly what this factory commit makes from this package and corpus;
   * build-input provenance (`managed`, `buildInputs`): every file in the engine that the build reads as
     configuration -- the SDK pin, package sources, MSBuild props and targets, projects and
-    solution, the overlay, and the lock files once recorded -- has the recorded bytes, whoever
+    solution, every overlay file, and the lock files once recorded -- has the recorded bytes, whoever
     wrote them.
 
 Together they say the engine's source tree is the recorded one. They do not say what a machine
@@ -125,20 +135,42 @@ Standard library only.
 """
 import builtins
 import hashlib
+import importlib.util
 import io
 import json
+import marshal
 import os
 import re
 import shutil
 import subprocess
 import tempfile
 
-import generate
+import agentrails
 import intake as intake_step
+import overlay as overlay_step
 import ownership
+import pins
+import rulescorpus
+import semantics
 
 FILE_NAME = "provenance.json"
-FORMAT = 3  # 2: buildInputs (#69); 3: managed and engineOwned (#72)
+FORMAT = 9  # 2: buildInputs (#69); 3: managed and engineOwned (#72); 4: the overlay is a directory (#247);
+#            5: `corpora`, every corpus the map cites, replaces the single `corpus` (#300, 0039);
+#            6: `verification`, whether the produce that wrote this built and tested the engine (#222);
+#            7: `maps`, every map package the engine is composed of, replaces the single `map`
+#               (#446, 0067). The same move 5 made for corpora, one level up, and for the same
+#               reason: a record that names one of several says nothing about the rest, and a
+#               reader cannot tell which one it named;
+#            8: `distribution`, the strictest requirement of the corpora this engine is made from
+#               (#497, 0068). Recorded rather than derived at read time, because a reader asking
+#               "may this repository be public?" must not have to re-open the map packages
+#            9: `repository`, where this engine sits in its repository and what the repository
+#               root holds for it (#501, 0069). `enginePath` is null for an engine that is its own
+#               repository root -- what every engine before this was -- and the path under the root
+#               for one embedded beneath it, whose four workflows are written **there**, because
+#               GitHub runs a workflow only from the root. Recorded rather than inferred from the
+#               engine's own directory: a reader with the record and not the checkout, and every
+#               emitted script that has to find those bytes, asks this field
 FACTORY_DIR = os.path.dirname(os.path.abspath(__file__))
 TAG = re.compile(r"^factory/v(\d+)\.(\d+)\.(\d+)$")
 SHORT_SHA = 12
@@ -148,7 +180,12 @@ SKIP_DIRS = frozenset({"bin", "obj", ".git", ".vs"})
 COPY_IGNORE = shutil.ignore_patterns(*sorted(SKIP_DIRS))
 # The build-input rule (`buildInputs` above; `is_build_input` applies it). Names compare casefolded.
 BUILD_INPUT_NAMES = frozenset({"global.json", "nuget.config", "packages.lock.json", "directory.build.rsp",
-                               ".editorconfig", ".globalconfig", generate.OVERLAY_NAME.lower()})
+                               ".editorconfig", ".globalconfig",
+                               agentrails.AGENT_POLICY.rsplit("/", 1)[-1].lower()})
+# Engine-root files named by path, because their name means something only there. `acceptance.json`
+# declares an action surface (0078): `produce` reads it to decide whether to emit the harness, so what
+# it held at a commit has to be recoverable from the record, as the overlay's files are.
+BUILD_INPUT_PATHS = frozenset({"acceptance.json"})
 BUILD_INPUT_SUFFIXES = (".props", ".targets", ".sln", ".slnx", ".csproj", ".fsproj", ".vbproj")
 LOCK_FILE = "packages.lock.json"
 
@@ -201,7 +238,121 @@ def require_clean(state, allow_dirty):
 RECIPES_BESIDE = ("check-map.py",)
 
 
+def discard_entry_point_bytecode(main_file):
+    """Remove the one `.pyc` the factory cannot stop itself from writing (#373).
+
+    `python3 tools/factory` runs a **directory**, and CPython loads its `__main__.py` through the
+    import machinery: the source is compiled and cached before its first line runs, so the
+    `sys.dont_write_bytecode` that first line sets comes one file too late. Every other module the
+    entry point imports is covered by the flag; this one is removed after the fact instead, so a
+    run still leaves nothing for the next run's `require_intact` to refuse.
+
+    Only bytecode this run's own Python would have written is removed -- the cached code object
+    has to equal what compiling the source now produces. Anything else (a stale `.pyc` whose
+    header happens to match, a planted one) is left exactly where it is, for `require_intact` to
+    refuse by name. Tidying it away would be the old exemption again, with a delete on top.
+
+    No check inside `__main__.py` can vouch for `__main__.py`'s own bytecode: bytecode that forged
+    this function's caller would simply not call it. What that costs is bounded -- a forged entry
+    point has to survive in a checkout where `require_clean` sees every source edit, and it is
+    erased the moment the source it caches is touched -- and running the factory as `python3 -B`,
+    or with PYTHONDONTWRITEBYTECODE set as scripts/validate.sh does, closes it outright by never
+    reading bytecode at all.
+    """
+    source = os.path.abspath(main_file)
+    cache = importlib.util.cache_from_source(source)
+    if not os.path.isfile(cache):
+        return
+    try:
+        with open(cache, "rb") as handle:
+            cached = marshal.loads(handle.read()[16:])  # the 16-byte header, then the code object
+        with open(source, "rb") as handle:
+            # dont_inherit, as the import machinery compiles: a __future__ import in *this* module
+            # must not change what the comparison expects of that one.
+            fresh = compile(handle.read(), source, "exec", dont_inherit=True)
+    except (OSError, ValueError, EOFError, TypeError, SyntaxError):
+        return
+    if cached != fresh:
+        return
+    try:
+        os.remove(cache)
+        os.rmdir(os.path.dirname(cache))  # empty now, and an empty __pycache__ is a leftover too
+    except OSError:
+        pass
+
+
+def require_intact(factory_dir, top):
+    """Refuse a factory whose recipe bytes are not the bytes of the commit it would name (#232).
+
+    `recipes()` hashes what it can read, and two things it can read are in no commit:
+
+      * a symlink. Git records the link text; `open()` returns the target's bytes. So the
+        digest would be of bytes outside the checkout while `dirty` said the tree was clean,
+        and `os.walk` does not descend a symlinked directory, so code the factory imports
+        would not be hashed at all.
+      * a git-ignored file. `git status --porcelain` never lists one, so it can never make
+        the tree dirty, and `recipes()` hashes it like any other module.
+
+    Both are refused rather than recorded, as `require_clean` refuses uncommitted changes:
+    there is no honest entry for a file that no commit holds. `--allow-dirty` does not lift
+    this -- it records `dirty: true`, which says the recorded commit is not the whole story,
+    and neither of these leaves any mark in `git status` for that flag to be about.
+
+    Ignored **bytecode** was exempt until #373, because a run left `tools/factory/__pycache__`
+    behind and the next one would have refused itself. It was the exemption that mattered most:
+    a `.pyc` whose header carries the source's mtime and size is loaded in preference to the
+    `.py` beside it, during import, before `produce()` reaches any check here -- so the record
+    would name a commit whose `generate.py` is not what ran. `__main__.py` sets
+    `sys.dont_write_bytecode` instead, so the factory produces none of the subject, and bytecode
+    is refused like any other ignored file. Bytecode nothing suppressed (a `python3 -c 'import
+    provenance'` run by hand, a stale `.pyc` left by a branch switch) is exactly what the
+    refusal is for, and the remedy is to delete it.
+    """
+    def named(path):
+        return os.path.relpath(os.path.abspath(path), top).replace(os.sep, "/")
+
+    def require_in_the_commit(path):
+        if os.path.islink(path):
+            raise intake_step.Refused(
+                f"{named(path)} is a symlink, so provenance would hash bytes the recorded commit does "
+                f"not hold (git records the link, not what it points at); put the file or directory "
+                f"itself in the checkout")
+        real = os.path.realpath(path)
+        if real != top and os.path.commonpath([real, top]) != top:
+            raise intake_step.Refused(
+                f"{named(path)} resolves to {real}, outside the factory checkout {top}, so provenance "
+                f"would hash bytes the recorded commit does not hold")
+
+    for name in RECIPES_BESIDE:
+        require_in_the_commit(os.path.join(os.path.dirname(os.path.abspath(factory_dir)), name))
+    require_in_the_commit(factory_dir)
+    for directory, dirs, names in os.walk(factory_dir):
+        # Directories too: a symlinked one is what `os.walk` refuses to follow and `recipes()`
+        # therefore never hashes, so checking only files would miss exactly the worse case.
+        for name in sorted(dirs) + sorted(names):
+            require_in_the_commit(os.path.join(directory, name))
+    # `-z` so a path with a space or a quote in it arrives whole, and `-- .` asks only about the
+    # factory directory, because the rest of the checkout is not hashed here and its ignored files
+    # are nobody's business. `--ignored=traditional --untracked-files=all` rather than
+    # `=matching`, which reports an ignored directory as itself: the refusal has to name the
+    # `.pyc` that would run, not the `__pycache__/` holding it.
+    for entry in _git(factory_dir, "status", "--porcelain", "-z", "--ignored=traditional",
+                      "--untracked-files=all", "--", ".").split("\0"):
+        if entry.startswith("!! "):
+            path = entry[3:].rstrip("/")
+            if path.endswith(".pyc") or "__pycache__" in path.split("/"):
+                raise intake_step.Refused(
+                    f"{path} is bytecode git ignores, and bytecode is what Python runs: a `.pyc` whose "
+                    f"header matches its source is loaded in preference to it, before this check, so "
+                    f"provenance would hash a source the run did not execute (#373); delete it "
+                    f"(the factory writes none of its own)")
+            raise intake_step.Refused(
+                f"{path} is ignored by git, so provenance would hash bytes no commit holds "
+                f"while `git status` called the factory clean; remove it, or commit it")
+
+
 def recipes(factory_dir, top):
+    require_intact(factory_dir, top)
     files = []
     for name in RECIPES_BESIDE:
         path = os.path.join(os.path.dirname(os.path.abspath(factory_dir)), name)
@@ -211,10 +362,7 @@ def recipes(factory_dir, top):
         files.append({"path": os.path.relpath(os.path.realpath(path), top).replace(os.sep, "/"),
                       "sha256": sha256_file(path)})
     for directory, dirs, names in os.walk(factory_dir):
-        dirs[:] = [d for d in dirs if d != "__pycache__"]
         for name in names:
-            if name.endswith(".pyc"):
-                continue
             path = os.path.join(directory, name)
             files.append({"path": os.path.relpath(os.path.realpath(path), top).replace(os.sep, "/"),
                           "sha256": sha256_file(path)})
@@ -271,12 +419,38 @@ class Recorder:
 
 
 def is_build_input(relative):
-    """Whether the engine-relative POSIX path `relative` is a build input: the one rule."""
+    """Whether the engine-relative POSIX path `relative` is a build input: the one rule.
+
+    `agent-policy.json` is here for the reason the others are: it is configuration the engine owns
+    and something reads at face value, so what it held at a commit has to be recoverable from the
+    record. The reader is the rails rather than MSBuild (0029).
+
+    `acceptance.json` is here by its path at the engine root (0078), for the reason the overlay is.
+
+    `overlay/<entry id>.json` is here by path and not by name (#247): its name is the entry's, so
+    there is no name to list. It is the input every generated file is made from, and covering the
+    whole directory by rule -- rather than the files that happened to be there -- is what makes a
+    file **added** or **removed** a mismatch as loudly as one edited.
+    """
     parts = relative.split("/")
     if any(part in SKIP_DIRS for part in parts[:-1]):
         return False
+    if overlay_step.is_overlay_file(relative):
+        return True
+    if relative in BUILD_INPUT_PATHS:
+        return True
     name = parts[-1].lower()
     return name in BUILD_INPUT_NAMES or name.endswith(BUILD_INPUT_SUFFIXES)
+
+
+def _walk(root):
+    """Every file under `root` as an engine-relative POSIX path, with the build's noise pruned."""
+    found = []
+    for directory, dirs, names in os.walk(root, followlinks=True):
+        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        for name in names:
+            found.append(os.path.relpath(os.path.join(directory, name), root).replace(os.sep, "/"))
+    return found
 
 
 def is_lock_file(relative):
@@ -382,17 +556,46 @@ def emit(model, out):
 # --- the record ------------------------------------------------------------------------------
 
 
-def build(state, result, model, recorder, factory_dir=FACTORY_DIR):
-    corpus = result.corpus
+#: What `verify` runs, in order, when produce is not given --no-verify (verify.py). Recorded rather
+#: than a bare boolean because a future partial mode would have to say which of these it did, and a
+#: reader of `"verified": true` should not have to guess what was proven (#222).
+VERIFICATION_STEPS = ("restore", "provenance", "build", "test", "gate")
+NOT_VERIFIED_WHY = ("produce ran with --no-verify: the engine was written but never built or "
+                    "tested, and the run ended NOT VERIFIED")
+
+
+def verification(verified):
+    """Whether the produce writing this record built and tested the engine, and what it ran (#222).
+
+    `produce --no-verify` says so loudly on stdout and exits 3, and the record said nothing at all:
+    a reader of a committed engine six months later could not tell a verified produce from an
+    unverified one, and the indirect signal -- lock files in `buildInputs` -- breaks the moment
+    anyone runs `dotnet restore` by hand. `provenance.json` is embedded in the assembly, so it
+    reaches readers who have no console output and no repository.
+
+    **Why `true` here is not a claim made before the fact.** The record is written before verify
+    runs and rewritten after restore, so at the moment these bytes are composed the gate has not
+    passed yet. What makes the field true is the transaction, not this function: verify raises at
+    the first failing stage, produce never reaches `commit`, and the staged engine is discarded. A
+    record saying `verified: true` is therefore only ever *committed* by a run that completed every
+    step below -- the same reasoning that lets the last line print "verified" beside exit 0.
+    """
+    if verified:
+        return {"verified": True, "ran": list(VERIFICATION_STEPS)}
+    return {"verified": False, "ran": [], "why": NOT_VERIFIED_WHY}
+
+
+def build(state, result, model, recorder, factory_dir=FACTORY_DIR, verified=False,
+          repository=None):
     root = recorder.root
     generated_files = []
     for relative in sorted(recorder.paths, key=lambda p: p.encode("utf-8")):
         try:
             row = ownership.classify(relative, model.name)
         except ownership.OwnershipError as error:
-            raise generate.GenerationError(str(error))
+            raise semantics.GenerationError(str(error))
         if row is None:
-            raise generate.GenerationError(f"produce wrote {relative}, which the ownership table "
+            raise semantics.GenerationError(f"produce wrote {relative}, which the ownership table "
                                            f"(tools/factory/ownership.py) does not classify; add it to the table")
         if relative == FILE_NAME or row.cls != ownership.GENERATED:
             continue
@@ -400,31 +603,64 @@ def build(state, result, model, recorder, factory_dir=FACTORY_DIR):
     managed = [{"path": path, "recipeVersion": version, "sha256": sha256_file(os.path.join(root, *path.split("/")))}
                for path, version in sorted(model.managed.items(), key=lambda kv: kv[0].encode("utf-8"))]
     # Only those present: the lock files exist once verify's restore has written them.
-    owned = sorted({row.pattern for row in ownership.rows(model.name) if row.cls == ownership.ENGINE_OWNED
-                    and os.path.isfile(os.path.join(root, *row.pattern.split("/")))}
-                   | set(model.adopted), key=lambda p: p.encode("utf-8"))
+    # A pattern with a `*` in it stands for however many files are there -- `overlay/*.json`, one
+    # per implemented entry (#247) -- so the section lists the paths, never the pattern.
+    owned = set(model.adopted)
+    for row in ownership.rows(model.name):
+        if row.cls != ownership.ENGINE_OWNED:
+            continue
+        if "*" in row.pattern:
+            owned |= {p for p in _walk(root) if ownership._matches(row.pattern, p)}
+        elif os.path.isfile(os.path.join(root, *row.pattern.split("/"))):
+            owned.add(row.pattern)
+    owned = sorted(owned, key=lambda p: p.encode("utf-8"))
     return {
         "provenanceFormat": FORMAT,
+        "verification": verification(verified),
         "engine": {"name": model.name},
+        # Where the engine is, and what its repository root holds for it (0069). Always present,
+        # so a reader can tell a standalone engine ("enginePath": null, and the four workflows are
+        # the engine's own files) from a record written by a factory that could not say.
+        "repository": repository if repository is not None else {"enginePath": None, "automation": []},
+        # Where this engine may go: the strictest requirement of the corpora it is made from
+        # (0068). `private` restricts distribution and says nothing about verification -- the
+        # record beside it establishes exactly what a public engine's does.
+        "distribution": result.distribution,
         "factory": {"version": state["version"], "commit": state["commit"], "dirty": state["dirty"]},
-        "map": {
-            "packageId": result.package_id,
-            "version": result.version,
-            "nupkgSha256": result.nupkg_sha256,
-            "files": [{"role": role, "path": result.part_paths[role], "sha256": sha256(raw)}
-                      for role, raw in (("map", result.map_raw), ("manifest", result.manifest_raw),
-                                        ("checker", result.checker_raw))],
-        },
-        "corpus": {
-            "sourceId": corpus["sourceId"],
-            "contentHash": corpus["contentHash"],
-            "hashDerivation": corpus["hashDerivation"],
-            "asOf": corpus.get("asOf"),
-            "recomputed": True,
-        },
-        **({"licensedCopyException": {"operator": result.licensed_copy_operator, "corpus": corpus["sourceId"]}}
-           if getattr(result, "licensed_copy_operator", None) else {}),
-        "kernel": {"packageId": "RulesKernel", "version": generate.KERNEL_VERSION},
+        # Every package this engine is composed of, ordered by package id so the record is a
+        # function of the inputs and not of the order they were given in (0067).
+        "maps": [
+            {
+                "packageId": package.package_id,
+                "version": package.version,
+                "nupkgSha256": package.nupkg_sha256,
+                "files": [{"role": role, "path": package.part_paths[role], "sha256": sha256(raw)}
+                          for role, raw in (("map", package.map_raw),
+                                            ("manifest", package.manifest_raw),
+                                            ("checker", package.checker_raw),
+                                            ("verification", package.verification_raw))],
+            }
+            for package in sorted(result.packages, key=lambda p: p.package_id.encode("utf-8"))
+        ],
+        # What one package's entries supersede in another, derived from the corpus and never
+        # authored (0067). Empty for an engine of one package, and the record says so rather than
+        # omitting the field, so a reader can tell "none" from "written by a factory that could
+        # not compose".
+        "supersedes": [{"entry": declined, "by": by}
+                       for declined, by in sorted(result.superseded.items())],
+        "corpora": [
+            {
+                "sourceId": verified["sourceId"],
+                "contentHash": verified["corpus"]["contentHash"],
+                "hashDerivation": verified["corpus"]["hashDerivation"],
+                "asOf": verified["corpus"].get("asOf"),
+                "path": f"corpus/{os.path.basename(str(verified['corpus'].get('committedPath') or verified['name']))}",
+                "principal": verified["sourceId"] == (result.map or {}).get("corpus"),
+                "recomputed": True,
+            }
+            for verified in sorted(result.corpora, key=lambda v: v["sourceId"].encode("utf-8"))
+        ],
+        "kernel": {"packageId": "RulesKernel", "version": pins.KERNEL_VERSION},
         "packs": [],
         "recipes": recipes(factory_dir, state["_top"]),
         "generated": generated_files,
@@ -451,10 +687,18 @@ def write(out, document):
 # --- recompute -------------------------------------------------------------------------------
 
 
+#: What names an item of a list, in the order a key is looked for. `packageId` joins them for
+#: `maps` (0067): an engine composed of several packages compares each against the one it
+#: recorded, so a mismatch reads `maps[RulesFactory.Maps.Srd52Combat].nupkgSha256` rather than
+#: dumping both whole lists and leaving a reader to find the byte that moved.
+KEYS = ("path", "role", "packageId")
+
+
 def _keyed(items):
-    """A list of objects keyed by path (or role) compares by that key, not by position."""
-    if items and all(isinstance(i, dict) and ("path" in i or "role" in i) for i in items):
-        return {str(i.get("path", i.get("role"))): {k: v for k, v in i.items() if k not in ("path",)} for i in items}
+    """A list of objects keyed by path, role or package id compares by that key, not by position."""
+    if items and all(isinstance(i, dict) and any(k in i for k in KEYS) for i in items):
+        return {str(next(i[k] for k in KEYS if k in i)):
+                {k: v for k, v in i.items() if k not in ("path",)} for i in items}
     return None
 
 
@@ -494,9 +738,10 @@ def diff(recorded, actual, field=""):
 def recompute(engine_dir, produce_into, package=None):
     """Every way `engine_dir/provenance.json` is not what re-producing gives; [] when it is.
 
-    `produce_into(package, corpus, name, out)` runs the whole of `produce` with --allow-dirty and
-    returns the provenance document it wrote (raising intake.Refused or GenerationError). `corpus`
-    is None for an engine recorded under the licensed-copy exception (0022), which holds none.
+    `produce_into(package, corpus, name, out, repo_root)` runs the whole of `produce` with
+    --allow-dirty and returns the provenance document it wrote (raising intake.Refused or
+    GenerationError). `repo_root` is the repository root the copy is produced under, which for an
+    embedded engine is the directory the copy was laid out beneath (0069).
     """
     path = os.path.join(engine_dir, FILE_NAME)
     try:
@@ -540,43 +785,89 @@ def recompute(engine_dir, produce_into, package=None):
         on_disk = claimed(recorded_inputs, build_inputs(engine_dir, recorded_generated))
         mismatches.extend(diff(recorded_inputs, on_disk, "buildInputs"))
 
-    corpus = recorded.get("corpus") or {}
-    corpus_files = [g["path"] for g in recorded.get("generated") or [] if str(g.get("path", "")).startswith("corpus/")]
-    # Decision 0022: an engine produced under the licensed-copy exception holds no corpus; the
-    # re-produce below reads the local copy from the manifest's envVar (intake), under the exception.
-    local_copy = "licensedCopyException" in recorded
-    if len(corpus_files) != (0 if local_copy else 1):
-        return mismatches + [f"generated: names {len(corpus_files)} corpus/ files; "
-                             + ("a licensed local-copy corpus is never committed (0022)" if local_copy
-                                else "exactly one is the corpus")]
-    corpus_path = os.path.join(engine_dir, *corpus_files[0].split("/")) if corpus_files else None
-    derive = intake_step.HASH_DERIVATIONS.get(corpus.get("hashDerivation"))
-    if derive is None:
-        mismatches.append(f"corpus.hashDerivation: {corpus.get('hashDerivation')!r} cannot be computed")
-    elif corpus_path is not None and os.path.isfile(corpus_path):
-        with open(corpus_path, "rb") as handle:
-            actual = derive(handle.read())
-        if actual != corpus.get("contentHash"):
-            mismatches.append(f"corpus.contentHash: recorded {corpus.get('contentHash')}, {corpus_files[0]} "
-                              f"gives {actual} under {corpus.get('hashDerivation')}")
+    # Every corpus the record names is carried with exactly what rebuilds it -- its build
+    # definition, its expectation and its stored sources (rulescorpus.carried) -- and nothing else
+    # sits in `corpus/`, so changing, removing or substituting any of them is a named mismatch, not
+    # a silence (0039). Its baseline is not re-hashed here: the re-produce below runs intake, which
+    # builds and verifies it with rules-corpus, and a corpus that no longer builds to its baseline
+    # is refused there.
+    corpora = [c for c in recorded.get("corpora") or [] if isinstance(c, dict)]
+    if not corpora:
+        return mismatches + ["corpora: the record names no corpus; provenance written by a factory "
+                             "before provenanceFormat 5 records `corpus` and is not comparable"]
+    generated_corpus = {g["path"] for g in recorded.get("generated") or []
+                        if str(g.get("path", "")).startswith("corpus/")}
+    corpus_files = []
+    expected_corpus = set()
+    for corpus in sorted(corpora, key=lambda c: str(c.get("sourceId")).encode("utf-8")):
+        source_id = corpus.get("sourceId")
+        relative = str(corpus.get("path"))
+        corpus_files.append(relative)
+        expected_corpus.add(relative)
+        corpus_path = os.path.join(engine_dir, *relative.split("/"))
+        if not os.path.isfile(corpus_path):
+            mismatches.append(f"corpora[{source_id}]: {relative} is named by the record and is not "
+                              f"in the engine, so its baseline cannot be re-derived")
+            continue
+        try:
+            expected_corpus.update(f"corpus/{p}" for p in rulescorpus.carried(corpus_path))
+        except rulescorpus.Refused as error:
+            mismatches.append(f"corpora[{source_id}]: {error}")
+    if generated_corpus != expected_corpus:
+        mismatches.append(f"corpora: the record generated {sorted(generated_corpus)} under corpus/ and "
+                          f"the cited corpora are built from {sorted(expected_corpus)}; every cited "
+                          f"corpus is carried with what rebuilds it, and nothing else")
 
-    source = recorded.get("map") or {}
+    recorded_maps = [m for m in recorded.get("maps") or [] if isinstance(m, dict)]
+    if not recorded_maps:
+        return mismatches + ["maps: the record names no map package; provenance written by a "
+                             "factory before provenanceFormat 7 records `map` and is not "
+                             "comparable"]
     name = (recorded.get("engine") or {}).get("name")
-    spec = package or f"{source.get('packageId')}@{source.get('version')}"
+    # `package` overrides what the record names, one spec per recorded package and in the record's
+    # own order: a caller re-producing from local .nupkg files supplies them in that order.
+    given = [package] if isinstance(package, str) else list(package or [])
+    if given and len(given) != len(recorded_maps):
+        return mismatches + [f"maps: the record names {len(recorded_maps)} package(s) and "
+                             f"{len(given)} were supplied; a composition is re-produced from every "
+                             f"package it was composed of, or from none of them"]
+    spec = given or [f"{m.get('packageId')}@{m.get('version')}" for m in recorded_maps]
+    # The record says where the engine sits in its repository (0069) and the scratch copy is laid
+    # out that way: an engine embedded at `engine/` is re-produced at `<scratch>/engine` with
+    # `<scratch>` as its repository root, so the `repository` section -- the workflows that root
+    # holds, rendered for that path -- is recomputed from the topology the engine was produced
+    # with and not from wherever a copy of it happens to sit. A standalone engine copies to
+    # `<scratch>/engine`, which is its own root, exactly as it always did.
+    section = recorded.get("repository")
+    embedded = str((section or {}).get("enginePath") or "") if isinstance(section, dict) else ""
     with tempfile.TemporaryDirectory(prefix="factory-recompute-") as scratch:
-        copy = os.path.join(scratch, "engine")
+        copy = os.path.join(scratch, *(embedded.split("/") if embedded else ["engine"]))
+        os.makedirs(os.path.dirname(copy), exist_ok=True)
         shutil.copytree(engine_dir, copy, ignore=COPY_IGNORE)
         try:
-            corpus_copy = os.path.join(copy, *corpus_files[0].split("/")) if corpus_files else None
-            actual = produce_into(spec, corpus_copy, name, copy)
-        except (intake_step.Refused, intake_step.Usage, generate.GenerationError) as error:
+            actual = produce_into(spec, [os.path.join(copy, *f.split("/")) for f in corpus_files],
+                                  name, copy, scratch if embedded else copy)
+        except (intake_step.Refused, intake_step.Usage, semantics.GenerationError) as error:
             return mismatches + [f"produce refused to re-produce the engine, so nothing else was compared: {error}"]
     if isinstance(recorded_inputs, list) and isinstance(actual.get("buildInputs"), list):
         actual = {**actual, "buildInputs": claimed(recorded_inputs, actual["buildInputs"])}
         # engineOwned names the lock files too; the same no-claim rule applies to it (#72).
         if isinstance(actual.get("engineOwned"), list):
             actual["engineOwned"] = claimed(recorded_inputs, actual["engineOwned"])
-    for line in diff(recorded, actual):
+    # `verification` is a fact about the run that produced the engine, not a function of its
+    # inputs, so it is held to its own rule and kept out of the recomputation diff (#222). The
+    # re-produce above runs unverified -- it re-derives bytes, it does not rebuild and retest the
+    # engine -- so comparing the two would report every verified engine as a mismatch, and the
+    # obvious "fix" for that noise is to let the recomputed value win, which is exactly the silent
+    # rewrite to `true` this must never do. `factory provenance` reports; it writes nothing.
+    recorded_verification = recorded.get("verification")
+    if not isinstance(recorded_verification, dict) or \
+            not isinstance(recorded_verification.get("verified"), bool):
+        mismatches.append("verification: the record does not say whether the produce that wrote it "
+                          "built and tested the engine; provenance written before provenanceFormat "
+                          f"{FORMAT} says nothing about it")
+    for line in diff({k: v for k, v in recorded.items() if k != "verification"},
+                     {k: v for k, v in actual.items() if k != "verification"}):
         if line not in mismatches:
             mismatches.append(line)
     return mismatches

@@ -29,7 +29,7 @@ Detection compares against the recipe history in code rather than against the ha
 `produce` recorded in provenance.json. The history does not trust a file in the engine (an edited
 provenance.json cannot make a hand edit look like the factory's), it works for an engine produced
 before this module existed (its files are version 1), and it makes a recipe version mean fixed
-bytes: tools/tests/test_factory_ownership.py fails when a recipe changes without a new version and
+bytes: tools/tests/factory/test_factory_ownership.py fails when a recipe changes without a new version and
 its hash. The cost is that a managed recipe may not depend on the engine's name or the map, and
 none does.
 
@@ -45,6 +45,11 @@ gate's locked restore. The rewrite is the consequence of the factory's input mov
 in provenance.json, and is committed only if the gate passes. Files the engine adds itself (its
 hand-written code, lock files) match no row and are not the factory's to classify.
 
+`RETIRED` is the other direction: a pattern `produce` **once wrote and now removes**. It is not a
+fourth class -- nothing writes a retired path and nothing hashes one -- but a file the factory
+stops writing does not become the engine's by default, so every run deletes what the patterns match
+(`remove_retired`) and that deletion is still recognisably the factory's work.
+
 Standard library only; vendored into every engine as scripts/factory/ownership.py because
 generate.py imports it and the engine's gate imports generate.py.
 """
@@ -53,6 +58,9 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
+
+import overlay
 
 GENERATED = "generated"
 MANAGED = "managed"
@@ -71,38 +79,506 @@ TABLE = (
     Row("src/{name}/Generated/*.g.cs", GENERATED, None,
         "the map, registry, typed contracts and embedded provenance, from merge(package, overlay)"),
     Row("tests/{name}.Tests/Generated/*.g.cs", GENERATED, None,
-        "the correspondence and provenance tests, from the same merge"),
+        "the correspondence and provenance tests, from the same merge; and the action-surface "
+        "acceptance harness, only for an engine whose `acceptance.json` declares one (0078)"),
     Row("corpus/*", GENERATED, None,
         "the corpus copy intake proved against the map's baseline"),
-    Row("backlog/*.md", GENERATED, None,
-        "the entries still to build, from the merge; GitHub issues are synced from it"),
+    Row("DISTRIBUTION.md", GENERATED, None,
+        "the notice a private engine carries, and which produce removes from one that stops "
+        "being private (0068)"),
     Row("scripts/validate.sh", GENERATED, None, "the gate recipe (M3): the factory's definition of acceptable"),
     Row("scripts/map-overlay.py", GENERATED, None, "the gate recipe: 0015's merge"),
     Row("scripts/engine-gate.py", GENERATED, None, "the gate recipe: its non-dotnet checks"),
     Row("scripts/factory/*.py", GENERATED, None, "the factory's generator, vendored so the gate can regenerate"),
     Row(".github/workflows/validate.yml", GENERATED, None, "the gate recipe: CI runs validate.sh full"),
+    Row("AGENTS.md", MANAGED, 30,
+        "the governing contract every agent works this engine under (decision 0029); section 4 carries "
+        "the sweep, the documentation section, and delete-only-what-you-created (#236); a packet that "
+        "names an entry is made with the map the reviewed commit declares, one per package for a "
+        "composed engine, and the entry id says which package it came from (#372, #460); section 11 is "
+        "what the machine owes the work -- the pinned SDK, a restore, a `gh` the packets can read "
+        "(#195); section 9 names the two emitted things that do name a vendor, as the defaults they "
+        "are (#174); section 4 ends an implementation attempt at the review boundary, and names the "
+        "brief the next one reads (#465); section 3 says the orchestrator holds the scheduling decision and the repository holds the state, and names the command that reads it (#466); section 7 says a reviewer is given what its role judges, "
+        "and that the role is part of the packet identity (#467); section 3 says where the rails are when the "
+        "engine is embedded under a repository root, because GitHub runs a workflow only from the root (#501, "
+        "0069); section 7 says a review leaves an attestation, the review after a repair is a delta of it, a full review needs a reason, a final acceptance review rereads the slice once, a reviewer starts clean, and no reviewer is paid before the self-review (0071); section 4 says a changed document outside an embedded engine is listed under its path relative to the engine, `../README.md` (#523); section 9 says the semantic surface is the engine's alone, so a host repository gates its own rule-bearing files (0072); section 7 says what a change owes the semantic review is its review class, computed from the diff and failing closed: a new decision record that overrules nothing, a regeneration with the rules unmoved and a document owe structural validation only, and an exemption is claimed on the pull request's `review class:` line and never assumed (0076); section 7 says a mutation spec's edits apply in order, each to the text the earlier ones left (#623); section 7 says an engine that declares an action surface in `acceptance.json` is accepted through it by a generated full-play harness, what its invariants hold, that the allowlist is built only from observed declines, and that cost is reduced by making the engine faster and not by checking less (0078)"),
+    Row("CLAUDE.md", MANAGED, 1,
+        "a pointer to AGENTS.md and the Claude adapters; it states no rule of its own (0029)"),
+    Row("docs/agent-team.md", MANAGED, 11,
+        "the four roles, what each may not do, and what a turn costs: the tiering the two reviews are "
+        "dispatched on, stated without naming any vendor's model (0029 amendment, #455); one instance of "
+        "the implementer is one attempt, and a fourth consequence of the cost model says why (#465); the orchestrator holds the scheduling decision and reads the rest (#466); each reviewer's section "
+        "names the cut of the packet it reads and what that cut leaves out (#467); the semantic reviewer starts clean with a packet and reads what a repair could have changed, and a fifth consequence of the cost model says why (0071); the structural review is the whole review for a change that owes no semantic one (0076)"),
+    Row("docs/review-evidence.md", MANAGED, 2,
+        "what a review covered and what a repair invalidates of it: the lifecycle, what can be reused, when a "
+        "full review is mandatory, the final acceptance review, clean reviewer sessions, reading an "
+        "attestation, and migrating an engine produced before it (0071); only a semantic-implementation or a semantic-ruling owes any of this evidence (0076)"),
+    Row("docs/adversarial-self-review.md", MANAGED, 3,
+        "the twenty classes an implementer attacks before a reviewer is paid, each with a test template, and "
+        "the record a semantic packet requires per entry (0071); only a semantic-implementation owes the self-review; a semantic-ruling owes the review of the ruling, `reviews/rulings/<decision>.json`, six classes bound to the decision record's bytes (0076); a decline is as narrow as the open question, said under `refusal-classification` and not as a twenty-first class (#628)"),
+    Row(".claude/agents/engine-dev.md", MANAGED, 12,
+        "the implementer's charter (0029); it ends with the attempt, and says what a repair attempt "
+        "reads and what it may not reconstruct (#465); it attacks its own work before review and commits the attestation a repair answers (0071); say what the change is before asking for review, and a ruling's own review record in place of a self-review (0076)"),
+    Row(".claude/agents/repo-steward.md", MANAGED, 5,
+        "the structural reviewer's charter, read-only, and on the cheaper tier its description has always "
+        "claimed (0029 amendment, #455); it reads the structural cut of the packet, which carries no entry "
+        "packet and needs no restored map package (#467); it knows a committed attestation or self-review record is review evidence the rails ask for, and what makes one a finding (0071); checks what a review class rests on, because for a change that owes no semantic review it is the whole review (0076)"),
+    Row(".claude/agents/rules-conformance.md", MANAGED, 8,
+        "the semantic reviewer's charter, read-only, on the deepest tier: the role not to economise on "
+        "(0029 amendment, #455); it reads the semantic cut, which carries the entry packets and not the "
+        "implementer's case for its own reading (#467); it starts from a clean session, reads a full, delta or final packet as each asks, and names the claim of each finding (0071); a packet is written only for a change that owes a semantic review, and how a ruling is judged (0076)"),
+    Row(".claude/hooks/primary-checkout-guard.py", MANAGED, 3,
+        "the PreToolUse guard that keeps implementation work out of the primary checkout (0029); it judges "
+        "the path of a `worktree add -b <branch> <path>`, not the branch (#496), and follows a literal `cd` "
+        "earlier in the same command, failing closed on one it cannot read (#463); it reads a command behind "
+        "a subshell's `)&&` or a reserved word such as `then`, and a subshell's `cd` does not outlive it (#550)"),
+    Row(".claude/settings.json", MANAGED, 1, "which tools the guard runs before (0029)"),
+    Row("tools/dispatch-agent.sh", MANAGED, 6,
+        "one issue, one worktree, one branch; it refuses what is not ready to work, and --sweep "
+        "removes what merged work left behind, before every dispatch (0029, #236); the directory it "
+        "sends an agent to is the engine inside the new worktree, which for an embedded engine is not "
+        "its root (#512, 0069); the primary checkout is recognised from a subdirectory, so an embedded "
+        "engine is not mistaken for a worktree (#518)"),
+    Row("tools/new-issue.sh", MANAGED, 2,
+        "an issue with the shape the rails expect, a factory update's included (0029, #193)"),
+    Row("tools/entry-packet.py", MANAGED, 7,
+        "the bounded assignment for one entry, assembled from merge(package, overlay) (0029); a composed "
+        "engine's packet is built over the whole composition and names the package its entry's id says it "
+        "came from (#460)"),
+    Row("tools/mutate.py", MANAGED, 2,
+        "a recorded mutation, run: the edit, the named test, and the source put back, so the evidence "
+        "AGENTS.md asks for is re-runnable by the reviewer rather than a sentence (#454); a spec's edits "
+        "apply in order, each to the text the earlier ones left, so every edit to a file is in place for "
+        "the run, and one that reads another's output is refused (#623); an interrupt, SIGTERM or SIGHUP puts every "
+        "file back, every name of a hard-linked file is restored, and a spec that names no site or "
+        "cancels itself out is refused (#623)"),
+    Row("tools/re-produce.sh", MANAGED, 8,
+        "an overlay edit is finished by a re-produce, from the factory commit the record names (#192); "
+        "a record a merge left conflicted is named as one, and --resolve-record settles it (#252); "
+        "the repository root comes from the record too, so an embedded engine re-produces with no "
+        "arguments of its own (#517, 0069); an engine made from several corpora is re-produced from "
+        "every corpus the record names, the principal first (#531, 0070)"),
+    Row("tools/review-packet.py", MANAGED, 18,
+        "everything a reviewer needs about one pull request, in the order it is read (0029); every map is "
+        "read once and the entry packets are built from those bytes, and a refused packet writes nothing "
+        "(#371, #372); a composed engine's maps are each checked against their own recorded digest and the "
+        "identity names all of them (#460); --role cuts it for one reviewer, the changed paths carry the "
+        "reviewed commit's own ownership class, and the identity names the role (#467); the semantic cut names the files it withheld rather than counting them, the policy among them (#475); "
+        "a cut section keeps what is nested under it (#484); a truncated file list is refused, because a cut "
+        "made from one drops a change and says it did not (#478); a packet with entry evidence writes the scope a verdict attests, --review final and --prior make the acceptance review and the reasoned full one, and it is refused until the self-review is current (0071); the semantic diff is asked for by paths anchored at the repository root, and a listed path the diff shows no change to is a refusal and not an empty fence (#522, #526); the entries are the ones pr-policy.py reads from the conformance bullet as well as the marker (#464); a list past the 100 files `gh pr view --json files` gives is read whole from the REST endpoint, and refused only when that is short too (#562); the review class is computed from the reviewed snapshot and stated first; a semantic packet is refused for a change that owes none; the self-review gate is an implementation's, and a ruling owes its decision-scoped review record instead (0076)"),
+    Row("tools/review-scope.py", MANAGED, 2,
+        "what a semantic review covered and what a repair invalidates of it, computed from the map's "
+        "dependencies, a lexical reference graph and recorded fingerprints; the delta packet a bounded "
+        "review reads, or the reasons a full one is owed; the self-review skeleton and check; an "
+        "attestation's integrity; and review telemetry (0071); `ruling-review` prints and checks the review of a ruling (0076)"),
+    Row("tools/repair-packet.py", MANAGED, 7,
+        "the bounded brief for one repair attempt: the head, the branch, the worktree, the issue's "
+        "acceptance criteria, the entries and the verdicts standing at that head, all derived -- and the "
+        "blocking findings, which are the caller's judgement and the only thing it is given (#465); a section "
+        "of the issue keeps what is nested under it (#484); it makes the readiness refusal dispatch "
+        "makes, and says a semantic verdict is owed only when the change owes one (#483); the brief says to commit the attestation it answers and that the next review is a delta of it (0071); the worktree it names is checked against the head it advertises, and every path it prints is quoted (#482); the changed paths are matched against the semantic surface in the engine's own terms, as the gate matches them, so an embedded engine is not told no verdict is owed when the gate will ask for one (#535); the brief says a semantic verdict is owed from the review class the gate reads, and from the surface when it cannot read the base (0076)"),
+    Row("tools/pr-policy.py", MANAGED, 16,
+        "the pull request contract, checked mechanically; a produce update's claim is checked, not taken "
+        "(#193); every document the engine owns is accounted for (#236); the entry declaration, linked issue "
+        "marker and overlay transition must identify the same work (#451); a changed path is judged in the "
+        "engine's own terms, which for an engine embedded under a repository root is not the path GitHub "
+        "reports (#501, 0069), the documentation skeleton included (#507); a changed document outside an "
+        "embedded engine is listed under its path relative to the engine, `../README.md`, by the check and "
+        "the skeleton alike, and a rename is its new path (#523, #511); the entry ids the conformance "
+        "bullet names are read by one function that review-packet.py loads, so the two cannot disagree (#464); a list past the 100 files `gh pr view --json files` gives is read whole from the REST endpoint, and refused only when that is short too (#562); a deletion is a deletion whether GitHub spells it DELETED or REMOVED, and an entry the overlay split moves out of the retired shared overlay keeps that row as its base, so the split implements nothing (#566); an `entry id(s):` line that is exactly `none` names no entry, so a factory update's semantic packet is not asked for an entry called `none` (#572); the review class of the diff is computed by `scripts/factory/reviewclass.py` and the pull request's `review class:` line is checked against it: it can claim an exemption the diff shows and raise a class, never lower one; a ruling names its scope or entries; only an implementation names a mutation; `generated-or-provenance` needs the produce claim admitted (0076)"),
+    Row("tools/record-verdict.py", MANAGED, 7,
+        "a review verdict as a commit status on the exact commit reviewed, from entry evidence bound to "
+        "that commit (0029, #372) -- every map of a composed engine, not one of them (#460); and from a packet "
+        "whose role could carry it, because a structural cut holds no entry evidence at all (#467); every verdict leaves a validated attestation whose digest is in the status, a delta PASS posts a context no gate requires, and a carry posts a comprehensive PASS again only when nothing moved (0071); refuses a semantic verdict on a packet whose review class owes none (0076)"),
+    Row("tools/conformance-gate.py", MANAGED, 6,
+        "whether the verdicts this change needs are recorded at the commit being merged; a truncated "
+        "file list is undecidable (0029, #193); the semantic surface is read in the engine's own paths, "
+        "which for an embedded engine is not what GitHub reports (#507, 0069); a list past the 100 files `gh pr view --json files` gives is read whole from the REST endpoint, and refused only when that is short too (#562); which verdicts a change needs is its review class's to say, read from the one vendored module; a module it cannot load is an undecidable gate and not a weaker answer (0076)"),
+    Row("tools/requeue-gate.py", MANAGED, 2,
+        "asks the gate to report again when something outside the pull request changed what it "
+        "would answer: a verdict recorded at its head (#191), or the risk label on the issue it "
+        "closes (#230)"),
+    Row(".github/pull_request_template.md", MANAGED, 6,
+        "the pull request shape pr-policy.py checks, documentation section included (0029, #236); "
+        "\"Unrelated changes\" says what belongs in it and what is part of the change (#196); the entry list "
+        "states the correspondence pr-policy checks (#451); a `review class:` line, checked against the diff and never taken, and a `decision scope:` line (0076)"),
+    Row(".github/workflows/pr-policy.yml", MANAGED, 3,
+        "the required check that runs pr-policy.py (0029); the runner is the repository variable FACTORY_RUNS_ON, "
+        "the hosted ubuntu-24.04 when it is unset (0079)"),
+    Row(".github/workflows/conformance-gate.yml", MANAGED, 5,
+        "the required check that runs conformance-gate.py (0029); the gate re-runs when the pull request body is edited, because the review class a pull request claims is a line in it (0076); "
+        "the runner is the repository variable FACTORY_RUNS_ON, the hosted ubuntu-24.04 when it is unset (0079); FACTORY_RUNS_ON_TRUSTED takes only the owner's run on a commit of this repository (0080)"),
+    Row(".github/workflows/verdict-requeue.yml", MANAGED, 4,
+        "runs requeue-gate.py on the status and issues events; deliberately not a required check "
+        "(#191, #230); the runner is the repository variable FACTORY_RUNS_ON, the hosted ubuntu-24.04 when it is unset (0079); FACTORY_RUNS_ON_TRUSTED takes only the owner's run on a commit of this repository (0080)"),
+    Row("tools/agent-doctor.py", MANAGED, 8,
+        "whether the rails are active or only present, locally and on GitHub, and what merged work "
+        "left behind (0029, #236); the machine's own prerequisites first, because a rail in place on a "
+        "machine that cannot run the gate stops nothing (#195); it looks for the gate workflow where "
+        "GitHub reads one, which for an embedded engine is the repository root and not the engine "
+        "(#501, 0069)"),
+    Row("tools/orchestrator-status.py", MANAGED, 3,
+        "where the work stands, read from the repository and bounded: the checkout, the worktrees and "
+        "their issues, the open pull requests with their heads, checks and recorded verdicts, and the "
+        "issues by state. Read-only, derived, and small enough to restart an orchestrator from (#466); "
+        "read-only of the index too, which an ordinary `git status` rewrites (#479); and a list it could not "
+        "read whole, a worktree it could not reach, and a checkout not level with the default branch are each "
+        "said rather than counted as nothing (#480)"),
+    Row(".editorconfig", MANAGED, 1,
+        "the kernel determinism analyzers' severities: a build error in src, off in tests (0029)"),
     Row("global.json", MANAGED, 1,
         "the kernel's SDK pin and roll-forward policy; an engine that must move it adopts it"),
     Row("NuGet.config", MANAGED, 2,
         "package sources and source mapping: supply-chain policy; an extra feed is an adoption"),
-    Row("Directory.Build.props", MANAGED, 2,
-        "target frameworks, analyzers, warnings-as-errors, determinism and lock-file policy"),
+    Row("Directory.Build.props", MANAGED, 3,
+        "target frameworks, analyzers, warnings-as-errors, determinism and lock-file policy, and every "
+        "configuration built optimized, Debug included (0077)"),
     Row("Directory.Packages.props", ENGINE_OWNED, None,
         "central package management and the test packages an engine bumps; imports the generated pins"),
     Row("{name}.slnx", ENGINE_OWNED, None, "the engine adds projects to its solution"),
     Row("src/{name}/{name}.csproj", ENGINE_OWNED, None, "the engine adds references and files"),
     Row("tests/{name}.Tests/{name}.Tests.csproj", ENGINE_OWNED, None, "the engine adds test references"),
-    Row("corpus-map.overlay.json", ENGINE_OWNED, None, "the engine's three fields per entry (0015)"),
+    Row(f"{overlay.DIRECTORY}/*{overlay.SUFFIX}", ENGINE_OWNED, None,
+        "the engine's three fields for one entry, one file per entry (0015, #247)"),
+    Row("acceptance.json", ENGINE_OWNED, None,
+        "the engine's declaration of an action surface: how many seeds, the step cap, the completion "
+        "fraction and the allowlist of readings. Its presence asks `produce` for the full-play "
+        "acceptance harness, and `produce` never writes it (0078)"),
+    Row(".github/agent-policy.json", ENGINE_OWNED, None,
+        "the engine's own rails configuration: labels, review contexts and chain, worktree "
+        "variables. Written once so a factory change can never undo a consumer's choice (0029)"),
     Row("src/{name}/packages.lock.json", ENGINE_OWNED, None,
         "written by verify's first restore when absent, then reviewed, committed and relocked by the engine; "
         "re-locked by a produce that changes the generated pins (#94)"),
     Row("tests/{name}.Tests/packages.lock.json", ENGINE_OWNED, None, "the same, for the test project"),
 )
 
+Retired = collections.namedtuple("Retired", "pattern reason witness")
+
+#: The witnesses a retirement may be authorised by, by name (`Retired.witness`). A witness is
+#: `(root, relative, bytes) -> why it may not be deleted, or None`, and it is what the deletion
+#: rests on when the record cannot carry it.
+#:
+#: There is exactly one, and adding a second is a decision, not a convenience: every entry here is
+#: another sentence that ends "...and so these bytes may be deleted". `superseded_by_split` is the
+#: overlay's (#247) -- see `WROTE_IT` below for why the record could not carry that one.
+WITNESSES = {"overlay-split": overlay.superseded_by_split}
+
+#: `Retired.witness` for the ordinary retirement: no witness, so the record decides.
+WROTE_IT = None
+
+#: Patterns `produce` **once wrote and now removes**. A file the factory stopped writing does not
+#: become the engine's by default: an engine produced before the retirement still has it committed,
+#: hashed by a record that no longer mentions it, and nobody would think to delete it. So each
+#: `produce` removes what these match (`remove_retired`), inside the staging copy, and the removal is
+#: committed with the run or not at all (transaction.py) -- which is the whole migration, run by the
+#: same `tools/re-produce.sh` an engine already runs after every overlay edit.
+#:
+#: They are not a fourth class: a retired path matches no row of TABLE, is written by nothing and is
+#: hashed nowhere. The list exists so that *deleting* one is still recognisably the factory's work --
+#: the engine's `tools/pr-policy.py` reads it, so a migration produce is not read as somebody's own
+#: decision smuggled into a produce update. A pattern is never removed from this list, for the same
+#: reason a recipe version is never removed: an engine that has not been produced since still holds
+#: the files.
+#:
+#: **A pattern is not a licence to delete.** Every retirement is authorised by the bytes and never
+#: by the path, and there are two ways to authorise one:
+#:
+#:   * `witness=WROTE_IT` (the default, #243): the engine's own `provenance.json` -- the record as
+#:     it stood before this run -- hashed that exact path with those exact bytes in `generated` or
+#:     `managed`. A file the record does not name, or one whose bytes have moved since it did, is
+#:     somebody's: it is left where it is and named in the run's output. `backlog/notes.md`,
+#:     written by hand and never emitted, matches `backlog/*.md` and is not the factory's to remove.
+#:   * `witness=<a name in WITNESSES>` (#247): the record cannot speak for this file, and something
+#:     else can. `corpus-map.overlay.json` is the engine's own evidence, which the factory never
+#:     wrote and so cannot claim to have written: it is recorded in `buildInputs`, which says only
+#:     which bytes were there. What retires it is not that the factory is dropping it but that this
+#:     run **moved** it, into `overlay/<entry id>.json`, so the witness parses the bytes it is about
+#:     to delete and requires the files beside it to carry every one of their keys and values
+#:     (overlay.superseded_by_split). The bar is the same: prove, from the bytes, that deleting them
+#:     takes nothing away.
+#:
+#: Both answers land in the same place -- deleted, or kept and named -- and the engine's
+#: `tools/pr-policy.py` asks the same question of the base commit's bytes before admitting the
+#: deletion into a produce update, so the run and the policy cannot disagree about who owned a file.
+#:
+#: **And a pattern may not overlap a row.** `retired_conflicts()` is checked before any deletion and
+#: by the tests: no RETIRED pattern may be able to match a path any row of TABLE can match, so a
+#: retirement can never reach an engine-owned or managed file -- adopted ones included -- however the
+#: pattern is spelled. Overlap is decided **exactly**, inside the narrow grammar `RETIRED_SEGMENT`
+#: admits and `check_retired_grammar` enforces, so the guard neither blocks a safe retirement nor
+#: misses an unsafe one. That is the structural guard; the record check above is the second, and an
+#: adopted file is listed in `engineOwned` without a hash, so it fails that one too.
+#:
+#: **A file kept once is kept for good.** The next `produce` writes a record that does not mention
+#: it, so no later run can attribute it to the factory either. That is the trade this makes
+#: deliberately: preserving a file somebody wrote, forever, costs an engine one path nothing
+#: maintains, and the run names it every time; deleting it costs somebody their work.
+RETIRED = (
+    Retired("backlog/*.md",
+            "the backlog is a projection of the map and the overlay -- filed as GitHub issues by "
+            "`factory backlog --create`, printed by `factory backlog --render` -- and is not "
+            "committed into an engine (#243)",
+            WROTE_IT),
+    Retired(overlay.RETIRED_NAME,
+            f"the overlay is one file per entry, {overlay.DIRECTORY}/<entry id>{overlay.SUFFIX}, so that two "
+            f"entry branches never write the same file; this run split it, and every key it held is in the "
+            f"files beside it (#247)",
+            "overlay-split"),
+)
+
 # Every version of every managed recipe: path -> {recipe version: SHA-256 of the bytes it wrote}.
 # Version 1 of each is what the write-once scaffold wrote before #72. Never remove a version: an
 # engine still carrying those bytes is unedited, and is migrated rather than refused.
 RECIPE_SHA256 = {
+    "docs/review-evidence.md": {
+        1: "acd33f7680250b25b17620781c9cb0eff18b05f6fe693f55fd878e459651c3dd",
+        2: "f829299ce4c7a6deff646d6196378da5ff8cf9d5ee49f2e53d3f58a54254d305",
+    },
+    "docs/adversarial-self-review.md": {
+        1: "9faff906492d809a701516c2a741fb89d5563e646b7a759e0d27bb64f08c3b06",
+        2: "38a3904e97c80e28ccfda7a2511aadd0f475a12e4e65f6db3d8b521d59a6e6a2",
+        3: "8e1c359f8aaabc70720116819fe8870ca0ddbc7e34c2235f7314e68d93810964",
+    },
+    "tools/review-scope.py": {
+        1: "84a69642db7a30efe6729d9557725794567462354072655ff4c223c7f6cbccf4",
+        2: "e96aeaf830d5bc23c4dcaa25e29fd91ac8c4be6b3ddba6a6618f4ab184a3e155",
+    },
+    ".claude/agents/engine-dev.md": {
+        1: "22dbac892b04903992d13516e5a08ac04d92d02b0d8d4ce5e4bfa9ef53543287",
+        2: "5f0dd905e2b3857115d93196a66a168e17b505f87dda13a7d200f2bc12572bdb",
+        3: "c8569477e58633f6e807a4b9be9a00b37a6f315d5b0f1fa8b0a7bc1f36b24b06",
+        4: "f2b21c791a783f828f8d4dc3fa17407f6557a15923be9b0b67ce5a94ba69f926",
+        5: "3491f1a0bbdd6b4fcb7b0d1e8d3827dfe5f4a19199d8da6ddcdc2b5bc9921521",
+        6: "5e88a1d896a9f9528f038f6daffb990e03bdcfe5f9d39f60c88723c8ee8247ca",
+        7: "8f26f1270af1eeaa12f471018cb8bf590265c573d690954b8cb942f64315746b",
+        8: "d7838a14be85667f9f97e5a483be681a4a3a2ae969399aa7437762631639cc7c",
+        9: "9bb4c07be9a29dd45b6e6d2e7ea96be95fa7227c9fbb20ea8251b21aaed6b693",
+        10: "57f96a153377f78df2a926fc29e0b998c3a547687a82f650881438b7924c2eac",
+        11: "10ac2f2159b2b93d65f6665274453902fa252c56f2d2cd0707ac76fda2e2d9fe",
+        12: "8fa4ba9fee9989fce1f9647b333e332a068ece02cf3eee315b3bdb92ac8e7dfd",
+    },
+    ".claude/agents/repo-steward.md": {
+        1: "6a2662ac958da76bb02263914d4e3b293a8dc15837e8a6ffccb14177b013bde7",
+        2: "2a991d61d6827a519878eb2659004c3ff451292a971a34636378a8bd449a2e43",
+        3: "4c022efad144ceec74ffe6036710eb0f8b8defd5379ebc0a4b22e8bfd69429af",
+        4: "df19aaa2a13662ff88c556e11b49b4033c4efa188386e5528631142aa7579834",
+        5: "00082b74a007eba0f7d6b7b541cf074431bc8aced8733574ff947161f4e8534d",
+    },
+    ".claude/agents/rules-conformance.md": {
+        1: "95eac2e802b474bdefad5a6053528dceda7465bbacfc946a0dd3c52a09705e78",
+        2: "034cc0af3ecb98e9af60a65931102c69546f22ddadfea9c82961bb71fbbf96c2",
+        3: "7f91ed4187d6d87621873266741f972a5b9bc8a27e16a248e78eb4de69789a64",
+        4: "4f63b9d3336f708c76fbe1cc9ab1b73a62ffd4c382419a4f979ca0329ffd4c8d",
+        5: "84289349255eee63078b42e155ebe7174e336c8b5028f35a01c2d38b22e40c05",
+        6: "80e8837ae312f1452ceaf6fa32b9fe5e54bb2db352472f998f83300de508585c",
+        7: "a86b4d07daccede53261077c430114fae3236d7611e7dfc287431caded6ecc04",
+        8: "241ff918ba8221b27afaf7cceeafd157bcba17178125a13dc0c6f2ac64498940",
+    },
+    ".claude/hooks/primary-checkout-guard.py": {
+        1: "a263531db502dfad98b38bf1dd90df7b1bec5f22133db016b6f30dc38509d16d",
+        2: "89d3bc82623f65c7b7bab8292fe80479419340bde92af15f1d147a89f91070d8",
+        3: "2f15d7192c5328376c1cd1836229c699d1d48f90ef35b451e48fa79b7fbef238",
+    },
+    ".claude/settings.json": {
+        1: "4d410acd10ba5b6ed2d3c6a016cc2cfde1cf8e621da54424755376a80da30aa0",
+    },
+    "AGENTS.md": {
+        1: "06594a3207634553a28ca057ecb53225082e4f111890961e27589c544353e740",
+        2: "81f5756c1bff7ca2f1f9091087138fed0204a43e2f30a1e6f05ad4430e2efd48",
+        3: "c3576d1cea769505a43794b8f2d42797f230f058b238eda09230f1fd3105ab50",
+        4: "b615fbea821a0171f3b7cdc503da561a7f385504da48395fa1efef934c0fc833",
+        5: "0bf3bb0f7519ac6cdccf4c03fd11bf65d8b3c0a4e5580917dd5bc7e8f81b1257",
+        6: "7da4642b702c6a8f527b043e4cf1d8f54f5ac6efc8840df250e998c40ac152c3",
+        7: "d141aa496491ab4eb6702fbdba803f82a4a0e11163c56289be404d9a7eeea8d9",
+        8: "0dca04ff9fd39143f1d241c4f02d14dd54576524c9596e76539a5572a552be14",
+        9: "64a111b943a7eb632f9d0bbd9ec065e4ddb6e7df625944b923c100da6871251f",
+        10: "956af7bde2aaa84131f1dc88402d8f16a90715325c01381cafe626c97b187664",
+        11: "721a114e68f56017c2c1319c2ea6202cf3af5bdef2eb9351f8fc088e333b6d50",
+        12: "7a3bc27f251ff1a274838e5e55cb546392138dd675d668c4d94bf2173d2fb8a5",
+        13: "151fe700348b37cf59f6fb4bbab5ef57dff7e41c0f080c0f78d4fbe4ab2dc011",
+        14: "1e3f3666d4812f88e9cd24347c96794c7d7115bfbd2af78c8bceb30bfbb8fb8d",
+        15: "5727dbd594baaace84cd5fa650eb9ec0e7d1779b4fd4bb262f74f3ccf56fb67b",
+        16: "07c9b6a26199f3bf9b06db4ab308fbc4747dfe71b3e2ab17a4f637be67fe14f6",
+        17: "f0148606dbd2a1e4f0614480ab74e7fa361876b9b65407019075f7a15dc24702",
+        18: "2b6a2f95c659e0d17b524f2b401f32cfe047ebe0a7249bda05ba0b4e7bab61b5",
+        19: "50c0496e6b4eb008dd649d3ca50af82400c6778b0fc1180cc3ec6d14aa2157c8",
+        20: "754e718a55fbb779147ae3089cdb1aeeec614323a5380ebe8aba43e4d949ed01",
+        21: "45a258a0b0ae9fc05390b4d41075d1c1419f8612006340505a7e4bc65ca95abd",
+        22: "4a146a7566423fd5e2e57c6cf24426534878f70c02a852a539035b5d3aa4ee9e",
+        23: "242b166fe723abccd63942c6eadad4575d407a922915cdf12397f2eed333eb52",
+        24: "02468d2b206814e1fac4e7ebeaa48ec480011e68ae1355bfbe1d114aaa31be28",
+        25: "6c95e3eafff98e597eca267f100a5a615aa086624f1f3fd5df7a1e8f16bdcacc",
+        26: "8be45eef569c2a2e46dfaac0b564798431f688bba229c850d7ac73f95d0b70d0",
+        27: "0fc0caeb0b289d9a4ed6c3cc397529b746f07ed7ac3bebbd8cc219f85e5f51f0",
+        28: "c764a5a4d78e8cf475847fd7143fbd35c3aac652285908065f22768f3a34c8a8",
+        29: "747d6d7c57d43b7caad66e0017c29c4102223ccba62c1787e98f07e25a7c13c5",
+        30: "bac17949671c440fa89fe655cd990496cf0debb59fa8ca81b5bd797275594fd0",
+    },
+    "CLAUDE.md": {
+        1: "04c07ad36e742fa60efafeca54d20bd96d16b6e338a44e46fad2b679ab8dfd9f",
+    },
+    "docs/agent-team.md": {
+        1: "48baa22a5f1b6bb3f26d6aaed5715782462430b8b5524e1f0737ad627fae219d",
+        2: "2972f4cdb30b4549639dc34de2fd47b8b06e0c680ef41e88de701ccfa66abb4d",
+        3: "ae9c54d7236adca8507e673d77b51e6431a48f4a3c29af40d7420ea2810e8521",
+        4: "1806e2679578deb3f6b59c920e1c209fb5c5606f36a07d1b8b9a942994103379",
+        5: "f7f114fc7b8a74239a2f5fba97aadf69d5252e7683aa6061a5f9052c7b981689",
+        6: "20523f6e370e6fb75c0ef3e645e41676d6252bdae91d8f242a0214114ba68574",
+        7: "f73289cfb230cfd5b32b986afd699ee99e1890810e7c86ed9428a60d84aa4625",
+        8: "3b11dcacc164b799313061341f8c65bf1c1765fd3754a92647d72268804dc97d",
+        9: "b426507e5f18c1602779d685aaf788b28764ee21ccfac865da342a127636ea30",
+        10: "e1fd3fe7e2a27ba99d485e946a00b893b2e2e39b6fece2cca001b1f9fd82c40d",
+        11: "d1ee84c9c31e5f44a4be7111f686c07b89b5a7fd318e458d287ab1f0b8d6bdbe",
+    },
+    "tools/dispatch-agent.sh": {
+        1: "868ce983b51d784a83a6a0fcac7456608b31f0af025c75ac5eeac64a373dca2b",
+        2: "5e66ff9229bf31ed43d4a70c957e774696462dba3ff4e7f75b566132a6858cb5",
+        3: "0f62f797181512f7e7e2b5b2314faaf50566866509f882927879e9361a7b6bfc",
+        4: "a9f9d81b4fb2386acaa07f905f81f0848e02b6a93351aedc1f5a978f9225ca70",
+        5: "561792adb28e18083b0210f771831532db5ed13ea9a80e95d897cbb3a6352ea0",
+        6: "c34826d451b6f8602a31b7e838d68f24baf1b276adb3f7e8e6b319b1a86b7b51",
+    },
+    "tools/new-issue.sh": {
+        1: "382a2f516f81f593e74ed9e57262080c25edbac1a16d542ffb235eb772b10e88",
+        2: "2830ba6458df4c34378538d73eadc4d522fb5f5cb7dbb945ef89097d66c9b9ee",
+    },
+    "tools/entry-packet.py": {
+        1: "6e413d4e4143d888e00c1570358c5f6c7404347a173cd023b821f4d2f781835a",
+        2: "59f112154a77a8cf574bd8d1ee1e43d39399025308c8f4eb2371d99081e49b20",
+        3: "58791e5a923a50c591ef35325a7f45ec8db652f1b09179f5fc28c874b44d230f",
+        4: "5ae5e226e92b0f1fe6ce227d58db2987173659d644e4a89667a984c9faee54af",
+        5: "3ef75a792934d473e87db94e1c3f08f459bab418a73ef5850dd6063fa4144fad",
+        6: "1125002f832f0876085db34be69de8701a43a5762ae31d49921d530c079ea0b0",
+        7: "0f37570f3995218e4ca893f254ce3476290e4b96429ee5bd4152cfe223f63cdc",
+    },
+    "tools/mutate.py": {
+        1: "d33f7ddedc923388af4582ffb6c04a1434c09f695738ca34f191839f21847901",
+        2: "eb722639671ba46c0703f699dc85177fe88f52e00ced99ccf4e90f54a30c49eb",
+    },
+    "tools/re-produce.sh": {
+        1: "2a281f94f81ce141733494a94744caa96c88af3cd9fa848cec21c13e73739499",
+        2: "259e860a06e1407b38ff2f302bd657056eb601955e5363b19d30b705f74b7d8e",
+        3: "0b0fd08926db78dff21bb8687e3cf57d34ff3a0456ae4cfb9ec1734ea2f8638f",
+        4: "465fb02b0fafd06106cfef3f1e8d0858b4cee232f7f57dc8ac628fe6f7513a67",
+        5: "4533319092ce21ccdcaaeade46dd4f10cdfa2209bb6f565efe0e9d163ef0b185",
+        6: "27f0459e33e943fb7c6cd185b808f52ffa7165a7de44f267adbcd8654ce65262",
+        7: "f60fa36f676144fd3a6ac4f7a29a5f85d2d2eaa5ecab3664594caf2fc4a8af86",
+        8: "9c0eb1c3178b16fd3799037316554ca8256f0ccebf82998d69658d781b1526b2",
+    },
+    "tools/review-packet.py": {
+        1: "2e989c02c1827bf6d3da8fce9a35874e25ea4baf14f62eeb64aab78c30b1f392",
+        2: "7dc52854df87a7837deb0cb7373258e4f7516ad23a9984b7ee20813eefbc5d50",
+        3: "5aa2d79176eea614b082653946c8ad48783dc2e8dc3966ae5b5894e83246f59e",
+        4: "bc80949e2aa1a788ed72f9574ebe85846646200fb574a5cafa451f67bc08b2a9",
+        5: "ccedcf96e26a8005387d2f95d7634b09196d1374db10a30b856a4375eeb49e1b",
+        6: "445377e001ec8f17a881f7369e82eacb9ecf9646a87d225ea80022efef98d2d5",
+        7: "7aa09461a5229497fedd360ec47cd05c8279e369be59626ef7a634caeb0d00ee",
+        8: "c511f80d77be24490ff8f259ea7fdec386db331ada4fed3812fee2d56fe9d3b1",
+        9: "7f8da2d694b74485d03179afc7167b1d469655ce08c36be875a74f1748865bdd",
+        10: "b074030233fd2e749ed3cbd41beb84d19914ee9bfafa64e9fdde0749cd4d4f69",
+        11: "b074030233fd2e749ed3cbd41beb84d19914ee9bfafa64e9fdde0749cd4d4f69",
+        12: "da610117bf1b24962640ba20d93f61f554db20f370984634446e45463fe95873",
+        13: "9f9ee16c5bd75d0e3ec95863274187ec2591adfa7992950c7cceade3501ace63",
+        14: "1c9adb51ce31986d763ce3c48a445bae95ceca0a95b7372767f02221a2840fa9",
+        15: "bbbfd33e2385ab884863f02d35c3a836405d21fbf95d3347fddd937f92ece238",
+        16: "035d4fe896df6573a295f2350ac16739f05a09fa4f4c718972fa1c6f2eddafc3",
+        17: "09a783f9e0a7a6e995167389f0c8398da73d3e4f44653fe451e2a8e47cacc291",
+        18: "cf48164f9f65042716b1dae08436c3573dc26073fc6f22053dc1899de6e58a85",
+    },
+    "tools/repair-packet.py": {
+        1: "7ec00d9a68ff35fa0af4ab65714411ac6b39cfce34baf448359d9be5e393c2f5",
+        2: "7ec00d9a68ff35fa0af4ab65714411ac6b39cfce34baf448359d9be5e393c2f5",
+        3: "d3a63261fd6edfbb352b01259d797bcba434b9a5845d4be458d2bc7b2ae83adf",
+        4: "4ac24b78411f3ea457e497838f5959d0374c8f3126c249bfb88393c2485318ed",
+        5: "c9c35317247883f7076972c29a19e9ca5ccfc3166882a5b2e218a6108dcddd9f",
+        6: "67e36ff58616171e5222ac3449bee618b13bba840f376069ecfcc7d577f8bc9f",
+        7: "bb9158eaf9132975677d9be5da5150f652ac422226f666dcfffaa3d9af18a7da",
+    },
+    "tools/pr-policy.py": {
+        1: "79a33c7fe1ea8d888e4d6912a43ac60afe285c7a8bf43fbe9f7be87d6947b76e",
+        2: "4a0c6677913decb13c8e9499840d5da4935c1725559dd6514d67dd72c8d849bd",
+        3: "fc3ca4f9571e3276b7208a5927cdcef01da852ae97972a5c47663fe7391703eb",
+        4: "1100f4005be978240ddd1f4ddb5001fefae8a89dff85818784dfe2e54ff61f8f",
+        5: "c17dbf45d593454342680dc2b8333c88028ce9ec23367bdc668e8204202d4dc1",
+        6: "308cbb15d1d908bc8db2c326633bd3ff7da97cc9447c057ba63fd81cc3574db5",
+        7: "0606f6993cb2667b79788f8c4a0356e2d2e86dab12603628759ac906d1ed7941",
+        8: "e5ee81be7c570a9b8df49b77ca9b306bd82ff57994d07da4a293867862014aae",
+        9: "20666192adbbdfc24cacbf8abd57d5f42b1c1bc826691382017d69f9735f8313",
+        10: "9017ed3f13402056e4a5b6ebb3f9b52349348904addf75ff6f0701f8dc7b5512",
+        11: "c8fce86c6cffc79afca5c3b1a06cfe8bcfc1a42962013f2c530dc81f9a7bb286",
+        12: "03d43a550a8f6fec9e2943f5f06f0f830dfc450650eed79e3f0640c537235268",
+        13: "37c2cee713e940b7799130fe5117074201e5390635d62700a4572582cb7a914b",
+        14: "a68e3e9603684143232a8badf4e36642ce2762a20a38fbed5e33f7255d2629ac",
+        15: "49e4845fb7d07855fe719c353b9493da9802f4bf80be3465a2ae8c991d957938",
+        16: "80fda4f86822f5c2b9c8cd4e8a1b23f85b30a2d32b681749e788821d9d78bd07",
+    },
+    "tools/record-verdict.py": {
+        1: "48f7b11f7fc829cdaebd776a3eb5db04e27cade97c427c6806b72f58805d83db",
+        2: "befcec43518715bf0604f182b2edea5dea340f4979adfd6d49072a3b50184f84",
+        3: "678b501239f684946dccbb6186035a39b5916257f0b3dadf13d35e6be97739a5",
+        4: "79ce6388ca3409c99bfdecccf46b3b9e0277756bfd6d0f7588a79fb6181f48cf",
+        5: "fd493c0e21a738f5e6bdc47c406a907e0a121e124fadfe3b9358d70580ac26e4",
+        6: "9dc1d7aafa536a37278bf526693893e106a43c43183bdcccddceac4e8fe45231",
+        7: "8e7ba67c30672e69e714ccd801a9b5a59ba18d1aa63c08b9b50b385264672e75",
+    },
+    "tools/conformance-gate.py": {
+        1: "567972b60f16d1f86c661e97efa56fa2878c9a5aa92fb820c4aea07a402cbd24",
+        2: "6e4a57468144caf4eaf74dce4d178a582322235ba37eb04d92bd72ddb929e58a",
+        3: "ed0db727f1ac5500be0496bc42351d19faa353f3fc578b6d195e0b41cc23c634",
+        4: "4c0e5daef3375bb4b17d7a751bc5fb5d221925fabbb2b13e38fac519c556574b",
+        5: "efa4ebba282b25abe388aea2721633d8565de22faaf591e09361c2ac1759c031",
+        6: "3fafa402a1c56bdcdedc7d9411e6d13bec638752ecdc81f11950790d537c44d7",
+    },
+    "tools/requeue-gate.py": {
+        1: "a4315a5fa76a696ee616e5ef190d6bbec0d023c04e22086082d4031c460aec8d",
+        2: "df937ba5ee305f52097406fa556c98ad0a98d4e6f76bb4a554ce0802fae1e952",
+    },
+    ".github/pull_request_template.md": {
+        1: "e2cebc6419d62e2df3b218d76462caf807d6637f2b305ac2aa11153f13304a92",
+        2: "8b679be11d7a53d3df4ee29fa687bff03042da01efa46a639da1d70e5dfe4234",
+        3: "89a364ba817959aa0c3842b1fa3a9138df39d2dccd9f59f04ba33ce90d064f71",
+        4: "3c21dc914830df9656fb49ec5cd56cbb56542f8121a219395cfc7d13f08aab74",
+        5: "3a343651e908d6b6bc36594fa663c2aee9e88996147516173c39e3bea63ede78",
+        6: "bb75cd6f5877d65d65cccf6e0cbfdddf86112899ecb11e6bbe61a77a9e459740",
+    },
+    ".github/workflows/pr-policy.yml": {
+        1: "caa3394a473d5fdd45b274176d8e28c48d9f5425176318194ba68fbea8453fa2",
+        2: "a99ddb7cd87905f24f64892a3773275554d29e1977acefc0fafd69838f14aa87",
+        3: "ebf84bcf01619ae578417767d0a984102dfcb00a67b6778b4527a409a3722b6e",
+    },
+    ".github/workflows/conformance-gate.yml": {
+        1: "851d64e8705363b70711b74fe1b25306c3fac1c1e26c88a9805defc3a03042a8",
+        2: "d66ae8a37a37874369ac962fbecbf9ac1b98cf0246541a61ea5089b23f8ea702",
+        3: "5ddfd5e6b2fba8553e4f9f7d0f6bd40de9d51529acf983b3ac65d5f94857f16a",
+        4: "e96719a5f71ef095f2265549c5c8b42fff7283b820aa035339bd0eebba4edabc",
+        5: "4a18b24d803fa8a7e97ba018ab3ae4d0c9ed59fcbbc615963bbf024503b49c20",
+    },
+    ".github/workflows/verdict-requeue.yml": {
+        1: "b1a48c75587dcbcf15638f83a703025c08f5449d9e2611550c4f15a448fcb178",
+        2: "8ab0d0de2df9777f3e545fedb66c118816e3c658a0fce87db63261967332780a",
+        3: "bfdc9cdf73e8e63264ef35b3cb020adb6848d6f8126da10987deb75322fd2a24",
+        4: "e12f280ee6e9e70e413f59cc6df35d4eda26a2bd2667ba4be5e954d2fecbb4df",
+    },
+    "tools/orchestrator-status.py": {
+        1: "ae752a3234fcdcf9cd5d478dd1737d8cf0c952c7853fa25918e27b0299a8db17",
+        2: "8ddba7efbe89b47166928c6d6ac1d366f80234e914de5b3745b6211b25ba64de",
+        3: "8ddba7efbe89b47166928c6d6ac1d366f80234e914de5b3745b6211b25ba64de",
+    },
+    "tools/agent-doctor.py": {
+        1: "1b6fced99797d165ab0216523bddae183d6e7254f41d5d5f51cdb1d1c3b8913d",
+        2: "340004575c29918f4dcbdacc7c1aef7f970e60bb270832901ae501bcb61b0b30",
+        3: "1ae43e922fbbe2cdcd4e1ed2708ac7377d644d7cdfac63a95cda2d37d7ef276b",
+        4: "4af176ea1850a69a148973f301a12ef6dafbd125ecc3d3bd4afff5c8581709f6",
+        5: "48192fc3bfea14393824f39b049c73606631f07db8caecdf8107f2500bd18af6",
+        6: "29a12d22a4befe577fcf67ab1ae868f0c1db3bc41d4d32babd812dd547324ab0",
+        7: "3483e812ad0e5fead7940ddddb45880d7de21ac3e788cfc5f2e9a53660efa26c",
+        8: "04b0ebbffc8638fa322543a8591096abb54ef5c5a7e5be4151de6e4066fff4ff",
+    },
+    ".editorconfig": {
+        1: "4109d1ef55053ef656e536d7818934deb73016fbe950f153bae6b2a163591cb2",
+    },
     "global.json": {
         1: "12f1cf1c3eef038f55de570dc8f5e321f4ff5306a9281106c43cc60a1f78a371",
     },
@@ -113,8 +589,48 @@ RECIPE_SHA256 = {
     "Directory.Build.props": {
         1: "1392b57192cfe16ac70aa847f932c52f136765c9ce60ed94254d73dafd0d14ef",
         2: "73c373b1457e4149eb7ab7da1aed49314536ca8945dea8022c1efbd49c7a1a8f",
+        3: "06222da635f4a0085395208fd47ebcb3d999bd1acfe49ba16d9aea9d3b1ac893",
     },
 }
+
+
+# --- what a repository root holds (0069) -----------------------------------------------------
+
+
+#: The automation a **repository root** holds for an engine embedded beneath it (#501, decision
+#: 0069): repository-relative paths, in their own table because they are not the engine's files.
+#: GitHub reads a workflow only from `.github/workflows` at the root of a repository, so an engine
+#: produced under a host repository does not own its rails -- the root does, and these are the
+#: bytes it holds. Generated, every one: they are a function of the recipe and the engine's path
+#: under the root, rewritten by every `produce`, and hashed in `provenance.json`'s `repository`
+#: section rather than in `generated`, which is engine-relative. A standalone engine has no row
+#: here: its own `.github/workflows` **is** its repository's.
+REPOSITORY_TABLE = (
+    Row(".github/workflows/validate.yml", GENERATED, None,
+        "the gate recipe, rendered to run validate.sh full in the engine"),
+    Row(".github/workflows/pr-policy.yml", GENERATED, None,
+        "the required check that runs the engine's pr-policy.py (0029)"),
+    Row(".github/workflows/conformance-gate.yml", GENERATED, None,
+        "the required check that runs the engine's conformance-gate.py (0029)"),
+    Row(".github/workflows/verdict-requeue.yml", GENERATED, None,
+        "runs the engine's requeue-gate.py on the status and issues events (#191, #230)"),
+    Row(".github/pull_request_template.md", GENERATED, None,
+        "the pull request contract pr-policy.py checks, which GitHub shows only from the root"),
+)
+
+
+def classify_repository(relative):
+    """The one `REPOSITORY_TABLE` row a repository-relative path matches, or None.
+
+    None is not a fault: a repository root holds its own workflows, its own README and whatever
+    else the product is, and none of that is the factory's. What matters is that the four the
+    factory does write are recognisable as its work wherever they are read -- by `produce`, which
+    rewrites them, and by `tools/pr-policy.py`, which judges a changed path in a pull request.
+    """
+    found = [row for row in REPOSITORY_TABLE if _matches(row.pattern, relative)]
+    if len(found) > 1:
+        raise OwnershipError(f"{relative} matches {len(found)} rows of the repository table; it must match one")
+    return found[0] if found else None
 
 
 class OwnershipError(Exception):
@@ -153,6 +669,207 @@ def managed_rows(name):
     return [row for row in rows(name) if row.cls == MANAGED]
 
 
+def retired(relative, name):
+    """The RETIRED entry `relative` matches, or None: a file `produce` used to write and now removes."""
+    for row in RETIRED:
+        if _matches(row.pattern.replace("{name}", name), relative):
+            return row
+    return None
+
+
+#: The whole grammar a RETIRED pattern's segments may use. Each segment is a literal, or `*`, or
+#: `*` followed by a literal suffix (`*.md`, `*.g.cs`). Nothing else: no `?`, no `[`, no interior or
+#: trailing `*`, no `{name}`. The grammar is narrow on purpose -- inside it `_segments_can_overlap`
+#: decides overlap **exactly**, so `retired_conflicts()` neither blocks a safe retirement nor misses
+#: an unsafe one. `a*.md` and `*b.md` both match `ab.md` while neither matches the other, which is
+#: the shape a fnmatch-both-ways test gets wrong; it is not in the grammar, so it cannot arise.
+RETIRED_SEGMENT = re.compile(r"\A(?:\*[^*?\[\]{}]*|[^*?\[\]{}]+)\Z")
+
+
+def _suffix(segment):
+    """(is a glob, its literal suffix) for a segment in the grammar; None for one outside it."""
+    if not RETIRED_SEGMENT.match(segment):
+        return None
+    return (True, segment[1:]) if segment.startswith("*") else (False, segment)
+
+
+def _segments_can_overlap(one, other):
+    """Whether two path segments could both match one segment. Exact inside the grammar.
+
+    `one` is a retired segment, always in the grammar (`check_retired_grammar`). `other` is a
+    table row's, with `{name}` already replaced by `*`: the engine name is one segment's worth of
+    text, so `{name}.slnx` is exactly "anything, then `.slnx`" -- which is why a retirement of
+    `obsolete.md` does not collide with it. A table segment outside the grammar (none is today)
+    answers True, which refuses a retirement rather than admitting one on an answer this cannot
+    give.
+    """
+    left, right = _suffix(one), _suffix(other)
+    if left is None or right is None:
+        return True
+    (left_glob, left_text), (right_glob, right_text) = left, right
+    if not left_glob and not right_glob:
+        return left_text == right_text
+    if not left_glob:
+        return fnmatch.fnmatchcase(left_text, other)
+    if not right_glob:
+        return fnmatch.fnmatchcase(right_text, one)
+    # Both are `*` plus a suffix: a witness exists exactly when one suffix ends the other.
+    return left_text.endswith(right_text) or right_text.endswith(left_text)
+
+
+def check_retired_grammar():
+    """Refuse any RETIRED pattern outside the grammar overlap detection is exact for."""
+    for gone in RETIRED:
+        outside = [part for part in gone.pattern.split("/") if _suffix(part) is None]
+        if outside:
+            raise OwnershipError(
+                f"the retired pattern {gone.pattern} uses {', '.join(repr(p) for p in outside)}, which is "
+                f"outside the grammar a retirement may use (a literal, `*`, or `*` and a literal suffix). "
+                f"Overlap with the ownership table is only decidable inside it, and a retirement whose "
+                f"reach cannot be decided is not run")
+
+
+def retired_conflicts():
+    """[(retired pattern, row pattern)] that could both match one path: a table bug, always empty.
+
+    A retirement deletes files. A pattern that could reach a row of TABLE could delete a generated,
+    managed, adopted or engine-owned file -- the overlay, a lock file, a project -- so this makes
+    that impossible rather than unlikely. Either the segment counts differ, or some segment pair is
+    disjoint, or the pattern does not go in RETIRED.
+    """
+    check_retired_grammar()
+    found = []
+    for gone in RETIRED:
+        for row in TABLE:
+            left = gone.pattern.split("/")
+            right = row.pattern.replace("{name}", "*").split("/")
+            if len(left) == len(right) and all(_segments_can_overlap(a, b) for a, b in zip(left, right)):
+                found.append((gone.pattern, row.pattern))
+    return found
+
+
+def _recorded_hashes(out):
+    """{path: sha256} for every file `out`'s provenance.json says the factory wrote, or {}.
+
+    `generated` and `managed` only: those are the two sections that say "the factory wrote these
+    bytes". `engineOwned` says the opposite and carries no hash, and `buildInputs` says only which
+    bytes were there. An unreadable or absent record yields {}, which makes `remove_retired` delete
+    nothing -- the safe direction, since the alternative is deleting a file on no evidence.
+    """
+    try:
+        with open(os.path.join(out, PROVENANCE), encoding="utf-8") as handle:
+            return _hashes_of(json.load(handle))
+    except (OSError, ValueError, AttributeError, TypeError):
+        return {}
+
+
+def _hashes_of(record):
+    """The same, for a record already in hand (the engine's pr-policy.py has the base commit's)."""
+    found = {}
+    if not isinstance(record, dict):
+        return found
+    for section in (GENERATED, MANAGED):
+        for item in record.get(section) or []:
+            if isinstance(item, dict) and isinstance(item.get("path"), str) \
+                    and isinstance(item.get("sha256"), str):
+                found[item["path"]] = item["sha256"]
+    return found
+
+
+def _unauthorised(root, relative, data, row, recorded):
+    """Why `data` at `relative` may not be deleted under retirement `row`, or None: the one line.
+
+    `recorded` is `_recorded_hashes` of the record as it stood before the run. Both the remover and
+    the engine's `tools/pr-policy.py` come through here (the policy via `authorised`), so a
+    deletion the run makes and a deletion the policy admits are decided by the same sentence.
+    """
+    if row.witness is WROTE_IT:
+        if relative not in recorded:
+            return f"{PROVENANCE} does not record the factory as having written it"
+        if sha256(data) != recorded[relative]:
+            return (f"its bytes are not the ones {PROVENANCE} recorded ({recorded[relative][:12]}...), so it "
+                    f"was edited after the last produce")
+        return None
+    witness = WITNESSES.get(row.witness)
+    if witness is None:
+        raise OwnershipError(f"the retired pattern {row.pattern} names the witness {row.witness!r}, which is "
+                             f"not one of {', '.join(sorted(WITNESSES))}; a deletion nothing can authorise "
+                             f"is not made")
+    return witness(root, relative, data)
+
+
+def authorised(root, relative, data, name, record):
+    """Whether `data`, the bytes at retired `relative`, may be deleted. None-safe for `record`.
+
+    The engine's `tools/pr-policy.py` calls this on the base commit's bytes, with the base commit's
+    record, to decide whether a deletion in a pull request is the factory's own work. It is the
+    remover's own test and not a second copy of it.
+    """
+    row = retired(relative, name)
+    if row is None:
+        return False
+    return _unauthorised(root, relative, data, row, _hashes_of(record)) is None
+
+
+def remove_retired(out, name):
+    """Delete the files under `out` that a RETIRED pattern matches **and the record says are ours**.
+
+    Returns `(removed, kept)`: the relative paths deleted, sorted, and `[(path, why)]` for every
+    match left where it is. Run by `produce` in the staging copy before provenance is written, so
+    the deletions are part of the one transaction and a refused run removes nothing; `out`'s
+    provenance.json is still the record the engine had when the run began, which is what says who
+    wrote each file.
+
+    Matching the pattern is necessary and not sufficient; what makes it sufficient is the row's
+    witness (RETIRED above). With `WROTE_IT`, a match is deleted only when that record hashed it in
+    `generated` or `managed` **and** the bytes on disk are still that hash. So `backlog/notes.md`,
+    written by hand under a directory the factory used to own, and an item file somebody edited
+    after the last produce, are both kept -- and returned in `kept`, for the caller to print,
+    because a file the factory has stopped maintaining and will not remove is something its owner
+    should be told about rather than left to find. With a named witness, the record is not asked and
+    the witness is: `corpus-map.overlay.json` goes only when `overlay/` carries every key it holds
+    (#247), and an overlay that says anything those files do not is kept and named in exactly the
+    same way.
+
+    The bytes are re-hashed rather than trusted from the record, so an edited provenance.json cannot
+    talk this into deleting a file: `recipe_versions` does not trust the record either, and for the
+    same reason. The witness reads the bytes for the same reason again. Deletion by pathname alone
+    was the first version of this and was wrong.
+
+    A directory left empty by the deletions goes too; a directory holding anything else stays, with
+    whatever else is in it.
+    """
+    conflicts = retired_conflicts()
+    if conflicts:
+        raise OwnershipError(
+            "a retired pattern can match a path the ownership table owns, so a migration could delete a "
+            "generated, managed, adopted or engine-owned file: "
+            + "; ".join(f"{gone} overlaps {row}" for gone, row in conflicts))
+    recorded = _recorded_hashes(out)
+    removed, kept, directories = [], [], set()
+    for directory, dirs, names in os.walk(out):
+        dirs[:] = [d for d in dirs if d not in ("bin", "obj", ".git", ".vs")]
+        for base in sorted(names):
+            path = os.path.join(directory, base)
+            relative = os.path.relpath(path, out).replace(os.sep, "/")
+            row = retired(relative, name)
+            if row is None:
+                continue
+            with open(path, "rb") as handle:
+                data = handle.read()
+            why = _unauthorised(out, relative, data, row, recorded)
+            if why is not None:
+                kept.append((relative, why))
+                continue
+            os.remove(path)
+            removed.append(relative)
+            directories.add(directory)
+    for directory in sorted(directories, key=len, reverse=True):
+        if directory != out and os.path.isdir(directory) and not os.listdir(directory):
+            os.rmdir(directory)
+    return sorted(removed), sorted(kept)
+
+
 def adopted(out):
     """Managed paths the engine's provenance.json records as adopted (engine-owned).
 
@@ -169,7 +886,113 @@ def adopted(out):
         return set()
 
 
-def plan_managed(out, name, recipes, adopt=(), reset=()):
+def recipe_versions(path, data):
+    """Every recipe version of managed `path` whose bytes are `data`: empty for a hand edit."""
+    digest = sha256(data)
+    return [version for version, recorded in RECIPE_SHA256.get(path, {}).items() if recorded == digest]
+
+
+# What `managed_states` finds a managed file to be.
+ABSENT, CURRENT, EARLIER, ADOPTED, EDITED = "absent", "current", "earlier recipe", "adopted", "edited by hand"
+
+
+def managed_states(out, paths):
+    """What each managed file in `paths` is on disk in `out`, judged against the recipe history.
+
+    Returns {path: (state, recipe versions its bytes are)}. `current` is the bytes of the table's
+    recipe version; `earlier recipe` is the bytes of an older one, which the next `produce`
+    migrates; `adopted` is a file provenance.json records as the engine's own, whatever its bytes;
+    `edited by hand` is bytes no version of the recipe wrote, which `produce` refuses.
+
+    It is the judgement `plan_managed` makes before a write, made without one, so that a report of
+    the rails (`factory rails --check`, the engine's `tools/agent-doctor.py`) can say a rail is as
+    the factory wrote it rather than only that a file of that name exists (#211).
+    """
+    table = {row.pattern: row for row in managed_rows("")}
+    recorded = adopted(out)
+    states = {}
+    for path in sorted(paths):
+        target = os.path.join(out, *path.split("/"))
+        if not os.path.isfile(target):
+            states[path] = (ABSENT, [])
+            continue
+        with open(target, "rb") as handle:
+            versions = recipe_versions(path, handle.read())
+        if path in recorded:
+            states[path] = (ADOPTED, versions)
+        elif not versions:
+            states[path] = (EDITED, versions)
+        elif path in table and table[path].recipe in versions:
+            states[path] = (CURRENT, versions)
+        else:
+            states[path] = (EARLIER, versions)
+    return states
+
+
+def engine_path(out):
+    """Where `out` sits under its repository root, or "" when it **is** that root (0069).
+
+    Read from the engine's own `provenance.json`, which is the one place it is recorded. "" for a
+    record that cannot be read or was written before format 9: such an engine was produced as a
+    repository root, which is what it was assumed to be.
+    """
+    try:
+        with open(os.path.join(out, PROVENANCE), encoding="utf-8") as handle:
+            record = json.load(handle)
+    except (OSError, ValueError):
+        return ""
+    section = record.get("repository") if isinstance(record, dict) else None
+    return str((section or {}).get("enginePath") or "") if isinstance(section, dict) else ""
+
+
+def repository_root(out):
+    """The repository root `out` is in, by its own record: `out` itself when it is that root."""
+    path = engine_path(out)
+    root = os.path.abspath(out)
+    for _ in path.split("/") if path else []:
+        root = os.path.dirname(root)
+    return root
+
+
+def repository_states(out, paths=None):
+    """What each rail at the **repository root** is, judged against the record (0069): {path: (state, [])}.
+
+    `current` when the bytes at the root are the SHA-256 `provenance.json` records for that path in
+    `repository.automation`; `absent` when the file is not there; `edited by hand` when it is and the
+    bytes are not the record's.
+
+    The recipe history cannot judge these and never could: at a repository root the bytes are
+    rendered for the engine's path beneath it, so they are generated rather than managed
+    (repository.py), and one fixed sequence of bytes per recipe version -- what `managed_states`
+    compares against -- is exactly what they are not. What says whether a rail at a root is the
+    factory's is the record the produce that wrote it left behind, which is also what the engine's
+    own `scripts/engine-gate.py repository` holds them to. `{}` for a standalone engine: its rails
+    are its own files, and `managed_states` judges them as it always has.
+    """
+    try:
+        with open(os.path.join(out, PROVENANCE), encoding="utf-8") as handle:
+            record = json.load(handle)
+    except (OSError, ValueError):
+        record = {}
+    section = record.get("repository") if isinstance(record, dict) else None
+    if not isinstance(section, dict) or not section.get("enginePath"):
+        return {}
+    root = repository_root(out)
+    recorded = {str(item.get("path")): str(item.get("sha256") or "")
+                for item in section.get("automation") or [] if isinstance(item, dict)}
+    states = {}
+    for path in sorted(paths if paths is not None else recorded):
+        target = os.path.join(root, *path.split("/"))
+        if not os.path.isfile(target):
+            states[path] = (ABSENT, [])
+            continue
+        with open(target, "rb") as handle:
+            digest = sha256(handle.read())
+        states[path] = (CURRENT if digest == recorded.get(path) else EDITED, [])
+    return states
+
+
+def plan_managed(out, name, recipes, adopt=(), reset=(), elsewhere=()):
     """Decide every managed file for a run into `out`.
 
     `recipes` maps each managed path to the current recipe's bytes. Returns (writes, managed,
@@ -177,8 +1000,15 @@ def plan_managed(out, name, recipes, adopt=(), reset=()):
     stay managed, the set that is engine-owned by adoption, and a line per decision worth
     logging. Raises OwnershipError, before anything is written, for a flag that names no managed
     file and for every hand-edited managed file neither flag settles.
+
+    `elsewhere` names the managed paths this engine does not receive at all because another owner
+    writes them -- the rails an embedded engine's repository root holds, which GitHub reads only
+    from there (repository.py, 0069). They are dropped from the recipes **and** from the rows, so
+    the two still have to agree: an engine cannot quietly stop receiving a managed file, and a
+    file nothing writes cannot be planned as managed either.
     """
-    table = {row.pattern: row for row in managed_rows(name)}
+    recipes = {path: data for path, data in recipes.items() if path not in set(elsewhere)}
+    table = {row.pattern: row for row in managed_rows(name) if row.pattern not in set(elsewhere)}
     if set(recipes) != set(table):
         raise OwnershipError(f"the managed recipes ({sorted(recipes)}) are not the managed rows of the "
                              f"ownership table ({sorted(table)})")
@@ -215,7 +1045,7 @@ def plan_managed(out, name, recipes, adopt=(), reset=()):
             writes[path] = current
             managed[path] = row.recipe
         else:
-            versions = [v for v, digest in RECIPE_SHA256[path].items() if digest == sha256(on_disk)]
+            versions = recipe_versions(path, on_disk)
             if not versions:
                 refused.append(path)
                 continue

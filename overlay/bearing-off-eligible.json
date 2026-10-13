@@ -1,0 +1,56 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "BearingOffEligibilityTests.Fourteen_home_and_one_out_does_not",
+      "mutation": "BearingOff.IsEligible ignored a man on pip 7 (the outer-table loop started at 8); this test went red."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling",
+      "mutation": "This entry's question's second part, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's: the number left bears off (docs/decisions/0009). Resolved through EntryPoints.MustPlayWholeThrow because it is a question about a throw. Replaces A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible (docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry where a player not eligible at the start of the throw played a move under bearing off); this test went red. LegalPlays.For never named bearing-off-eligible/2 (`!eligibleAtStart && false`); red. It named it whatever the start (`(eligibleAtStart || true)`); red."
+    },
+    {
+      "test": "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_bears_off_again_only_once_every_man_is_home_naming_the_owners_ruling",
+      "mutation": "This entry's question's first part, fate unresolved since map 3.0.0 (blind-mapping resolution rows 12 and 13), is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a man hit after bearing off began who re-enters may not bear off again until every man is home. Replaces A_man_re_entered_after_bearing_off_began_is_the_case_the_corpus_does_not_settle (the decline of ruleset versions 2 to 5). Through EntryPoints.BearingOffEligible and LegalPlays.For. Ruleset 5's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry once a line reached the case with a number left); this test went red. bearing-off-eligible/1 never named on a play (the node never marked); red. Named only on a play whose last state is the marked one, not on plays reached from it (`[.. ReEnteredMidBearOff]` for `Reachable(ReEnteredMidBearOff)`); red. The other reading, bearing off resumed (`IsEligible(...) || HasReEnteredMidBearOff(...)` in Movement.MovesForDie); red. BearingOff.Eligibility never naming the ruling (`Rulings = []`); red, and no other test."
+    },
+    {
+      "test": "BearingOffEligibilityTests.The_re_entry_ruling_is_named_only_where_the_question_arises",
+      "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Replaces The_decline_is_only_where_the_question_arises. bearing-off-eligible/1 named at every state with a number left (`HasReEnteredMidBearOff(...) || true`); this test went red. Named only where the question arises at the start of the throw, not after entering the man that was hit (`moves.IsEmpty && ...`); red. Ruleset 5's decline restored; red. The ruling never named; red. The other reading, bearing off resumed; red."
+    },
+    {
+      "test": "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on",
+      "mutation": "Seed 20260907, adopting the opening throw and taking the middle play, declined under ruleset 5 at a man re-entered mid-bear-off and finishes under ruleset 6 as a backgammon against a loser with nothing off and a man in the winner's home table, naming bearing-off-eligible/1 on two turns and game-value/2 on its value, in the record and its canonical bytes (docs/decisions/0010). Ruleset 5's decline of a man re-entered mid-bear-off restored; this test went red. bearing-off-eligible/1 never named; red. Named only on a throw that began re-entered, not after entering; red. game-value's overlap decline restored; red. The overlap valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. Game.Play not setting GameRecord.ValueRulings; red, and no other test. The canonical serialisation omitting valueRulings; red."
+    }
+  ],
+  "rulings": [
+    {
+      "id": "bearing-off-eligible/1",
+      "span": "The stage begins 'when either player has succeeded in getting all his men into his home table', and the chapter never says whether it lasts. If one of his men is hit after he has begun to bear off and then re-enters, the text does not say whether he may go on bearing off the men still at home or must first bring every man home again.",
+      "answer": "No: a player whose man is hit after he has begun to bear off may not bear off again until every man is back in his home table.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "tests": [
+        "BearingOffEligibilityTests.A_man_re_entered_after_bearing_off_began_bears_off_again_only_once_every_man_is_home_naming_the_owners_ruling",
+        "BearingOffEligibilityTests.The_re_entry_ruling_is_named_only_where_the_question_arises",
+        "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+      ]
+    },
+    {
+      "id": "bearing-off-eligible/2",
+      "span": "Nor does it say when within a throw the stage begins. If a man played with the first number of a throw is the last to come home, the text does not say whether the number left is played under this stage ('each throw entitles the player either to move forward a man or men ... or to remove men'), or as an ordinary move because the throw began before the stage was reached. On the first reading, with his last man outside on the nine point and six-trois thrown, 9/3 then bearing that man off with the trois is a legal play, and so is 9/6 then bearing him off with the six; on the second reading neither is. The quatre-trois example weighs both numbers against a distribution already home, so it does not decide the case.",
+      "answer": "Yes: once a player's first number brings his last man home, the number left bears off.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+      "tests": [
+        "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling"
+      ]
+    }
+  ],
+  "declines": []
+}

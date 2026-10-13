@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "EntitlementTests.Doublets_are_played_twice_over",
+      "mutation": "Movement.Entitlement gave doublets two numbers instead of four; this test went red."
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "LegalDestinationTests.An_adversarys_men_on_the_destination",
+      "mutation": "Movement.IsPermittedDestination refused a point holding one adversary man (`== 0` for `<= 1`); this test went red."
+    }
+  ]
+}

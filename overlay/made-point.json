@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "FullTableSuspensionTests.Six_points_held_by_two_or_more_suspends_his_play_altogether",
+      "mutation": "Position.HasMadePoint required three men (`>= 3` for `>= 2`); this test went red."
+    },
+    {
+      "test": "PositionTests.Two_men_make_a_point_and_one_is_a_blot",
+      "mutation": "The same mutation, three men to a point; this test went red. Before it was strengthened it checked only the six point, which starts with five men, and stayed green; it now checks White's 24, which starts with exactly two."
+    }
+  ]
+}

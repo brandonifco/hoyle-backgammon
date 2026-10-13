@@ -1,0 +1,97 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "WholeThrowTests.A_throw_that_can_be_played_whole_must_be",
+      "mutation": "LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, and no filter to the compelled use); this test went red. The maximal filter alone removed was not caught by it, because from the start every leaf is whole."
+    },
+    {
+      "test": "WholeThrowTests.Doublets_that_cannot_be_played_four_times_are_played_as_far_as_they_go",
+      "mutation": "The same mutation, partial plays offered; this test went red. Re-observed after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red."
+    },
+    {
+      "test": "WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled",
+      "mutation": "LegalPlays.For compelled only the higher number where the throw could not be played whole: when the one playable number was the lower, it returned the empty play instead; this test went red (the trois case). Before it was strengthened it tested only a playable six and stayed green. It also went red when any throw not playable whole was forfeited entirely. Removing the maximal-use filter cannot turn it red, and no test of this case could: where only one die is ever playable every unextendable line uses that die once, so the filter removes nothing. Re-observed (the trois case) after the fixture's thirteen other men moved from off the board to White's ace point (map 3.0.0, rows 12 and 13); still red. Since ruleset version 6 it also holds that the play names no owner's ruling, since the corpus settles this case (docs/decisions/0010): must-play-whole-throw/1 named wherever the throw was not played whole; this test went red."
+    },
+    {
+      "test": "WholeThrowTests.A_man_up_is_still_compelled_to_play_the_whole_throw",
+      "mutation": "LegalPlays.For exempted a player with a man up from the compulsion -- every line, partial ones included, offered with no maximal filter -- which is the enter-from-bar suspension map 3.0.0 removed (blind-mapping resolution row 66); this test went red, and so did EnterFromBarTests.The_second_man_up_is_still_up_when_the_first_has_entered. It went red too under the partial-plays mutation above."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.A_six_trois_with_a_man_up_resolves_to_the_plays_of_the_whole_throw_each_move_citing_its_entry",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. LegalPlays.For offered every partial play as well as the whole one (a terminal at every node, `if (extended || !extended)`, and no filter to the compelled use); this test went red, and so did the doublet test beside it. It went red too when Move.Authority named move-by-pip for an entry from the bar (`MoveKind.Entry => MapEntries.MoveByPip`), and when it named legal-destination for an ordinary move. Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\". Since ruleset version 5 it also holds that none of these plays names an owner's ruling: bar/22 22/16 and bar/19 19/16 are one play under the same rules. LegalPlays.For named must-play-whole-throw/2 for every order it pruned (`first.Authorities != authorities || true`); this test went red."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.Doublets_resolve_to_the_one_play_that_goes_as_far_as_the_throw_can_each_move_citing_its_entry",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. The partial-plays mutation above; this test went red. It went red too when Move.Authority named legal-destination for an ordinary move (`MoveKind.Ordinary => MapEntries.LegalDestination`). Both went red too when the handler answered the bare plays without the assertion (`Answer(LegalPlays.For(...))`), and when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_are_one_play_naming_the_owners_ruling",
+      "mutation": "The second part of this entry's question, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's: a play is the position it reaches (docs/decisions/0009). Replaces Two_orders_reaching_the_same_position_under_different_rules_decline_citing_page_275 (ruleset 4's decline, docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry whenever an order reached a state under different rules); this test went red, and so did every DeterminismTests game and PlayerCountTests. LegalPlays.For never named must-play-whole-throw/2 (`search.DifferentRules.Add(first.Id)` removed); this test went red, and DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on with it. It named the ruling only on the state where two orders met, not on the plays that go on from it (`[.. DifferentRules]` for `Reachable(DifferentRules)`); this test went red (double trois, 8/5 7/4 5/2 4/1), and no other. It went red too when bearing-off-eligible/2 was never named (`!eligibleAtStart && false`)."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.A_number_left_after_the_last_man_comes_home_bears_off_naming_the_owners_ruling",
+      "mutation": "Named here because it resolves through EntryPoints.MustPlayWholeThrow; the question is bearing-off-eligible's, and it is named there too. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0009); replaces A_number_left_after_the_last_man_comes_home_declines_citing_bearing_off_eligible (ruleset 4's decline, docs/decisions/0008). Ruleset 4's decline restored (LegalPlays.For returning RequiresInterpretation citing bearing-off-eligible where a player not eligible at the start of the throw played a move under bearing off); this test went red. bearing-off-eligible/2 never named (`!eligibleAtStart && false`); red. Named whatever the start (`(eligibleAtStart || true)`); red, on the throw that began with every man home. must-play-whole-throw/2 named for every pruned order; red. bearing-off-eligible/2 dated 2026-09-16; red."
+    },
+    {
+      "test": "AssertedPositionEntryPointTests.Every_entry_asked_about_an_asserted_position_answers_with_that_assertion",
+      "mutation": "Covers all thirteen entries whose request takes a position; named here, where PR #11 found the attribution dropped. Handlers.Value attached a copy of the assertion asserted by \"the engine\" (`new AssertedPosition(asserted.Position, \"the engine\", asserted.Justification)` for `asserted`); every row went red. The must-play-whole-throw handler answered the bare plays (`Answer(LegalPlays.For(...))`, the assertion dropped); that row went red and no other."
+    },
+    {
+      "test": "AssertedPositionEntryPointTests.Every_request_that_takes_a_position_takes_an_asserted_one_and_is_resolved_above",
+      "mutation": "OpeningRollRequest gained an `AssertedPosition? Position` input that the theory beside it does not resolve; this test went red and no other test in the class did."
+    },
+    {
+      "test": "AssertedPositionEntryPointTests.A_request_without_a_position_is_the_callers_error_not_an_answer",
+      "mutation": "Handlers.Missing dropped the parameter name from its ArgumentException; this test went red. It went red too when the game-value handler defaulted a missing position to the corpus start asserted by \"the engine\" instead of demanding one (the rule then threw for the winner, not the position)."
+    },
+    {
+      "test": "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on",
+      "mutation": "Seed 20260913 with the first play offered, which declined under ruleset 4 (docs/decisions/0008) and finishes under ruleset 5, naming both owner's rulings on its one turn that relies on them (docs/decisions/0009); replaces A_game_that_finished_under_ruleset_three_declines_citing_page_275. Ruleset 4's decline of orders under different rules restored; this test went red. So did ruleset 4's decline of bearing off within the throw. must-play-whole-throw/2 never named; red. bearing-off-eligible/2 never named; red. Named whatever the start; red. BearingOff.HasWon holding once any man was off; red."
+    },
+    {
+      "test": "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_higher_is_compelled_naming_the_owners_ruling",
+      "mutation": "This entry's question's first part, fate unresolved in map 6.0.0, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): where either number alone can be played but not both, the higher must be. Replaces Where_either_die_alone_can_be_played_but_not_both_the_corpus_does_not_settle_it (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored (LegalPlays.For returning RequiresInterpretation citing this entry where the maximal uses were incomparable); this test went red, and so did MapCorrespondenceTests.Every_entry_whose_row_predicts_a_decline_has_a_hand_written_code_path_returning_it, which holds a fully ruled entry to declining nothing. The lower number compelled (`used[1] > 0` for `used[0] > 0`); red. must-play-whole-throw/1 never named (`higherCompelled && false`); red."
+    },
+    {
+      "test": "WholeThrowTests.The_owners_ruling_is_named_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+      "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Replaces The_rule_declines_in_exactly_one_shape_either_die_alone_playable_but_not_both: the same shape, computed from single-die moves alone, now coincides with must-play-whole-throw/1 being named, and every play there uses the higher number; the random walk no longer stops, since no throw declines. Ruleset 5's decline restored; this test went red. The lower number compelled; red. The ruling never named; red. The ruling named wherever the throw was not played whole (`higherCompelled || compelled.Sum() < entitlement.Length`); red. bearing-off-eligible/1 replaced by the other reading, bearing off resumed with a man re-entered (`IsEligible(...) || HasReEnteredMidBearOff(...)` in Movement.MovesForDie); red."
+    },
+    {
+      "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces Either_die_alone_playable_but_not_both_declines_citing_page_275. Ruleset 5's decline restored; this test went red. The lower number compelled; red. must-play-whole-throw/1 never named; red. Named wherever the throw was not played whole, so the throw with only the six playable at all named it too; red, and so did WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled."
+    }
+  ],
+  "rulings": [
+    {
+      "id": "must-play-whole-throw/1",
+      "span": "An unplayable part is lost and the whole must be played 'if it is possible'. The text does not say what happens when either die alone is playable but not both -- a case every modern ruleset settles explicitly.",
+      "answer": "Where either number alone can be played but not both, the higher number must be played.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "tests": [
+        "WholeThrowTests.Where_either_die_alone_can_be_played_but_not_both_the_higher_is_compelled_naming_the_owners_ruling",
+        "WholeThrowTests.The_owners_ruling_is_named_in_exactly_one_shape_either_die_alone_playable_but_not_both",
+        "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling"
+      ]
+    },
+    {
+      "id": "must-play-whole-throw/2",
+      "span": "Nor does it say what a play of the whole throw is: the position the numbers reach, or the moves in the order they are made. Where two orders use the same numbers and reach the same position, the text does not say whether they are one play or two, which matters where the rule that permits a move differs between the orders (with the last man outside on the eight point and deuce-ace thrown, 8/6 6/5 and 8/7 7/5 both leave that man on the five point, but the first plays the ace after every man is home and the second does not; see bearing-off-eligible's question).",
+      "answer": "One play: orders of the same numbers that reach the same position are offered once, crediting the rules of the first order found.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0009-owner-rulings-are-ruleset-version-five.md",
+      "tests": [
+        "MustPlayWholeThrowEntryPointTests.Two_orders_reaching_the_same_position_under_different_rules_are_one_play_naming_the_owners_ruling",
+        "DeterminismTests.A_game_version_four_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+      ]
+    }
+  ],
+  "declines": []
+}

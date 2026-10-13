@@ -33,7 +33,7 @@ public sealed record Turn(Player Player, DiceThrow? Thrown, Play? Play, Position
 /// <param name="Value">Whether the win was a hit, a gammon or a backgammon. <see cref="ValueRulings"/> names any owner's ruling it relies on.</param>
 /// <param name="Next">Who throws first in the game after this one.</param>
 public sealed record GameRecord(
-    ReplayCompatibilityIdentity Identity,
+    EngineIdentity Identity,
     MapPackage Map,
     AssertedPosition Start,
     OpeningRoll? OpeningRoll,
@@ -98,7 +98,7 @@ public static class Game
     /// map 3.0.0, whose corrections made some games decline where version 1 finished them
     /// (<c>docs/decisions/0004</c>).
     /// </remarks>
-    public static ReplayCompatibilityIdentity Identity { get; } = new(
+    public static EngineIdentity Identity { get; } = new(
         ruleset: new RulesetVersion("hoyle-1909-backgammon", 6),
         replaySchema: new ReplaySchemaVersion(4),
         sourceBaselines: [MapEntries.Baseline],

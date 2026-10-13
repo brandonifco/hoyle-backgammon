@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "PlayerCountTests.A_game_is_played_by_exactly_two_persons_turn_and_turn_about",
+      "mutation": "Players.Adversary returned the player himself (`player` for `player == Player.White ? Player.Black : Player.White`), so one person plays alone; this test went red. It went red too with Players.Both reduced to White alone, and with a third value, Red, added to Player. Re-observed (Adversary returning the player) after the game moved from seed 20260913 to 20260905, which still finishes under ruleset version 4 (map 6.0.0, rules-factory#125); still red. Re-observed (Adversary returning the player) after the game moved back from seed 20260905 to 20260913, which finishes again under ruleset version 5 (Brandon's rulings of 2026-09-15; docs/decisions/0009); still red."
+    }
+  ]
+}

@@ -15,8 +15,9 @@ namespace HoyleBackgammon;
 public sealed record MapPackage(string PackageId, string Version)
 {
     /// <summary>
-    /// The map package named by <see cref="EngineProvenance"/>: the <c>map.packageId</c> and
-    /// <c>map.version</c> of the provenance <c>factory produce</c> wrote and the build embedded.
+    /// The map package named by <see cref="EngineProvenance"/>: the <c>packageId</c> and <c>version</c>
+    /// of the one entry in <c>maps</c> of the provenance <c>factory produce</c> wrote and the build
+    /// embedded. This engine is produced from exactly one map package.
     /// Read from those bytes, never typed out here, so it cannot drift from what the engine was
     /// produced from.
     /// </summary>
@@ -26,7 +27,9 @@ public sealed record MapPackage(string PackageId, string Version)
     private static MapPackage ReadProvenance()
     {
         using var provenance = JsonDocument.Parse(EngineProvenance.ReadBytes());
-        if (provenance.RootElement.TryGetProperty("map", out var map)
+        if (provenance.RootElement.TryGetProperty("maps", out var maps)
+            && maps.ValueKind == JsonValueKind.Array && maps.GetArrayLength() == 1
+            && maps[0] is var map
             && map.TryGetProperty("packageId", out var id) && id.GetString() is { Length: > 0 } packageId
             && map.TryGetProperty("version", out var v) && v.GetString() is { Length: > 0 } version)
         {
@@ -34,7 +37,7 @@ public sealed record MapPackage(string PackageId, string Version)
         }
 
         throw new InvalidOperationException(
-            $"the embedded {EngineProvenance.ResourceName} names no map package (map.packageId and map.version)");
+            $"the embedded {EngineProvenance.ResourceName} names no single map package (maps[0].packageId and maps[0].version)");
     }
 }
 
@@ -91,7 +94,7 @@ internal static class GameRecordJson
         ["next"] = Name(record.Next),
     };
 
-    private static Obj Of(ReplayCompatibilityIdentity identity) => new()
+    private static Obj Of(EngineIdentity identity) => new()
     {
         ["ruleset"] = new Obj { ["id"] = identity.Ruleset.Id, ["version"] = identity.Ruleset.Version },
         ["replaySchema"] = identity.ReplaySchema.Version,

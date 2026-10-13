@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "MoveByPipTests.Six_trois_moves_one_man_six_and_then_the_same_or_another_man_three",
+      "mutation": "Movement.MovesForDie let only the rearmost man move, so the trois could not go to another man; this test went red."
+    },
+    {
+      "test": "MoveByPipTests.A_man_may_not_be_played_off_the_board_before_bearing_off_begins",
+      "mutation": "Movement.MovesForDie offered a move past the ace point before bearing off (`to < 1 || IsPermittedDestination(...)` for `to >= 1 && IsPermittedDestination(...)`); this test went red."
+    }
+  ]
+}

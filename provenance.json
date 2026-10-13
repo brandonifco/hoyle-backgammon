@@ -1,133 +1,356 @@
 {
-  "provenanceFormat": 3,
+  "provenanceFormat": 9,
+  "verification": {
+    "verified": true,
+    "ran": [
+      "restore",
+      "provenance",
+      "build",
+      "test",
+      "gate"
+    ]
+  },
   "engine": {
     "name": "HoyleBackgammon"
   },
+  "repository": {
+    "enginePath": null,
+    "automation": []
+  },
+  "distribution": "public",
   "factory": {
-    "version": "0.7.0",
-    "commit": "069780809543a66d5556d713e337d850ef405b41",
+    "version": "1.6.0",
+    "commit": "24fd802ba4f5b8a039f848c9387059a8c2aa4414",
     "dirty": false
   },
-  "map": {
-    "packageId": "RulesFactory.Maps.HoyleBackgammon",
-    "version": "6.0.0",
-    "nupkgSha256": "50f0381718d77ccf96ebe652db2235ba11ec079707a9bd4a8c5ad049e4e053a8",
-    "files": [
-      {
-        "role": "map",
-        "path": "map/corpus-map.json",
-        "sha256": "384814cfc06a4b293ede04d11c70ceb046b82370d1487b66080a5f01c08ecc67"
-      },
-      {
-        "role": "manifest",
-        "path": "map/corpus-manifest.json",
-        "sha256": "8f36445244a9c4c0fc3ea10a2249f008f63797102e1ca457633070f57141e7ad"
-      },
-      {
-        "role": "checker",
-        "path": "tools/check-map.py",
-        "sha256": "3198b323fbad84c6c7b284b88dce188d02c16b7bdd569c31ad090c58491e37c8"
-      }
-    ]
-  },
-  "corpus": {
-    "sourceId": "hoyle-1909",
-    "contentHash": "5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e",
-    "hashDerivation": "gutenberg-plain-text-including-boilerplate",
-    "asOf": null,
-    "recomputed": true
-  },
+  "maps": [
+    {
+      "packageId": "RulesFactory.Maps.HoyleBackgammon",
+      "version": "7.0.0",
+      "nupkgSha256": "fdd27d2654f80ac66865068cabfd00da6c130ce01ed31dbca28527794335afa8",
+      "files": [
+        {
+          "role": "map",
+          "path": "map/corpus-map.json",
+          "sha256": "384814cfc06a4b293ede04d11c70ceb046b82370d1487b66080a5f01c08ecc67"
+        },
+        {
+          "role": "manifest",
+          "path": "map/corpus-manifest.json",
+          "sha256": "8f36445244a9c4c0fc3ea10a2249f008f63797102e1ca457633070f57141e7ad"
+        },
+        {
+          "role": "checker",
+          "path": "tools/check-map.py",
+          "sha256": "e51ab4de773f7cdff859514856e3956622f0aaf43c36ee5977f9eba9086baa82"
+        },
+        {
+          "role": "verification",
+          "path": "map/verification.json",
+          "sha256": "c5d01f9c2dc2b522c74bc76e5f40a1b787b25fb83626f668bb1255dfdd14add4"
+        }
+      ]
+    }
+  ],
+  "supersedes": [],
+  "corpora": [
+    {
+      "sourceId": "hoyle-1909",
+      "contentHash": "5d505fa9f6202340eb55313b8ef607b816087a860d3d51b1bf92b5f65240645e",
+      "hashDerivation": "gutenberg-plain-text-including-boilerplate",
+      "asOf": null,
+      "path": "corpus/hoyle.txt",
+      "principal": true,
+      "recomputed": true
+    }
+  ],
   "kernel": {
     "packageId": "RulesKernel",
-    "version": "0.3.0"
+    "version": "1.0.0"
   },
   "packs": [],
   "recipes": {
     "files": [
       {
         "path": "tools/check-map.py",
-        "sha256": "3198b323fbad84c6c7b284b88dce188d02c16b7bdd569c31ad090c58491e37c8"
+        "sha256": "e51ab4de773f7cdff859514856e3956622f0aaf43c36ee5977f9eba9086baa82"
       },
       {
         "path": "tools/factory/__main__.py",
-        "sha256": "e36697ae5b26a375f45c1c1dd6afab54f096162c7bb06003a257236a6a5db996"
+        "sha256": "e97a462dc5a25aea9e57516f60977281287b5cd13381e6d143d61ec93f13d3ad"
+      },
+      {
+        "path": "tools/factory/acceptance.py",
+        "sha256": "2b9139a868da41723fca82f4351e25f99cce39006a86112999af193001b3a8d8"
+      },
+      {
+        "path": "tools/factory/acceptancecs.py",
+        "sha256": "fce826ed401677458c260de55c04e9fe1a1ea56925a73abec8802f7e0777819a"
+      },
+      {
+        "path": "tools/factory/agentrails.py",
+        "sha256": "609331810ed102c17453e0de5a773398e4fbc0f3f058ba8c82f115f03976a608"
       },
       {
         "path": "tools/factory/backlog.py",
-        "sha256": "43027c085a9dc027016118a81f0159d2e09b33340ee402fc26415b31d972ed7f"
+        "sha256": "af24eee3361fb23f612d95e2c4c89c21f99202ccfc628c66dd13fba0c4c5d774"
+      },
+      {
+        "path": "tools/factory/compose.py",
+        "sha256": "1adaaf6b893a60337754a6c758dd38d6a43f6c6617ff3101c6d29687c0da9f18"
+      },
+      {
+        "path": "tools/factory/contracts.py",
+        "sha256": "2b0938184d187bf931aa74b19ef53ec59f7617d264d82f9538a6681282b23ed1"
+      },
+      {
+        "path": "tools/factory/correspondence.py",
+        "sha256": "1247d9b3bd2b15ad2537acfe714583c27bebfc0a0c8ae130f1e89d3abf749e30"
+      },
+      {
+        "path": "tools/factory/csharp.py",
+        "sha256": "f6b4be5d76dac11f922cf84fefaaaa81d58cd21b6c8f213e79103c602693c1b6"
+      },
+      {
+        "path": "tools/factory/entries.py",
+        "sha256": "9383e7b3513e8a6e6ab2ab0c360628e2c721b0afcea302b3b46844472e6dc26c"
       },
       {
         "path": "tools/factory/gate.py",
-        "sha256": "3af31278d127048660d6f8ef9f4c9d7ad4ba136e87c7ebd4fd3d9d736cca326b"
+        "sha256": "92e6ca53c4825d2fb48878f814644561927fb5fff045aa08df85d031f8afbf95"
       },
       {
         "path": "tools/factory/generate.py",
-        "sha256": "afcea250d2dbd23390f156ece985824714ac68c65e8f4551c51323397c2388bb"
+        "sha256": "7a0a1b370901665531a36999de148a1ee768eda8b7a318667f4de12fa6caa23d"
       },
       {
         "path": "tools/factory/intake.py",
-        "sha256": "002730b82e965e2ef2d70d5cd51855e01e8052f940a40cb591f2c26a26a5a7b9"
+        "sha256": "df923af440fa12e5bc05e96e7a79d2248b46bcc00f950b659261bc910675d8ab"
       },
       {
-        "path": "tools/factory/licensed-copy-operators.json",
-        "sha256": "0559c7b769660eff9a23f03de6619b9084a6dc0e8ce4d0ca511d868da38bfff9"
-      },
-      {
-        "path": "tools/factory/licensed_copy.py",
-        "sha256": "020549331fc45f0d08817cb55ab628a20d02b3db00f35e91aef9a25fe56b0d23"
+        "path": "tools/factory/overlay.py",
+        "sha256": "418c313977e2d209ca35651aa4a95cb93f202b7809064499c04484eef858bde9"
       },
       {
         "path": "tools/factory/ownership.py",
-        "sha256": "799fd376c652954a4d371b329cc1bfdb8cd32c43e2eb3ed971ba028f6655240a"
+        "sha256": "c22262cf119dd4cdf05ab44e48c6ce1534412c8c1d5c8bd34940567bb6d5e791"
+      },
+      {
+        "path": "tools/factory/pins.py",
+        "sha256": "28078f5b61d5918e60083f9bd34112f86186d409de612320b8386c6bacbe8b8c"
       },
       {
         "path": "tools/factory/provenance.py",
-        "sha256": "715ae6898c9e370589d32f38a32b8bb8ace2b144281b19bdbcac9b6eff403f98"
+        "sha256": "bcfafde6a50c8b5d1f98433ae557eb9aacd93650bc5c7f73e1f31b3f381cc42e"
+      },
+      {
+        "path": "tools/factory/rails.py",
+        "sha256": "c6ce3c601083e64e17f1b55de4820f3190dae600a372ab61a8345d952362c596"
       },
       {
         "path": "tools/factory/recipe/engine-gate.py",
-        "sha256": "6bdfc491088584d5dbca128692e4d3fb7182655d24f9b24c2b45e641b605ffdb"
+        "sha256": "cbf6aaa5e632800bf6c49a918bfa8007b840ef14fdf4be846af6fb38de91aa13"
       },
       {
         "path": "tools/factory/recipe/map-overlay.py",
-        "sha256": "11cb78f15f1e6a1ccc8a08542d5fd59beecb30bb8e0a6c903460d6b041129714"
+        "sha256": "d2d7974eb22dbd19641ad17a5e6026ed76f39d74ab9d680650e3286a9b2097a0"
+      },
+      {
+        "path": "tools/factory/recipe/rails/AGENTS.md",
+        "sha256": "bac17949671c440fa89fe655cd990496cf0debb59fa8ca81b5bd797275594fd0"
+      },
+      {
+        "path": "tools/factory/recipe/rails/CLAUDE.md",
+        "sha256": "04c07ad36e742fa60efafeca54d20bd96d16b6e338a44e46fad2b679ab8dfd9f"
+      },
+      {
+        "path": "tools/factory/recipe/rails/adversarial-self-review.md",
+        "sha256": "8e1c359f8aaabc70720116819fe8870ca0ddbc7e34c2235f7314e68d93810964"
+      },
+      {
+        "path": "tools/factory/recipe/rails/agent-team.md",
+        "sha256": "d1ee84c9c31e5f44a4be7111f686c07b89b5a7fd318e458d287ab1f0b8d6bdbe"
+      },
+      {
+        "path": "tools/factory/recipe/rails/agents/engine-dev.md",
+        "sha256": "8fa4ba9fee9989fce1f9647b333e332a068ece02cf3eee315b3bdb92ac8e7dfd"
+      },
+      {
+        "path": "tools/factory/recipe/rails/agents/repo-steward.md",
+        "sha256": "00082b74a007eba0f7d6b7b541cf074431bc8aced8733574ff947161f4e8534d"
+      },
+      {
+        "path": "tools/factory/recipe/rails/agents/rules-conformance.md",
+        "sha256": "241ff918ba8221b27afaf7cceeafd157bcba17178125a13dc0c6f2ac64498940"
+      },
+      {
+        "path": "tools/factory/recipe/rails/editorconfig",
+        "sha256": "4109d1ef55053ef656e536d7818934deb73016fbe950f153bae6b2a163591cb2"
+      },
+      {
+        "path": "tools/factory/recipe/rails/hooks/primary-checkout-guard.py",
+        "sha256": "2f15d7192c5328376c1cd1836229c699d1d48f90ef35b451e48fa79b7fbef238"
+      },
+      {
+        "path": "tools/factory/recipe/rails/pull_request_template.md",
+        "sha256": "bb75cd6f5877d65d65cccf6e0cbfdddf86112899ecb11e6bbe61a77a9e459740"
+      },
+      {
+        "path": "tools/factory/recipe/rails/review-evidence.md",
+        "sha256": "f829299ce4c7a6deff646d6196378da5ff8cf9d5ee49f2e53d3f58a54254d305"
+      },
+      {
+        "path": "tools/factory/recipe/rails/settings.json",
+        "sha256": "4d410acd10ba5b6ed2d3c6a016cc2cfde1cf8e621da54424755376a80da30aa0"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/agent-doctor.py",
+        "sha256": "04b0ebbffc8638fa322543a8591096abb54ef5c5a7e5be4151de6e4066fff4ff"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/conformance-gate.py",
+        "sha256": "3fafa402a1c56bdcdedc7d9411e6d13bec638752ecdc81f11950790d537c44d7"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/dispatch-agent.sh",
+        "sha256": "c34826d451b6f8602a31b7e838d68f24baf1b276adb3f7e8e6b319b1a86b7b51"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/entry-packet.py",
+        "sha256": "0f37570f3995218e4ca893f254ce3476290e4b96429ee5bd4152cfe223f63cdc"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/mutate.py",
+        "sha256": "eb722639671ba46c0703f699dc85177fe88f52e00ced99ccf4e90f54a30c49eb"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/new-issue.sh",
+        "sha256": "2830ba6458df4c34378538d73eadc4d522fb5f5cb7dbb945ef89097d66c9b9ee"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/orchestrator-status.py",
+        "sha256": "8ddba7efbe89b47166928c6d6ac1d366f80234e914de5b3745b6211b25ba64de"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/pr-policy.py",
+        "sha256": "80fda4f86822f5c2b9c8cd4e8a1b23f85b30a2d32b681749e788821d9d78bd07"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/re-produce.sh",
+        "sha256": "9c0eb1c3178b16fd3799037316554ca8256f0ccebf82998d69658d781b1526b2"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/record-verdict.py",
+        "sha256": "8e7ba67c30672e69e714ccd801a9b5a59ba18d1aa63c08b9b50b385264672e75"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/repair-packet.py",
+        "sha256": "bb9158eaf9132975677d9be5da5150f652ac422226f666dcfffaa3d9af18a7da"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/requeue-gate.py",
+        "sha256": "df937ba5ee305f52097406fa556c98ad0a98d4e6f76bb4a554ce0802fae1e952"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/review-packet.py",
+        "sha256": "cf48164f9f65042716b1dae08436c3573dc26073fc6f22053dc1899de6e58a85"
+      },
+      {
+        "path": "tools/factory/recipe/rails/tools/review-scope.py",
+        "sha256": "e96aeaf830d5bc23c4dcaa25e29fd91ac8c4be6b3ddba6a6618f4ab184a3e155"
+      },
+      {
+        "path": "tools/factory/recipe/rails/workflows/conformance-gate.yml",
+        "sha256": "4a18b24d803fa8a7e97ba018ab3ae4d0c9ed59fcbbc615963bbf024503b49c20"
+      },
+      {
+        "path": "tools/factory/recipe/rails/workflows/pr-policy.yml",
+        "sha256": "ebf84bcf01619ae578417767d0a984102dfcb00a67b6778b4527a409a3722b6e"
+      },
+      {
+        "path": "tools/factory/recipe/rails/workflows/verdict-requeue.yml",
+        "sha256": "e12f280ee6e9e70e413f59cc6df35d4eda26a2bd2667ba4be5e954d2fecbb4df"
       },
       {
         "path": "tools/factory/recipe/validate.sh",
-        "sha256": "c28695c10c0b4e966b895d9cd7bb0ac36a1b02dd6a7778d57257093023d2cff1"
+        "sha256": "500f45c408581908737206860868e5cfb30b67f52b6dfe1dd6efdbe0bf391321"
       },
       {
         "path": "tools/factory/recipe/validate.yml",
-        "sha256": "f7720e2d2a26d65bb738c77d6be6fb84a46960a3e7230a75ed27ab66ce1b0033"
+        "sha256": "62d40d41634466099292d60ffd2a685edff56369fbf4fc4d060accc751d119e4"
+      },
+      {
+        "path": "tools/factory/registry.py",
+        "sha256": "8b4a714acdbfc71694db10649413e6cb5241a89111f816f5532723dd232e2437"
+      },
+      {
+        "path": "tools/factory/repository.py",
+        "sha256": "54c59932f00115d95a5e2b9352d8a6a1d0ea52f4ba61a36e4bb6b7d995d63f27"
+      },
+      {
+        "path": "tools/factory/reviewclass.py",
+        "sha256": "f6e0af9bb7d329d7c9243c91ab6f15aac09253f14fdb36c254c685caf1f43a1f"
+      },
+      {
+        "path": "tools/factory/reviewscope.py",
+        "sha256": "e2241d46ee9e154ad9816a8e6623ad1733bc2d8ccfcbc677c7691f48c4d78701"
+      },
+      {
+        "path": "tools/factory/rulescorpus.py",
+        "sha256": "7f37f62b59672cdd197efe3c07a07dd0b097f25c833447a201269c112dfa4c41"
       },
       {
         "path": "tools/factory/rulings.py",
-        "sha256": "cd99fde18b6c9b031e6669d36d3d2af7030afbc686c3fdd8e7c40a0fc07e5fe2"
+        "sha256": "6cbf313d23a2243b8a20d9ab8c7c5613744604aad31635b81dfaf4b25464b373"
+      },
+      {
+        "path": "tools/factory/scaffold.py",
+        "sha256": "a14df9891f378bf171ba845219b6dab326b28fefdcaad52a8fb5770130f595da"
+      },
+      {
+        "path": "tools/factory/semantics.py",
+        "sha256": "17eba290b4242a420654a8e68485d00a0f09d589e8601a3ba90fa181daeb0b24"
+      },
+      {
+        "path": "tools/factory/status.py",
+        "sha256": "974a369ce4ce317de302d6bc412ade2764b2bdbe0f38f92ac4e2d4203d64d6b3"
+      },
+      {
+        "path": "tools/factory/trace.py",
+        "sha256": "107dc97e634171256a2409d7962e6a33d80d9be886f7c2260e8281a4e73a9b81"
+      },
+      {
+        "path": "tools/factory/tracereport.py",
+        "sha256": "91d60e786187a479cf44c5e8be7871f38a71713f2df8a7401b09484b15d1ba74"
       },
       {
         "path": "tools/factory/transaction.py",
-        "sha256": "554d2b30826cb5c828bd1bb3dfb5b2888846a8fa22aa0982f4f5c5576cfd1e1a"
+        "sha256": "6b85edc10b43fe4d24e247c6ace6c25bcba0406057f4f5ca3363214fedbc4695"
       },
       {
         "path": "tools/factory/verify.py",
-        "sha256": "ff188e0da339ed80599065ceaf81be45818590d4a91b1534aa709ce6dcf2c964"
+        "sha256": "20d9199e2aa0f7df2be6357e704022750735998243fe7e70cd8e3ada9ae58a41"
       }
     ],
     "digestRule": "sha256 over UTF-8 lines '<sha256>  <path>\\n', one per recipe file, in ascending byte order of path",
-    "digest": "1ddbbfea919b4fde8f98fe7d7973a4d1e6472fc6825e425f57c15a7b7d17ed0a"
+    "digest": "0e2652ff8028f75ee147e4550f9298fddab2d4501a8d083c68268fe80c27ebe2"
   },
   "generated": [
     {
       "path": ".github/workflows/validate.yml",
-      "sha256": "f7720e2d2a26d65bb738c77d6be6fb84a46960a3e7230a75ed27ab66ce1b0033"
+      "sha256": "62d40d41634466099292d60ffd2a685edff56369fbf4fc4d060accc751d119e4"
     },
     {
       "path": "RulesFactory.Packages.g.props",
-      "sha256": "e9e03eee983b8db3a72daf00b6e3be28d685e9139731318ee24112959202bf55"
+      "sha256": "49f613319ab6b2295805763bf9da703535eeed5d221ff073d7ad3901ccfaea87"
     },
     {
-      "path": "backlog/README.md",
-      "sha256": "f434fe262dc257cd517491647c6e170256baedb66395fd1c8d9b5edb00337d6f"
+      "path": "corpus/hoyle.corpus.build.json",
+      "sha256": "6738661837995d907162f1ccb50ced6dfc060ec45079bd75172f9e0acc51eef6"
+    },
+    {
+      "path": "corpus/hoyle.corpus.expect.json",
+      "sha256": "cb350f41601a38a1e82d0c54c5b6190ab0077e095ab98e68e43044afb3647230"
     },
     {
       "path": "corpus/hoyle.txt",
@@ -135,74 +358,198 @@
     },
     {
       "path": "scripts/engine-gate.py",
-      "sha256": "6bdfc491088584d5dbca128692e4d3fb7182655d24f9b24c2b45e641b605ffdb"
+      "sha256": "cbf6aaa5e632800bf6c49a918bfa8007b840ef14fdf4be846af6fb38de91aa13"
+    },
+    {
+      "path": "scripts/factory/acceptance.py",
+      "sha256": "2b9139a868da41723fca82f4351e25f99cce39006a86112999af193001b3a8d8"
+    },
+    {
+      "path": "scripts/factory/acceptancecs.py",
+      "sha256": "fce826ed401677458c260de55c04e9fe1a1ea56925a73abec8802f7e0777819a"
+    },
+    {
+      "path": "scripts/factory/agentrails.py",
+      "sha256": "609331810ed102c17453e0de5a773398e4fbc0f3f058ba8c82f115f03976a608"
+    },
+    {
+      "path": "scripts/factory/compose.py",
+      "sha256": "1adaaf6b893a60337754a6c758dd38d6a43f6c6617ff3101c6d29687c0da9f18"
+    },
+    {
+      "path": "scripts/factory/contracts.py",
+      "sha256": "2b0938184d187bf931aa74b19ef53ec59f7617d264d82f9538a6681282b23ed1"
+    },
+    {
+      "path": "scripts/factory/correspondence.py",
+      "sha256": "1247d9b3bd2b15ad2537acfe714583c27bebfc0a0c8ae130f1e89d3abf749e30"
+    },
+    {
+      "path": "scripts/factory/csharp.py",
+      "sha256": "f6b4be5d76dac11f922cf84fefaaaa81d58cd21b6c8f213e79103c602693c1b6"
+    },
+    {
+      "path": "scripts/factory/entries.py",
+      "sha256": "9383e7b3513e8a6e6ab2ab0c360628e2c721b0afcea302b3b46844472e6dc26c"
     },
     {
       "path": "scripts/factory/generate.py",
-      "sha256": "afcea250d2dbd23390f156ece985824714ac68c65e8f4551c51323397c2388bb"
+      "sha256": "7a0a1b370901665531a36999de148a1ee768eda8b7a318667f4de12fa6caa23d"
     },
     {
       "path": "scripts/factory/intake.py",
-      "sha256": "002730b82e965e2ef2d70d5cd51855e01e8052f940a40cb591f2c26a26a5a7b9"
+      "sha256": "df923af440fa12e5bc05e96e7a79d2248b46bcc00f950b659261bc910675d8ab"
+    },
+    {
+      "path": "scripts/factory/overlay.py",
+      "sha256": "418c313977e2d209ca35651aa4a95cb93f202b7809064499c04484eef858bde9"
     },
     {
       "path": "scripts/factory/ownership.py",
-      "sha256": "799fd376c652954a4d371b329cc1bfdb8cd32c43e2eb3ed971ba028f6655240a"
+      "sha256": "c22262cf119dd4cdf05ab44e48c6ce1534412c8c1d5c8bd34940567bb6d5e791"
+    },
+    {
+      "path": "scripts/factory/pins.py",
+      "sha256": "28078f5b61d5918e60083f9bd34112f86186d409de612320b8386c6bacbe8b8c"
     },
     {
       "path": "scripts/factory/provenance.py",
-      "sha256": "715ae6898c9e370589d32f38a32b8bb8ace2b144281b19bdbcac9b6eff403f98"
+      "sha256": "bcfafde6a50c8b5d1f98433ae557eb9aacd93650bc5c7f73e1f31b3f381cc42e"
+    },
+    {
+      "path": "scripts/factory/registry.py",
+      "sha256": "8b4a714acdbfc71694db10649413e6cb5241a89111f816f5532723dd232e2437"
+    },
+    {
+      "path": "scripts/factory/reviewclass.py",
+      "sha256": "f6e0af9bb7d329d7c9243c91ab6f15aac09253f14fdb36c254c685caf1f43a1f"
+    },
+    {
+      "path": "scripts/factory/reviewscope.py",
+      "sha256": "e2241d46ee9e154ad9816a8e6623ad1733bc2d8ccfcbc677c7691f48c4d78701"
+    },
+    {
+      "path": "scripts/factory/rulescorpus.py",
+      "sha256": "7f37f62b59672cdd197efe3c07a07dd0b097f25c833447a201269c112dfa4c41"
     },
     {
       "path": "scripts/factory/rulings.py",
-      "sha256": "cd99fde18b6c9b031e6669d36d3d2af7030afbc686c3fdd8e7c40a0fc07e5fe2"
+      "sha256": "6cbf313d23a2243b8a20d9ab8c7c5613744604aad31635b81dfaf4b25464b373"
+    },
+    {
+      "path": "scripts/factory/scaffold.py",
+      "sha256": "a14df9891f378bf171ba845219b6dab326b28fefdcaad52a8fb5770130f595da"
+    },
+    {
+      "path": "scripts/factory/semantics.py",
+      "sha256": "17eba290b4242a420654a8e68485d00a0f09d589e8601a3ba90fa181daeb0b24"
     },
     {
       "path": "scripts/map-overlay.py",
-      "sha256": "11cb78f15f1e6a1ccc8a08542d5fd59beecb30bb8e0a6c903460d6b041129714"
+      "sha256": "d2d7974eb22dbd19641ad17a5e6026ed76f39d74ab9d680650e3286a9b2097a0"
     },
     {
       "path": "scripts/validate.sh",
-      "sha256": "60fc4ef99c57292143043dac49462e681bcbd65d361d80c326dc30787f34cf84"
+      "sha256": "960ff2fb9f7b5503294554e34b65ef1d170110f0baaf57d896789ff0b8c4d21b"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Contracts.g.cs",
-      "sha256": "9710b3d7cfa49788847373f54a4cf3624e04e86fd8b6e1b6ed91ff29116873ef"
+      "sha256": "7825256bcf869013019c3b54ee8ec0482bfb8c77bec4f648052811d0484f78ec"
     },
     {
       "path": "src/HoyleBackgammon/Generated/MapEntries.g.cs",
-      "sha256": "dd03bb0e1c9694128657f11e3c25d9e2b36fafe303a32ab2f53fc3191afb28d2"
+      "sha256": "bcff1fa239eb10269de4a5decf9f122cf5d9576d95507abdaf58156e5abfcd14"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Provenance.g.cs",
-      "sha256": "617124709f4809d38a4c6e7629f90634c9d37d95b8c271dcdbac0d1fed094c1b"
+      "sha256": "7c062576d345fdc998f97e11129d4044d1dcb84c37e01403f1b4cbcc7d2ef004"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Registry.g.cs",
-      "sha256": "b42d05e88a1a7587a7eb65e0de1b3f8d2a7539ad9f869c6831b033cbfd775d3f"
+      "sha256": "e6e7d490291d09149b1d5c83854ec654912e6004a0f95d04511f292910db60b7"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Requests.g.cs",
-      "sha256": "55dcfa46e0ebf73be20ddef888d5832d6f95f6683eb1a6e63158998021f153cd"
+      "sha256": "db1507e30d967af748475179544fb13f9f09bfae26af2dca9da2dc287ff4f9fb"
     },
     {
       "path": "src/HoyleBackgammon/Generated/Rulings.g.cs",
-      "sha256": "2370298196db795bd11cc1888f27584130e82c97aa68f408175517257d20814c"
+      "sha256": "4daab9b8fab7868d0c053cd1c0ad7a01753a9ec438cae80e0d77bc43c385c23e"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/CorrespondenceTests.g.cs",
-      "sha256": "9f26e313bc924ae765fac6d9d075f7fd7b1d36aa62d21b0b31be590686e7000d"
+      "sha256": "1e5c988064d11ecfef871e706351fb7ac5167eb5941fd9380669f7247152eb2b"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/Generated/ProvenanceTests.g.cs",
-      "sha256": "4baa5271a08c6a4dc199555b08a18a6a679a1fc821b1c896599023d9c9ebdddd"
+      "sha256": "af3adbbd5ec12c1891b898937ae44c1fff3c75e9c3dc3c8146a7d6e08b676cf7"
     }
   ],
   "managed": [
     {
+      "path": ".claude/agents/engine-dev.md",
+      "recipeVersion": 12,
+      "sha256": "8fa4ba9fee9989fce1f9647b333e332a068ece02cf3eee315b3bdb92ac8e7dfd"
+    },
+    {
+      "path": ".claude/agents/repo-steward.md",
+      "recipeVersion": 5,
+      "sha256": "00082b74a007eba0f7d6b7b541cf074431bc8aced8733574ff947161f4e8534d"
+    },
+    {
+      "path": ".claude/agents/rules-conformance.md",
+      "recipeVersion": 8,
+      "sha256": "241ff918ba8221b27afaf7cceeafd157bcba17178125a13dc0c6f2ac64498940"
+    },
+    {
+      "path": ".claude/hooks/primary-checkout-guard.py",
+      "recipeVersion": 3,
+      "sha256": "2f15d7192c5328376c1cd1836229c699d1d48f90ef35b451e48fa79b7fbef238"
+    },
+    {
+      "path": ".claude/settings.json",
+      "recipeVersion": 1,
+      "sha256": "4d410acd10ba5b6ed2d3c6a016cc2cfde1cf8e621da54424755376a80da30aa0"
+    },
+    {
+      "path": ".editorconfig",
+      "recipeVersion": 1,
+      "sha256": "4109d1ef55053ef656e536d7818934deb73016fbe950f153bae6b2a163591cb2"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "recipeVersion": 6,
+      "sha256": "bb75cd6f5877d65d65cccf6e0cbfdddf86112899ecb11e6bbe61a77a9e459740"
+    },
+    {
+      "path": ".github/workflows/conformance-gate.yml",
+      "recipeVersion": 5,
+      "sha256": "4a18b24d803fa8a7e97ba018ab3ae4d0c9ed59fcbbc615963bbf024503b49c20"
+    },
+    {
+      "path": ".github/workflows/pr-policy.yml",
+      "recipeVersion": 3,
+      "sha256": "ebf84bcf01619ae578417767d0a984102dfcb00a67b6778b4527a409a3722b6e"
+    },
+    {
+      "path": ".github/workflows/verdict-requeue.yml",
+      "recipeVersion": 4,
+      "sha256": "e12f280ee6e9e70e413f59cc6df35d4eda26a2bd2667ba4be5e954d2fecbb4df"
+    },
+    {
+      "path": "AGENTS.md",
+      "recipeVersion": 30,
+      "sha256": "bac17949671c440fa89fe655cd990496cf0debb59fa8ca81b5bd797275594fd0"
+    },
+    {
+      "path": "CLAUDE.md",
+      "recipeVersion": 1,
+      "sha256": "04c07ad36e742fa60efafeca54d20bd96d16b6e338a44e46fad2b679ab8dfd9f"
+    },
+    {
       "path": "Directory.Build.props",
-      "recipeVersion": 2,
-      "sha256": "73c373b1457e4149eb7ab7da1aed49314536ca8945dea8022c1efbd49c7a1a8f"
+      "recipeVersion": 3,
+      "sha256": "06222da635f4a0085395208fd47ebcb3d999bd1acfe49ba16d9aea9d3b1ac893"
     },
     {
       "path": "NuGet.config",
@@ -210,12 +557,101 @@
       "sha256": "e53f00efe0e550fb452b2e1d8d3b1e2f0cdd1de86628eff7d60a813ebfa1818f"
     },
     {
+      "path": "docs/adversarial-self-review.md",
+      "recipeVersion": 3,
+      "sha256": "8e1c359f8aaabc70720116819fe8870ca0ddbc7e34c2235f7314e68d93810964"
+    },
+    {
+      "path": "docs/agent-team.md",
+      "recipeVersion": 11,
+      "sha256": "d1ee84c9c31e5f44a4be7111f686c07b89b5a7fd318e458d287ab1f0b8d6bdbe"
+    },
+    {
+      "path": "docs/review-evidence.md",
+      "recipeVersion": 2,
+      "sha256": "f829299ce4c7a6deff646d6196378da5ff8cf9d5ee49f2e53d3f58a54254d305"
+    },
+    {
       "path": "global.json",
       "recipeVersion": 1,
       "sha256": "12f1cf1c3eef038f55de570dc8f5e321f4ff5306a9281106c43cc60a1f78a371"
+    },
+    {
+      "path": "tools/agent-doctor.py",
+      "recipeVersion": 8,
+      "sha256": "04b0ebbffc8638fa322543a8591096abb54ef5c5a7e5be4151de6e4066fff4ff"
+    },
+    {
+      "path": "tools/conformance-gate.py",
+      "recipeVersion": 6,
+      "sha256": "3fafa402a1c56bdcdedc7d9411e6d13bec638752ecdc81f11950790d537c44d7"
+    },
+    {
+      "path": "tools/dispatch-agent.sh",
+      "recipeVersion": 6,
+      "sha256": "c34826d451b6f8602a31b7e838d68f24baf1b276adb3f7e8e6b319b1a86b7b51"
+    },
+    {
+      "path": "tools/entry-packet.py",
+      "recipeVersion": 7,
+      "sha256": "0f37570f3995218e4ca893f254ce3476290e4b96429ee5bd4152cfe223f63cdc"
+    },
+    {
+      "path": "tools/mutate.py",
+      "recipeVersion": 2,
+      "sha256": "eb722639671ba46c0703f699dc85177fe88f52e00ced99ccf4e90f54a30c49eb"
+    },
+    {
+      "path": "tools/new-issue.sh",
+      "recipeVersion": 2,
+      "sha256": "2830ba6458df4c34378538d73eadc4d522fb5f5cb7dbb945ef89097d66c9b9ee"
+    },
+    {
+      "path": "tools/orchestrator-status.py",
+      "recipeVersion": 3,
+      "sha256": "8ddba7efbe89b47166928c6d6ac1d366f80234e914de5b3745b6211b25ba64de"
+    },
+    {
+      "path": "tools/pr-policy.py",
+      "recipeVersion": 16,
+      "sha256": "80fda4f86822f5c2b9c8cd4e8a1b23f85b30a2d32b681749e788821d9d78bd07"
+    },
+    {
+      "path": "tools/re-produce.sh",
+      "recipeVersion": 8,
+      "sha256": "9c0eb1c3178b16fd3799037316554ca8256f0ccebf82998d69658d781b1526b2"
+    },
+    {
+      "path": "tools/record-verdict.py",
+      "recipeVersion": 7,
+      "sha256": "8e7ba67c30672e69e714ccd801a9b5a59ba18d1aa63c08b9b50b385264672e75"
+    },
+    {
+      "path": "tools/repair-packet.py",
+      "recipeVersion": 7,
+      "sha256": "bb9158eaf9132975677d9be5da5150f652ac422226f666dcfffaa3d9af18a7da"
+    },
+    {
+      "path": "tools/requeue-gate.py",
+      "recipeVersion": 2,
+      "sha256": "df937ba5ee305f52097406fa556c98ad0a98d4e6f76bb4a554ce0802fae1e952"
+    },
+    {
+      "path": "tools/review-packet.py",
+      "recipeVersion": 18,
+      "sha256": "cf48164f9f65042716b1dae08436c3573dc26073fc6f22053dc1899de6e58a85"
+    },
+    {
+      "path": "tools/review-scope.py",
+      "recipeVersion": 2,
+      "sha256": "e96aeaf830d5bc23c4dcaa25e29fd91ac8c4be6b3ddba6a6618f4ab184a3e155"
     }
   ],
   "engineOwned": [
+    {
+      "path": ".github/agent-policy.json",
+      "adopted": false
+    },
     {
       "path": "Directory.Packages.props",
       "adopted": false
@@ -225,7 +661,119 @@
       "adopted": false
     },
     {
-      "path": "corpus-map.overlay.json",
+      "path": "overlay/agreed-backgammon-multiple.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/bearing-off-doublets.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/bearing-off-eligible.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/bearing-off-highest.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/bearing-off-move-or-remove.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/blot-hit.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/board-tables.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/die-faces.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/direction-of-travel.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/doublets.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/enter-from-bar.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/full-table-suspension.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/game-value.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/hit-pays-single-stake.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/legal-destination.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/made-point.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/men-count.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/move-by-pip.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/must-play-whole-throw.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/next-game-opening.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/opening-roll.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/opening-thrower-option.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/player-count.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/point-designations.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/rubber-scoring.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/stake-multiplier.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/starting-position.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/throw-two-dice.json",
+      "adopted": false
+    },
+    {
+      "path": "overlay/win-condition.json",
       "adopted": false
     },
     {
@@ -247,6 +795,10 @@
   ],
   "buildInputs": [
     {
+      "path": ".github/agent-policy.json",
+      "sha256": "f7cf1e1fde837af49da2997b314ff9c61ff3507f62db4bf7ae34a17bb6f0b756"
+    },
+    {
       "path": "Directory.Packages.props",
       "sha256": "b2cc3b4934d1bc9843a91f2e25e31f76d4e9f04d3b675b0ec73ba4d3eba386c5"
     },
@@ -255,8 +807,120 @@
       "sha256": "225327ace7d30798173f78662594a0fb1c3a85e88fa48863a89a846445a4abcd"
     },
     {
-      "path": "corpus-map.overlay.json",
-      "sha256": "0183a46640ad81237c1f4bcbf1b52abd72d9992dd051d8545be778868b8e67d2"
+      "path": "overlay/agreed-backgammon-multiple.json",
+      "sha256": "06792be639ff2029367516d5dd1851bb15ca9d00acdcfe71a4b05c83b2f7ec7b"
+    },
+    {
+      "path": "overlay/bearing-off-doublets.json",
+      "sha256": "aaf8770c84635aba7649f918bd262aec36d69b9a9acfc3573b2c5ed1248b779e"
+    },
+    {
+      "path": "overlay/bearing-off-eligible.json",
+      "sha256": "7163abc846e47ac7bee151db20eb0b0a07236777ba53c924afef74807c4ed264"
+    },
+    {
+      "path": "overlay/bearing-off-highest.json",
+      "sha256": "fbd195234364499af3e6f99a860a6275b77686507d10889eef8bbc3c8e826d89"
+    },
+    {
+      "path": "overlay/bearing-off-move-or-remove.json",
+      "sha256": "432d5742b025423cbe54f29e6e08e35d7a845defea313db25b5c3601a07b37a7"
+    },
+    {
+      "path": "overlay/blot-hit.json",
+      "sha256": "04e0961fa917c67db4fd1fe8de1e30ea22487e00ad762b5656332ab649503802"
+    },
+    {
+      "path": "overlay/board-tables.json",
+      "sha256": "6f05ff39c5ae02e23707624041322184db1ff9cf188f13ddbd7087e5363f6b4a"
+    },
+    {
+      "path": "overlay/die-faces.json",
+      "sha256": "4e3498e141fd1d9470af13e8d69a346e103312ac00e37f76a09173614d5c15a5"
+    },
+    {
+      "path": "overlay/direction-of-travel.json",
+      "sha256": "e66fc9f4dadfca03a40ab1c63125b58197902b0034feddc65541cf8c03ac08c9"
+    },
+    {
+      "path": "overlay/doublets.json",
+      "sha256": "b5f8b1d1cd8cacb26dbe8304992bf9d1cf78165babfada971770adf80207e9df"
+    },
+    {
+      "path": "overlay/enter-from-bar.json",
+      "sha256": "abcf61504af20f7b2e5e34acb823450526c70df373caadd1983efcc9d94c06f6"
+    },
+    {
+      "path": "overlay/full-table-suspension.json",
+      "sha256": "0934d1bbb7069099d90ee9cf42f764ec5cca840c9f5be3e78b8b50fe90f4f842"
+    },
+    {
+      "path": "overlay/game-value.json",
+      "sha256": "08d29f76fb2051e033a9bd3c6425a2e482aed1a8e226bf73d782702d52aec3ea"
+    },
+    {
+      "path": "overlay/hit-pays-single-stake.json",
+      "sha256": "0d9471bc75df100842dc84ad08e3aa559f69765c3a7b687fc2c8d62f8ee48c1b"
+    },
+    {
+      "path": "overlay/legal-destination.json",
+      "sha256": "39c35bf1cfd638c90d146760e58be5b720352f283b898f6d5cfc4357ed346d99"
+    },
+    {
+      "path": "overlay/made-point.json",
+      "sha256": "7076f5b346edee2ead1ce8c1231b85900ce97e9c12a20d0da312ab90498c3aef"
+    },
+    {
+      "path": "overlay/men-count.json",
+      "sha256": "ea10247ec0d0030fd5228f0e0fd76e0b7bbe68302563717f9d889c1a65a6f92a"
+    },
+    {
+      "path": "overlay/move-by-pip.json",
+      "sha256": "07dd825e29e3e832014e7fc0a6713cee126b9fc8154b83d5136050ff81d2f726"
+    },
+    {
+      "path": "overlay/must-play-whole-throw.json",
+      "sha256": "f4ec153657afdcbef078fa165e54dbb292f83807b81b8ae4726a09f4126724fc"
+    },
+    {
+      "path": "overlay/next-game-opening.json",
+      "sha256": "bec1c6f5d2d72ec6ae442e9004651eda30b7ea616c69efea7fcb171c1a589f3b"
+    },
+    {
+      "path": "overlay/opening-roll.json",
+      "sha256": "02c5f7006d1bc49e1eee340d348ba155d740f08fc944e649575fd4f50a520965"
+    },
+    {
+      "path": "overlay/opening-thrower-option.json",
+      "sha256": "fcc4b6eee949728516172857d449e5cf100077a95f8f3108c4faf8b034fa84a3"
+    },
+    {
+      "path": "overlay/player-count.json",
+      "sha256": "67d7ec589666b9cd9f2e377fdab9535457b564f2ceb8c55f0fae33dd080154e2"
+    },
+    {
+      "path": "overlay/point-designations.json",
+      "sha256": "84b43d19aa409799f4b92e7ac95eb4b7b670ed1deec8c4b4bb719e65e9840f3e"
+    },
+    {
+      "path": "overlay/rubber-scoring.json",
+      "sha256": "0f41c678631e4b0f9d299edc2919e2246fdf73d5e8cf9f98c0edc95c839e27c1"
+    },
+    {
+      "path": "overlay/stake-multiplier.json",
+      "sha256": "ebbf1ee94cb34ae6edef808d4f7cf00dda65f0a3c0c9d384e5b75d4deb6f28b4"
+    },
+    {
+      "path": "overlay/starting-position.json",
+      "sha256": "b188a0157bc3ae30c029c5f02c2d5f98220df460404407c09e4f5f4cbd63eaa5"
+    },
+    {
+      "path": "overlay/throw-two-dice.json",
+      "sha256": "905d5019f48f6bd9fb579f73382d351f853f67f019f7007185717cea182b3d75"
+    },
+    {
+      "path": "overlay/win-condition.json",
+      "sha256": "38dee2425de1dcd75b7b78ec427529e36546d2770d43ed7ffc05e5f60b95000b"
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",
@@ -264,7 +928,7 @@
     },
     {
       "path": "src/HoyleBackgammon/packages.lock.json",
-      "sha256": "e818fdd4d6acdc65f1cb9bdced2f0d48a5c28972585fded4981b84f936e9de4d"
+      "sha256": "a10fb448ed4eb7d2af05530ede41b892837dad890b3ccd315d60133acf0315b0"
     },
     {
       "path": "src/Tabletop.Dice/Tabletop.Dice.csproj",
@@ -272,7 +936,7 @@
     },
     {
       "path": "src/Tabletop.Dice/packages.lock.json",
-      "sha256": "a900848fac01e0b7d74b463fadc3be92c8ca0839545d59aed1c9681a0472259c"
+      "sha256": "6e7d038501c23b37e42d91fc7f496d185f2ef9a32ba543de34277b4ce77fda15"
     },
     {
       "path": "tests/HoyleBackgammon.Tests/HoyleBackgammon.Tests.csproj",
@@ -280,7 +944,7 @@
     },
     {
       "path": "tests/HoyleBackgammon.Tests/packages.lock.json",
-      "sha256": "434882ba46a7c43a9c8122c774bd85f6b20e88864b20bfe255c9c64440cd430f"
+      "sha256": "81b59671ecf323f5843a8f2374add4605fb296d0d5d79c33ba98ad876273e8cb"
     },
     {
       "path": "tests/Tabletop.Dice.Tests/Tabletop.Dice.Tests.csproj",
@@ -288,7 +952,7 @@
     },
     {
       "path": "tests/Tabletop.Dice.Tests/packages.lock.json",
-      "sha256": "75f7f075247e9b2297ee03bdbf88df7bc6b205528e1bd2e8bb8ee71898b5c0f8"
+      "sha256": "ec92e2c32decd8809a1713a93a79c96603bd0a9a7297d16a15b67e1b64543a38"
     }
   ],
   "randomness": "seeded",

@@ -1,0 +1,21 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "BearingOffWorkedExampleTests.Deuces_bear_off_three_and_the_fourth_man_is_played_forward",
+      "mutation": "LegalPlays refused to mix bearing off and moving within one doublets play (the 'or both' dropped); this test went red."
+    },
+    {
+      "test": "BearingOffDetailTests.Doublets_may_be_played_wholly_by_bearing_off",
+      "mutation": "LegalPlays refused any bearing off with doublets; this test went red. It stayed green under the no-mixing mutation above."
+    },
+    {
+      "test": "BearingOffSuspensionTests.A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters",
+      "mutation": "Movement.MovesForDie tested bearing off before the bar, BearingOff.IsEligible ignored the bar and BearingOff.MovesForDie dropped its enter-from-bar refusal, so a player bearing off with a man up bore off instead of entering; this test went red. The suspension is map 3.0.0's (blind-mapping resolution rows 11, 14 and 17)."
+    }
+  ]
+}

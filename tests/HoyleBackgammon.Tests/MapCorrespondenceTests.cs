@@ -59,16 +59,20 @@ public class MapCorrespondenceTests
 
     private sealed record Decline(string File, UnresolvedReason Reason, string EntryId);
 
-    /// <summary>The entries <c>corpus-map.overlay.json</c> declares fully ruled: <c>rulings</c> and <c>declines: []</c>.</summary>
-    private static HashSet<string> FullyRuled()
-    {
-        using var overlay = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(EngineTree.PathOf("corpus-map.overlay.json")));
-        return overlay.RootElement.EnumerateObject()
-            .Where(item => item.Value.TryGetProperty("rulings", out var rulings) && rulings.GetArrayLength() > 0
-                && item.Value.TryGetProperty("declines", out var declines) && declines.GetArrayLength() == 0)
-            .Select(item => item.Name)
+    /// <summary>
+    /// The entries the overlay declares fully ruled: <c>rulings</c> and <c>declines: []</c>. The overlay
+    /// is one file per entry, <c>overlay/&lt;entry id&gt;.json</c> (rules-factory #247).
+    /// </summary>
+    private static HashSet<string> FullyRuled() =>
+        new DirectoryInfo(EngineTree.PathOf("overlay")).EnumerateFiles("*.json")
+            .Where(file =>
+            {
+                using var item = System.Text.Json.JsonDocument.Parse(File.ReadAllBytes(file.FullName));
+                return item.RootElement.TryGetProperty("rulings", out var rulings) && rulings.GetArrayLength() > 0
+                    && item.RootElement.TryGetProperty("declines", out var declines) && declines.GetArrayLength() == 0;
+            })
+            .Select(file => Path.GetFileNameWithoutExtension(file.Name))
             .ToHashSet(StringComparer.Ordinal);
-    }
 
     private static IEnumerable<FileInfo> HandWrittenSources() =>
         new DirectoryInfo(EngineTree.PathOf("src")).EnumerateFiles("*.cs", SearchOption.AllDirectories)

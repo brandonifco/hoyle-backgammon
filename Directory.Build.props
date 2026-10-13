@@ -1,7 +1,7 @@
 <Project>
 
   <!-- Zero-warning, deterministic builds.
-       Managed by rules-factory (recipe 2): `factory produce` updates this file when its
+       Managed by rules-factory (recipe 3): `factory produce` updates this file when its
        recipe changes and refuses to overwrite a hand edit; adopting it makes it the engine's own. -->
   <PropertyGroup>
     <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
@@ -16,6 +16,11 @@
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <InvariantGlobalization>true</InvariantGlobalization>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Optimized in every configuration, Debug included (decision 0077). -->
+  <PropertyGroup>
+    <Optimize>true</Optimize>
   </PropertyGroup>
 
   <!-- Every package, the map included, is pinned by content hash in packages.lock.json;

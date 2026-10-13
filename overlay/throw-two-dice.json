@@ -1,0 +1,25 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "OpeningThrowerOptionTests.Every_subsequent_throw_is_with_both_dice",
+      "mutation": "Opening.Throw threw one die and doubled its face instead of throwing the pair; this test went red."
+    },
+    {
+      "test": "SeededGameReplayTests.A_seeded_game_replays_byte_for_byte_from_its_seed_and_its_recorded_decisions",
+      "mutation": "Compares GameRecord.ToCanonicalJson, the engine's own serialisation, not a rendering of the test's. Opening.Throw kept process-wide state, swapping the two faces of every throw after its seventieth (`++calls > 70 ? new DiceThrow(t.Second, t.First) : t`), so the recorded game was untouched and its replay was not; this test went red. It went red too with Game.Identity's ruleset at version 2, with its replay schema at 1, with Game.Play recording a hand-typed map (`new MapPackage(\"RulesFactory.Maps.HoyleBackgammon\", \"4.0.0\")` for `MapPackage.FromProvenance`), with the serialisation's object members in reverse order, with the identity left out of it, and with each move's authority written as its MoveKind instead of its entry id. Re-pinned for ruleset version 4 (map 6.0.0, rules-factory#125; docs/decisions/0008) with seed 20260965, since seed 20260914's game now declines; the dice-swap mutation re-observed on the new game (72 turns), still red, and so was Game.Identity's ruleset at version 3. Re-pinned for ruleset version 5 and replay schema 3 (Brandon's rulings of 2026-09-15; docs/decisions/0009), back on seed 20260914, whose game finishes again (65 turns, a gammon for White) and names one owner's ruling on one turn; the dice-swap mutation re-observed on it, still red. It went red too with Game.Identity's ruleset at version 4, with its replay schema at 2, with each turn's `rulings` left out of the serialisation (written under another name), with a ruling's ruledBy written as its entry id, with bearing-off-eligible/2 dated 2026-09-16, and whenever LegalPlays.For named a ruling a play does not rely on or failed to name one it does (bearing-off-eligible/2 never named, or named in a throw that began with every man home; must-play-whole-throw/2 named for every pruned order). Re-pinned for ruleset 6 and replay schema 4 (docs/decisions/0010): the game is move for move that of ruleset 5; its bytes with the two versions set back and valueRulings removed hash to the ruleset 5 pin. The canonical serialisation omitting valueRulings; this test went red, and so did The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record. Re-pinned for map 7.0.0 on RulesKernel 1.0.0 (#20): the game is move for move that of map 6.0.0; its bytes with map.version set back to 6.0.0 hash to the ruleset 6 pin (24af54b1...a24ba274). The dice-swap mutation re-observed on it, still red."
+    },
+    {
+      "test": "SeededGameReplayTests.The_canonical_serialisation_is_rfc_8785_json_of_every_field_of_the_record",
+      "mutation": "Named beside the seeded replay whose bytes it defines (docs/decisions/0006). GameRecordJson wrote C0 controls other than the five named escapes as themselves (the `case < ' '` arm removed); this test went red and the seeded replay did not. It went red too with object members in reverse order, with the identity left out, with the replay schema at 1, with Game.Identity's ruleset at version 2, and with a move's authority written as its MoveKind. Its ruleset literal moved to 4 (map 6.0.0, rules-factory#125); Game.Identity's ruleset at version 3 turned it red. Its literals moved to ruleset 5 and replay schema 3, and its record gained a turn whose play names both owner's rulings (docs/decisions/0009). Each turn's `rulings` left out of the serialisation turned it red; so did a ruling's ruledBy written as its entry id, bearing-off-eligible/2 dated 2026-09-16, Game.Identity's ruleset at version 4, and its replay schema at 2."
+    },
+    {
+      "test": "IdentityTests.The_replay_schema_is_version_four",
+      "mutation": "Named beside the seeded replay whose schema it pins (docs/decisions/0006; 0009, which adds each turn's owner's rulings and makes the schema 3; 0010, which adds the rulings the game's value relies on, valueRulings, and makes it 4). Game.Identity's replay schema set back to 3 (`new ReplaySchemaVersion(3)`); this test went red, with both SeededGameReplayTests. Before this rename, with the schema at 3, it went red with the schema set back to 2, and before the rename to three with it set back to 1."
+    }
+  ]
+}

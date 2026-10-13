@@ -1,0 +1,29 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "EnterFromBarTests.While_a_man_is_up_the_play_of_his_other_men_is_suspended",
+      "mutation": "Movement.MovesForDie never took the entry branch, so a player with a man up moved his other men; this test went red."
+    },
+    {
+      "test": "EnterFromBarTests.Entry_is_available_only_where_the_adversarys_table_is_open",
+      "mutation": "The same mutation, the entry branch never taken; this test went red."
+    },
+    {
+      "test": "EnterFromBarTests.Two_men_up_suspends_the_others_exactly_as_one_does",
+      "mutation": "Movement.MustEnterFromBar held only for exactly one man up (`== 1` for `> 0`); this test went red."
+    },
+    {
+      "test": "EnterFromBarTests.The_second_man_up_is_still_up_when_the_first_has_entered",
+      "mutation": "The same mutation, exactly one man up; this test went red."
+    },
+    {
+      "test": "EnterFromBarTests.Entry_is_permitted_on_a_point_the_entering_players_own_men_hold",
+      "mutation": "Movement.MovesForDie refused entry onto a point the entering player's own men hold -- the strict reading 0006 rejected; this test went red."
+    }
+  ]
+}
