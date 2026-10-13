@@ -91,7 +91,7 @@ internal static class GameRecordJson
         ["next"] = Name(record.Next),
     };
 
-    private static Obj Of(ReplayCompatibilityIdentity identity) => new()
+    private static Obj Of(EngineIdentity identity) => new()
     {
         ["ruleset"] = new Obj { ["id"] = identity.Ruleset.Id, ["version"] = identity.Ruleset.Version },
         ["replaySchema"] = identity.ReplaySchema.Version,
