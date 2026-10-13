@@ -1,0 +1,21 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "NextGameTests.The_winner_of_a_hit_throws_first_in_the_game_next_following",
+      "mutation": "Outcome.Next inverted the hit test (`!=` for `==`); this test went red."
+    },
+    {
+      "test": "NextGameTests.After_a_gammon_or_backgammon_the_players_throw_again_for_the_right",
+      "mutation": "The same mutation, Next inverted; this test went red."
+    },
+    {
+      "test": "DeterminismTests.The_winner_of_a_hit_opens_the_next_game_without_a_roll_for_the_right",
+      "mutation": "Game.Play rolled for the right to begin even when an opener was supplied; this test went red."
+    }
+  ]
+}

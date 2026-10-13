@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "DieFacesTests.A_throw_shows_the_twenty_one_throws_the_corpus_names_and_no_other",
+      "mutation": "Die.D6 constructed a five-faced die; this test went red."
+    }
+  ]
+}

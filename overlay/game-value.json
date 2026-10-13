@@ -1,0 +1,74 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "GameValueTests.The_adversary_bearing_off_makes_it_a_hit",
+      "mutation": "Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); this test went red."
+    },
+    {
+      "test": "GameValueTests.A_man_up_makes_it_a_backgammon",
+      "mutation": "Outcome.ValueOf ignored a loser's man on the bar; this test went red. Re-observed after the loser was given two men borne off, so that he is not also a gammon (map 3.0.0, blind-mapping resolution row 52); under the mutation he now declines as the uncovered finish, and the test still went red. Re-observed under ruleset version 6 (docs/decisions/0010), where the uncovered finish is the owner's hit, game-value/1, and the test also holds that the corpus's backgammon names no ruling: a loser's man on the bar ignored; still red. game-value/2 named on every backgammon; red."
+    },
+    {
+      "test": "GameValueEntryPointTests.A_finished_game_resolves_to_a_hit_a_gammon_or_a_backgammon",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.GameValue, not Outcome. Outcome.ValueOf called it a gammon while the loser had borne off two or fewer (`<= 2` for `== 0`); the hit row went red. Outcome.ValueOf ignored a loser's man on the bar (`bool backgammon = LoserStandsInWinnersHome(...)` alone); the backgammon row went red. Every row went red too when Handlers.Value attached a copy of the assertion asserted by \"the engine\"."
+    },
+    {
+      "test": "GameValueTests.The_finish_no_named_result_covers_is_a_hit_naming_the_owners_ruling",
+      "mutation": "This entry's question's first part, fate unresolved, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a loser who has borne off a man, has none up or in the winner's home table and is not all home loses a hit. Replaces The_three_named_results_do_not_cover_every_finish (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored in Outcome.ResultOf; this test went red. game-value/1 never named; red. Valued a gammon; red. game-value/1 named on the corpus's own hit too; red. game-value/2 named on every backgammon; red (its corpus backgammon row)."
+    },
+    {
+      "test": "GameValueEntryPointTests.The_finish_no_named_result_covers_resolves_to_a_hit_naming_the_owners_ruling",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer<GameResult> carrying it back. Through EntryPoints.GameValue, not Outcome. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010). Ruleset 5's decline restored; this test went red. game-value/1 never named; red. Valued a gammon; red."
+    },
+    {
+      "test": "GameValueTests.A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+      "mutation": "This entry's question's second part, the overlap, is Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010): a loser who has borne off nothing and has a man up or in the winner's home table loses a backgammon, never also a gammon. Replaces A_man_up_before_bearing_off_is_both_a_gammon_and_a_backgammon (the decline of ruleset versions 2 to 5). Ruleset 5's decline restored; this test went red. Valued a gammon (`begunToBearOff ? Backgammon : Gammon`); red. game-value/2 never named; red. A loser's man on the bar ignored; red."
+    },
+    {
+      "test": "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+      "mutation": "Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces A_man_in_the_winners_home_table_before_bearing_off_is_both_a_gammon_and_a_backgammon. Ruleset 5's decline restored; this test went red. Valued a gammon; red. game-value/2 never named; red. Named only for a man up (`begunToBearOff || position.OnBar(loser) == 0 ? null : ...`); red, with the entry-point test beside it, and A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling stayed green."
+    },
+    {
+      "test": "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_is_a_backgammon_naming_the_owners_ruling",
+      "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer<GameResult> carrying it back. Through EntryPoints.GameValue, not Outcome. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_declines_citing_the_entry. Ruleset 5's decline restored; this test went red. Valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. A loser's man on the bar ignored; red."
+    },
+    {
+      "test": "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on",
+      "mutation": "Seed 20260907, adopting the opening throw and taking the middle play, declined under ruleset 5 at a man re-entered mid-bear-off and finishes under ruleset 6 as a backgammon against a loser with nothing off and a man in the winner's home table, naming bearing-off-eligible/1 on two turns and game-value/2 on its value, in the record and its canonical bytes (docs/decisions/0010). Ruleset 5's decline of a man re-entered mid-bear-off restored; this test went red. bearing-off-eligible/1 never named; red. Named only on a throw that began re-entered, not after entering; red. game-value's overlap decline restored; red. The overlap valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. Game.Play not setting GameRecord.ValueRulings; red, and no other test. The canonical serialisation omitting valueRulings; red."
+    }
+  ],
+  "rulings": [
+    {
+      "id": "game-value/1",
+      "span": "The three named results do not cover every finish. Written as predicates on the loser they are: all his men home and he has begun to bear off (a hit); he has not begun to bear off (a gammon); he has a man up or in the winner's home table (a backgammon). A loser who has borne off a man, been taken up, re-entered and run that man clear of the winner's home table but not yet back into his own answers none of them, and the corpus does not say what such a win is worth.",
+      "answer": "A single game (a hit): a loser who has borne off a man, has none on the bar or in the winner's home table, and is not all home loses a hit.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "tests": [
+        "GameValueTests.The_finish_no_named_result_covers_is_a_hit_naming_the_owners_ruling",
+        "GameValueEntryPointTests.The_finish_no_named_result_covers_resolves_to_a_hit_naming_the_owners_ruling"
+      ]
+    },
+    {
+      "id": "game-value/2",
+      "span": "Nor are they disjoint, in two cases. A loser who has borne off nothing answers 'before his adversary has begun to do the same' (a gammon); if he also has a man up, or a man in the winner's home table, he answers 'a man or men \"up\" (_i.e._, on the bar) or in his (the winner's) home table' (a backgammon) as well. The corpus does not say which result he suffers in either case.",
+      "answer": "A backgammon, never also a gammon: a loser who has borne off nothing and has a man on the bar or in the winner's home table is backgammoned.",
+      "ruledBy": "Brandon",
+      "ruledOn": "2026-09-15",
+      "record": "docs/decisions/0010-owner-rulings-are-ruleset-version-six.md",
+      "tests": [
+        "GameValueTests.A_man_up_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+        "GameValueTests.A_man_in_the_winners_home_table_before_bearing_off_is_a_backgammon_and_not_a_gammon_naming_the_owners_ruling",
+        "GameValueEntryPointTests.Nothing_borne_off_with_a_man_up_or_in_the_winners_home_table_is_a_backgammon_naming_the_owners_ruling",
+        "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on"
+      ]
+    }
+  ],
+  "declines": []
+}

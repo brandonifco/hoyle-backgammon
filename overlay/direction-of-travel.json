@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "GeometryTests.The_two_courses_run_opposite_over_one_set_of_points",
+      "mutation": "Geometry.Mirror returned its argument, so both players' courses ran the same way; this test went red."
+    },
+    {
+      "test": "GeometryTests.A_mans_own_ace_point_faces_the_adversarys_ace_point",
+      "mutation": "The same mutation, Mirror as the identity; this test went red."
+    }
+  ]
+}

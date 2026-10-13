@@ -1,0 +1,25 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "RubberScoringTests.Having_lost_the_first_hit_he_who_loses_the_next_game_has_lost_the_rubber",
+      "mutation": "Outcome.RubberWinner gave the rubber to the winner of both games only when the second was also a hit (`second.Winner == first && second.Value == GameValue.Hit`); this test went red for a backgammon. (A gammon still resolved, through the other stated case.)"
+    },
+    {
+      "test": "RubberScoringTests.Having_lost_the_first_hit_he_who_secures_a_gammon_wins_the_rubber",
+      "mutation": "Outcome.RubberWinner gave the rubber to the first game's winner after the other player's gammon; this test went red."
+    },
+    {
+      "test": "RubberScoringTests.Every_other_rubber_is_the_question_the_corpus_leaves_open",
+      "mutation": "Outcome.RubberWinner resolved a hit each to the second game's winner (`second.Value != GameValue.Backgammon` for `== GameValue.Gammon`); this test went red. It went red too when a rubber of three or more games was judged on its first two (`games.Count >= 2`), but only after the two-games-then-a-third row was added: the first three-game row declines on its first two anyway."
+    },
+    {
+      "test": "RubberScoringTests.A_rubber_scored_from_a_game_valued_by_an_owners_ruling_names_that_ruling",
+      "mutation": "Since ruleset version 6 a game's value can rest on an owner's ruling (game-value/1, game-value/2; docs/decisions/0010), and a rubber scored from it relies on the ruling too: RubberResult.Rulings is the union of the two games' rulings in OwnerRulings.All's order. Outcome.RubberWinner dropping the rulings (`rulings = []`); this test went red, and no other. Taking only the first game's (`InOrder(games[0].Rulings)`); red. Concatenating without de-duplicating or ordering (`[.. second.Rulings, .. games[0].Rulings]`); red. game-value's uncovered-finish decline restored, so the ruled hit this rubber is scored from cannot be valued; red. game-value/1 never named; red."
+    }
+  ]
+}

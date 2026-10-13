@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "GeometryTests.Every_point_has_its_corpus_name",
+      "mutation": "Geometry.NameOf called an outer table's first point the ace point rather than the bar point; this test went red."
+    }
+  ]
+}

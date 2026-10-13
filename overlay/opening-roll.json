@@ -1,0 +1,21 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "OpeningRollTests.The_higher_single_die_gives_the_right_to_begin",
+      "mutation": "Opening.RollForTheRight gave the right to begin to the lower die; this test went red."
+    },
+    {
+      "test": "OpeningRollTests.The_other_player_begins_when_his_is_the_higher",
+      "mutation": "The same mutation, the lower die begins; this test went red."
+    },
+    {
+      "test": "OpeningRollTests.In_the_event_of_a_tie_the_players_throw_again",
+      "mutation": "Opening.RollForTheRight accepted the first pair thrown, ties included (`attempt.First > 0` for `attempt.First != attempt.Second`); this test went red."
+    }
+  ]
+}

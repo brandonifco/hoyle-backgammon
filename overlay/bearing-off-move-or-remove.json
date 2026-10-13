@@ -1,0 +1,21 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "BearingOffWorkedExampleTests.For_the_quatre_he_may_remove_from_the_quatre_point_or_advance_cinque_to_ace",
+      "mutation": "BearingOff.MovesForDie never removed a man from the point the die names; this test went red."
+    },
+    {
+      "test": "BearingOffWorkedExampleTests.For_the_trois_he_has_no_man_on_that_point_and_must_play_forward",
+      "mutation": "BearingOff.MovesForDie offered no forward move within the table; this test went red."
+    },
+    {
+      "test": "BearingOffSuspensionTests.A_man_up_mid_bear_off_suspends_bearing_off_until_he_enters",
+      "mutation": "Movement.MovesForDie tested bearing off before the bar, BearingOff.IsEligible ignored the bar and BearingOff.MovesForDie dropped its enter-from-bar refusal, so a player bearing off with a man up bore off instead of entering; this test went red. The suspension is map 3.0.0's (blind-mapping resolution rows 11, 14 and 17)."
+    }
+  ]
+}

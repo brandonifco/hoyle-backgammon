@@ -1,0 +1,44 @@
+name: pr-policy
+
+# Emitted by rules-factory as a managed file (decision 0029). It runs tools/pr-policy.py and
+# nothing else: the contract is stated once, in that script and in the pull request template, and
+# restating any of it here would create a second contract that drifts from the first.
+#
+# `pull_request_target` is deliberately NOT used. This reads a pull request's body, which is
+# attacker-controlled text; running with the base repository's write token would be a way to turn
+# that text into privilege. The read-only token below is all the check needs.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+    branches: [main]
+
+concurrency:
+  group: pr-policy-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  pr-policy:
+    # The runner is a repository variable's JSON label or list of labels (decisions 0079, 0080).
+    # FACTORY_RUNS_ON_TRUSTED takes only a run the owner started on a commit of this repository,
+    # and a dispatcher outside this file checks that again before any runner exists for it;
+    # FACTORY_RUNS_ON takes every run and is for private repositories alone. Neither set, the
+    # hosted ubuntu-24.04. A malformed value fails the workflow, and an offline runner is waited
+    # for, never replaced by a hosted one.
+    runs-on: ${{ fromJSON(github.actor == github.repository_owner && github.triggering_actor == github.repository_owner && (github.event.pull_request.head.repo.full_name || !github.event.pull_request && github.repository) == github.repository && vars.FACTORY_RUNS_ON_TRUSTED || vars.FACTORY_RUNS_ON || '"ubuntu-24.04"') }}
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check the pull request against the contract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 tools/pr-policy.py "${{ github.event.pull_request.number }}"

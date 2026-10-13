@@ -1,36 +1,39 @@
 """M1 of #3: intake. Open a map package, prove the corpus in hand is the one it was mapped from.
 
 An engine is only as right as the correspondence between its map and its corpus, so nothing
-is scaffolded until five things are shown, in this order, and any one that is not shown is a
+is scaffolded until seven things are shown, in this order, and any one that is not shown is a
 refusal rather than a warning:
 
   1. **The package is a map package.** A `.nupkg` built by `tools/pack-map.py` (0015): its
-     `build/<id>.props` declares exactly one `RulesFactoryMap` item, and the map, manifest and
-     `ConsumerChecker` that item names are all inside the archive. A package without its
+     `build/<id>.props` declares exactly one `RulesFactoryMap` item, and the map, manifest,
+     `ConsumerChecker` and `Verification` record that item names are all inside the archive. A package without its
      checker (pre-2.0.0 backgammon, or a hand-built zip) is not one an engine's gate can use
      (#51), so it is refused, not tolerated. The checker's bytes are read so provenance can
      record their digest; they are never run (below).
   2. **The map is in a schemaVersion this factory reads.** The supported set is
      `SCHEMA_VERSIONS` in the factory's own `tools/check-map.py`, not a copy kept here. A map in
      any other version is refused, naming the versions that would be accepted.
-  3. **The corpus is verifiable here.** The map cites exactly one corpus, the manifest declares
-     it, and its `verification` is `committed-copy` (0013). A `local-copy` corpus is NOT
-     VERIFIED: an engine produced from it could not re-derive its own baseline in CI --
-     except under the licensed-copy exception (0022), when the caller has established an
-     allowlisted operator (licensed_copy.py, which this module never imports, since it is vendored
-     into engines) and passes that login. The local file is then hashed exactly as step 4 says:
-     the one given on the command line, or, when none is (provenance's recompute, whose engine
-     holds no corpus), the file the manifest's `envVar` names. The result says the exception was
-     used (`licensed_copy_operator`), and generation copies no corpus bytes into the engine.
-  4. **The corpus file is the baseline.** The map's `baseline` agrees with the manifest, and
-     the file given on the command line hashes to `contentHash` under `hashDerivation`. A
-     derivation this module does not know is refused -- a digest computed the wrong way is
-     indistinguishable from a changed corpus.
-  5. **The corpus declares whether its engine may draw random values** (0019): `randomness` is
+  3. **The package binds the artifacts its publish gate verified.** Its decision-0048
+     verification record names the map, manifest and packaged checker by SHA-256 and names every
+     corpus the map cites by sourceId, hashDerivation and contentHash. Those artifact digests are
+     compared with the actual package members; a legacy package with no binding is refused.
+  4. **Every cited corpus is admitted, and is verifiable here.** Its `licence` is public domain,
+     an admitted open licence, or `licensed-proprietary` declaring `distribution: private`
+     (0028, 0068), and its `verification` is `committed-copy` (0013). A local-copy corpus is NOT
+     VERIFIED. The package's distribution requirement is the strictest of its corpora's, and
+     `private` restricts where the engine may go, never what is established about it.
+  5. **Every resolved corpus file is the exact identity this package was verified against.**
+     The map's principal `baseline` agrees with the manifest; each supplied file is built and
+     verified by rules-corpus from the build definition committed beside it (rulescorpus.py,
+     #558), and the baseline rules-corpus computes must equal the manifest's declaration --
+     contentHash, hashDerivation and asOf -- and the package verification record's contentHash
+     for that same sourceId. A missing definition or expectation, a build or verification
+     rules-corpus refuses, and a malformed declared digest all fail closed.
+  6. **The corpora agree on whether the engine may draw random values** (0019): `randomness` is
      `none` or `seeded`. A package whose manifest predates the field declares nothing, and is
      refused rather than read as `none`: the answer is the corpus's, and a default would be the
      factory's.
-  6. **The factory's own checker passes, in its consumer phase**, on the packaged map and
+  7. **The factory's own checker passes, in its consumer phase**, on the packaged map and
      manifest. Before any overlay exists this is the map exactly as published, so a failure
      here means the map does not hold under the checks its engine will run, and no engine
      should be built on it.
@@ -42,6 +45,29 @@ checkout and versioned with it. The package's `ConsumerChecker` is for the engin
 which chose that package by exact version and lock-file hash. The factory has chosen nothing
 yet when it opens a package, so running what the package names would hand the package the
 privileges of whoever runs the factory before a single claim in it had been checked.
+
+**Nothing is read without a limit (#187, #229).** All seven checks above run on bytes intake
+already holds, so the size of what it takes in is the one thing it must decide before it has
+verified anything. Every read is bounded before it starts, and by a cap named here:
+
+  * a package is refused over `MAX_PACKAGE_BYTES`, whatever its source -- a download is stopped
+    and deleted at that many bytes as it streams, and a `.nupkg` named on the command line or
+    found in the NuGet global packages folder is measured before it is hashed or opened;
+  * an archive is refused over `MAX_ARCHIVE_ENTRIES` entries, before any member is read;
+  * a member is refused unread over `MAX_MEMBER_BYTES` uncompressed, or over a compression ratio
+    of `MAX_COMPRESSION_RATIO`;
+  * a corpus is refused over `MAX_CORPUS_BYTES`, measured before it is opened and counted again
+    as it is read in chunks.
+
+The package and the corpus the operator names are theirs, so this is about not exhausting their
+machine, not about trust.
+
+**A nuspec or props that declares a DTD is refused before it is parsed (#210).** The size caps
+bound the bytes intake reads, not what an XML parser makes of them: `xml.etree` expands internal
+entities, so a nuspec of a few kilobytes can declare its way to gigabytes inside the parser. A
+DTD is a small instruction set, and admitting one is admitting a little code (0016); nothing
+`tools/pack-map.py` builds carries one, so a document type declaration is refused outright rather
+than its expansion bounded.
 
 What intake cannot do: tell whether the map is *right* about the corpus (the publish gate's
 locator checkers and review did that), or whether a newer version of the package exists.
@@ -58,47 +84,108 @@ import re
 import tempfile
 import urllib.request
 import xml.etree.ElementTree as ET
+import xml.parsers.expat
 import zipfile
+
+import rulescorpus
 
 FLAT_CONTAINER = "https://api.nuget.org/v3-flatcontainer"
 
-# What each `hashDerivation` covers, and how to recompute it from the file an engine commits.
+# The `hashDerivation` names the factory admits, and what each claims about the bytes it names. The
+# set is closed: a corpus naming anything else is refused (intake, pack-map and every engine's gate
+# all ask `verify_declared_corpus`), because each name is a claim a reviewer read -- that a text is
+# what a tool extracted, or what a reader transcribed -- and an unreviewed one claims nothing.
 #
-# Both derivations in use today are SHA-256 over the file's bytes exactly as retrieved from
-# the manifest's `retrievedFrom`; their names differ because the *bytes* differ from what a
-# reader might assume, and that is the whole point of naming a derivation (corpus-map.md):
+# The digest itself is not computed here. rules-corpus builds the corpus from the build definition
+# committed beside it and records the SHA-256 of the artifact its baseline names (rulescorpus.py,
+# #558). This module once held a function per name, the recipe every engine received a copy of,
+# and the copies drifted (rules-corpus#4). What bytes a name covers is now the definition's
+# derivation chain, and the name has to be the one that definition's baseline declares.
 #
 #   * ecfr-versioner-xml -- the XML document the eCFR versioner API serves for the part and
 #     date, not the rendered HTML or the printed volume (examples/faa-part-107/README.md);
 #   * gutenberg-plain-text-including-boilerplate -- the Project Gutenberg `.txt.utf-8`
 #     including its licence header and footer, not the work text alone
 #     (examples/hoyle-backgammon/README.md, finding 6).
-#
-# A derivation that needs normalisation (stripping boilerplate, canonicalising XML) gets its
-# own function here; it must never be approximated by the raw-bytes one.
-#
-# This is the only table. Every engine's gate (recipe/engine-gate.py, `posture`) imports it from
-# the copy of this file produce vendors at scripts/factory/intake.py, so a derivation admitted here
-# is one every engine's gate can recompute (#106). Keep this module importable standalone, standard
-# library only, from that directory.
-def _sha256_of_bytes(data):
-    return hashlib.sha256(data).hexdigest()
-
-
-HASH_DERIVATIONS = {
-    "ecfr-versioner-xml": _sha256_of_bytes,
-    "gutenberg-plain-text-including-boilerplate": _sha256_of_bytes,
+ADMITTED_HASH_DERIVATIONS = frozenset({
+    "ecfr-versioner-xml",
+    "gutenberg-plain-text-including-boilerplate",
     # SHA-256 over the committed page-marked text, byte for byte -- which is *not* what was
     # retrieved: WotC publishes a PDF, and examples/srd-52-combat/extract.py derives the text
-    # from it with pdftotext 24.02.0 and a `{N}` marker per page. The raw-bytes function is exact
-    # here because the committed file is the derivation's output; the PDF's own digest is the
+    # from it with pdftotext 24.02.0 and a `{N}` marker per page. The digest is exact
+    # because the committed file is the derivation's output; the PDF's own digest is the
     # manifest's `sourcePdf.sha256`, and `extract.py --check` holds the two together.
-    "srd-5.2.1-pdftotext-24.02.0-page-marked": _sha256_of_bytes,
-}
+    "srd-5.2.1-pdftotext-24.02.0-page-marked",
+    # SHA-256 over the committed page-marked text, byte for byte -- for a source no tool can
+    # read. A scan carries page images and no text layer, so `pdftotext` returns nothing from
+    # it and the only text it can have is one a reader transcribed from those images and
+    # checked back against them. The digest is exact, because the committed file is the
+    # derivation's output; what this name does **not** claim is that a machine can re-derive
+    # it, because no machine wrote it. A corpus declaring this says so in the open, rather
+    # than borrowing the name of a tool that never ran over it, and the project that commits
+    # it holds this digest to its source scan's the way `extract.py --check` does (0013).
+    "transcribed-from-page-images-page-marked",
+    # SHA-256 over the committed page-marked text, byte for byte -- for a born-digital print
+    # master whose extraction order is not its reading order. Between the two names above sits
+    # a source neither describes: the text layer is real and complete, so nothing is
+    # transcribed, and a straight `pdftotext` of it is still not the document. A design-heavy
+    # rulebook runs prose in two interleaved columns, reproduces its own components as
+    # illustrations whose text is real text at a fraction of prose size, clips that artwork so
+    # much of it extracts without ever being visible, and merges a prose line with an artwork
+    # fragment sharing its baseline. What such a corpus adds is a committed, per-page
+    # declaration of which rectangle holds which column, in what order, and which holds
+    # artwork: **geometry, never text**. Every byte still comes out of the text layer, so
+    # unlike a transcription this one *is* mechanically reproducible, and the project that
+    # commits it holds the corpus to its source by re-deriving and comparing byte for byte, the
+    # way `extract.py --check` does (0013). The digest is exact because the committed file is
+    # the derivation's output; the PDF's own digest is the manifest's `sourcePdf.sha256`.
+    "pdftotext-24.02.0-bbox-layout-declared-reading-order-page-marked",
+    # SHA-256 over the committed page-marked text, byte for byte -- for a printed board, read by
+    # grid position and not in reading order, some of whose facts are artwork. Two claims, in
+    # stated proportions, and the name carries both. The cell text is the text layer's, cut by a
+    # committed declaration of cell rectangles (geometry, never text), so it is mechanically
+    # re-derivable and the project that commits it holds it to its source by deriving it again
+    # and comparing. What the layer does not carry -- which spaces bear a flag, the tables of a
+    # track -- is printed as artwork, and the corpus states it as **labels a reader wrote**,
+    # checked only by a second reading. Neither sibling says that: the reading-order name claims
+    # every byte is the layer's, and the transcription name claims no machine wrote any.
+    "pdftotext-24.02.0-bbox-layout-declared-cells-and-artwork-labels-page-marked",
+})
+SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+VERIFICATION_FORMAT = 1
 
 # What a manifest may declare as a corpus's `randomness` (decision 0019). `seeded`: an engine may
 # draw, and only through RulesKernel.Randomness's seeded, replayable source.
 RANDOMNESS = ("none", "seeded")
+
+# Admission is two facts, and neither is read from the other (decision 0068).
+#
+# The **licence class** says whether the factory may consume the corpus at all. It is read from the
+# leading identifier of the manifest's `licence` (before any whitespace, `;`, `,` or closing `.`):
+# `public-domain`, or a `public-domain-` form that says whose (`public-domain-us-government`), is
+# public domain; an identifier in OPEN_LICENCES is open; LICENSED_PROPRIETARY is licensed
+# proprietary. Anything else, a missing `licence` included, is refused. A licence is added here
+# only with a decision that admits it.
+#
+# The **distribution requirement** says where what comes out of it may go. It is the manifest's
+# `distribution`, `public` or `private`. Absent it reads as `public` -- except under
+# `licensed-proprietary`, where absence is refused and there is no default (0068 section 2). A
+# public-domain or open corpus may declare `private` and the factory honours it; a
+# licensed-proprietary corpus may never reach public distribution.
+#
+# 0028 wrote the first fact and inferred the second from it. It still governs public distribution,
+# and is why proprietary material cannot enter this repository's examples or its map publication.
+PUBLIC_DOMAIN = "public-domain"
+OPEN_LICENCES = ("CC-BY-4.0", "CC0-1.0")
+LICENSED_PROPRIETARY = "licensed-proprietary"
+LICENCE_IDENTIFIER = re.compile(r"\A([A-Za-z0-9][A-Za-z0-9.-]*?)\.?(?=[\s;,]|\Z)")
+
+PUBLIC, PRIVATE = "public", "private"
+DISTRIBUTIONS = (PUBLIC, PRIVATE)
+
+#: Absent, told apart from a declared `null`. Writing `"distribution": null` states nothing and is
+#: refused; leaving the key out is what reads as public for a licence that permits publishing.
+ABSENT = object()
 
 # The factory's own checker: tools/check-map.py, one directory above this package. It is a
 # hyphenated script rather than a module, so it is loaded by path, once, on first use.
@@ -107,6 +194,47 @@ _checker_module = None
 
 PACKAGE_REF = re.compile(r"^(?P<id>[A-Za-z0-9_.-]+)@(?P<version>[0-9A-Za-z.+-]+)$")
 THIS_DIR = "$(MSBuildThisFileDirectory)"
+
+# How much of a package intake will take in before it has verified anything (#187). Every check
+# below -- the digest, the props, the schema version, the consumer phase -- happens after the
+# bytes are already here, so a package or a mirror that is hostile or merely broken could
+# exhaust memory or disk before a single claim in it had been read. These bound that window.
+#
+# The numbers are sized off what a map package this factory builds actually weighs, with room
+# for maps far larger than any written yet. Packing examples/ today:
+#
+#   srd-52-combat  235 KB, largest member map/corpus-map.json at 108 KB
+#   faa-part-107   205 KB, largest member tools/check-map.py  at 105 KB
+#   hoyle-backgammon 185 KB, same checker
+#
+# and every member deflates by at most 5.1x (the maps; the checker 3.7x, the XML and props under
+# 3x). pack-map.py stores rather than deflates, so packages built here sit at ratio 1.0; a
+# package repacked by another tool will not.
+#
+# They are constants, not options. This is a refusal boundary, and a limit an operator can raise
+# is one an attacker's README can tell them to raise ("if intake refuses, set the cap higher").
+# A real map that outgrows these wants a considered change here, not a flag at the call site.
+#
+# MAX_ARCHIVE_ENTRIES and MAX_CORPUS_BYTES are #229's: the first two caps bounded the bytes of a
+# package and of one member, and left the *number* of members and the corpus unbounded.
+#
+#   * entries -- every package pack-map.py builds holds exactly ten members, and that number is
+#     the package layout's, not the map's: it does not grow with the map, its entries, or the
+#     number of corpora it cites. 1024 is a hundredfold of a count that does not vary, and it is
+#     what bounds the central directory MAX_PACKAGE_BYTES alone would let hold over a million
+#     entries -- each of which is a ZipInfo in memory before any member has been looked at.
+#   * corpus -- the largest corpus committed here is examples/hazmat-172-table/section-172.101.xml
+#     at 2.8 MiB (srd-5.2.1.txt is 1.3 MiB, hoyle.txt 723 KiB). 64 MiB is ~23x that, and is
+#     deliberately the same number as MAX_PACKAGE_BYTES: both bound a whole file the operator
+#     names, read into memory before anything about it has been verified. A corpus is text a
+#     person reads and a map cites by locator, so a corpus that outgrows this wants the same
+#     considered change the other caps do.
+MAX_PACKAGE_BYTES = 64 * 1024 * 1024      # ~280x the largest package this factory builds
+MAX_ARCHIVE_ENTRIES = 1024                # ~100x the ten members every package here holds
+MAX_MEMBER_BYTES = 8 * 1024 * 1024        # ~75x the largest member; a map is JSON, not media
+MAX_COMPRESSION_RATIO = 100               # real members reach 5.1x; a zip bomb reaches 1000x
+MAX_CORPUS_BYTES = 64 * 1024 * 1024       # ~23x the largest corpus committed here
+DOWNLOAD_CHUNK = 1024 * 1024              # also the chunk a .nupkg is hashed and a corpus read in
 
 
 class Refused(Exception):
@@ -136,10 +264,70 @@ def _global_packages_folder():
     return os.environ.get("NUGET_PACKAGES") or os.path.join(os.path.expanduser("~"), ".nuget", "packages")
 
 
+def sha256_of_file(path):
+    """The file's SHA-256, read a chunk at a time: a .nupkg is never held whole in memory."""
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(DOWNLOAD_CHUNK), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _download(url, target):
+    """Stream `url` to `target`, hashing as it goes; refuse past MAX_PACKAGE_BYTES (#187).
+
+    Hashed while streaming rather than re-read afterwards, and capped while streaming rather
+    than checked afterwards: by the time a whole `response.read()` had returned, the memory or
+    the disk is already spent. What is written before the cap is reached is removed, so a
+    refusal leaves no half a package behind for anything else to pick up.
+    """
+    digest, total = hashlib.sha256(), 0
+    try:
+        with urllib.request.urlopen(url, timeout=60) as response, open(target, "wb") as handle:
+            for chunk in iter(lambda: response.read(DOWNLOAD_CHUNK), b""):
+                total += len(chunk)
+                if total > MAX_PACKAGE_BYTES:
+                    raise Refused(f"{url} is larger than {MAX_PACKAGE_BYTES} bytes, the most intake will "
+                                  f"download; nothing in a package is verified until it is here, so the "
+                                  f"download is stopped and the partial file removed")
+                digest.update(chunk)
+                handle.write(chunk)
+    except BaseException as error:
+        with contextlib.suppress(OSError):
+            os.remove(target)
+        if isinstance(error, OSError):
+            raise Usage(f"cannot fetch {url}: {error}")
+        raise
+    return digest.hexdigest()
+
+
+def _package_in_hand(path):
+    """(path, its SHA-256) for a `.nupkg` already on this machine, refused over the cap (#229).
+
+    A download is bounded as it streams; a package named on the command line or found in the
+    NuGet global packages folder arrives past that point, and was bounded by nothing at all. It
+    is no more verified for having a path: nothing has read a byte of it yet, and the very next
+    things intake does are hash it whole and hand it to `zipfile`, which reads its central
+    directory. So it is measured first, by `os.stat`, and refused before it is opened.
+
+    Measuring rather than reading is the point: the refusal costs one stat, and the file the cap
+    turns away is never read at all.
+    """
+    try:
+        size = os.path.getsize(path)
+    except OSError as error:
+        raise Usage(f"cannot read package {path}: {error}")
+    if size > MAX_PACKAGE_BYTES:
+        raise Refused(f"{path} is {size} bytes, over the {MAX_PACKAGE_BYTES} a package intake reads "
+                      f"may be; nothing in a package is verified until it is here, so it is refused "
+                      f"unread")
+    return path, sha256_of_file(path)
+
+
 def resolve_package(spec, download_dir, log=None):
-    """A `.nupkg` path for `spec`: a file path, or `Id@Version` from the NuGet cache or nuget.org."""
+    """(`.nupkg` path, its SHA-256) for `spec`: a file path, or `Id@Version` from the cache or nuget.org."""
     if os.path.isfile(spec):
-        return os.path.abspath(spec)
+        return _package_in_hand(os.path.abspath(spec))
     match = PACKAGE_REF.match(spec)
     if not match:
         raise Usage(f"--package {spec!r} is neither a .nupkg file nor Id@Version")
@@ -148,16 +336,11 @@ def resolve_package(spec, download_dir, log=None):
     cached = os.path.join(_global_packages_folder(), lower_id, version, name)
     if os.path.isfile(cached):
         _note(log, f"package {spec} from the NuGet global packages folder: {cached}")
-        return cached
+        return _package_in_hand(cached)
     url = f"{FLAT_CONTAINER}/{lower_id}/{version}/{name}"
     target = os.path.join(download_dir, name)
     _note(log, f"package {spec} from {url}")
-    try:
-        with urllib.request.urlopen(url, timeout=60) as response, open(target, "wb") as handle:
-            handle.write(response.read())
-    except OSError as error:
-        raise Usage(f"cannot fetch {url}: {error}")
-    return target
+    return target, _download(url, target)
 
 
 # --- reading the package -----------------------------------------------------------------
@@ -173,17 +356,102 @@ def _props_path(ref):
     return joined.replace(os.sep, "/")
 
 
+def _read_member(archive, name):
+    """One member's bytes, refusing an oversized or over-compressed one *before* reading it (#187).
+
+    This runs on every member intake reads, whatever the package's provenance: a downloaded one
+    is capped on the way in, but one named on the command line or taken from the NuGet cache is
+    not, and either can carry a member that decompresses to more memory than the machine has.
+
+    Two checks, then the read:
+
+      * the declared uncompressed size, against MAX_MEMBER_BYTES;
+      * the declared ratio, against MAX_COMPRESSION_RATIO -- a member can sit under the size cap
+        and still be a bomb relative to the bytes intake paid for it.
+
+    Both read the archive's own declarations, which the package controls, so checking them looks
+    like trusting the attacker. What makes it sound is the reader underneath: `ZipFile.open`
+    stops at the declared `file_size` and verifies the member's CRC-32, so a member that declares
+    less than it holds does not hand back the extra -- it fails, and that failure is a refusal
+    here rather than a traceback. A declaration can therefore only be an *over*statement, and an
+    overstatement is refused above. The read is still asked for one byte past the declared size
+    and checked, so the bound is stated here and does not rest on that reader's internals.
+    """
+    info = archive.getinfo(name)
+    if info.file_size > MAX_MEMBER_BYTES:
+        raise Refused(f"{name} declares {info.file_size} uncompressed bytes, over the {MAX_MEMBER_BYTES} "
+                      f"a package member may be; it is refused unread")
+    ratio = info.file_size / info.compress_size if info.compress_size else info.file_size
+    if ratio > MAX_COMPRESSION_RATIO:
+        raise Refused(f"{name} declares {info.file_size} bytes from {info.compress_size} compressed, a ratio "
+                      f"of {ratio:.0f} over the {MAX_COMPRESSION_RATIO} a package member may be; it is "
+                      f"refused unread")
+    try:
+        with archive.open(name) as member:
+            data = member.read(info.file_size + 1)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise Refused(f"{name} cannot be read as the {info.file_size} bytes it declares: {error}")
+    if len(data) > info.file_size:
+        raise Refused(f"{name} decompresses to more than the {info.file_size} bytes it declares; the size "
+                      f"intake checked was not the size the member has")
+    return data
+
+
+class _DeclaresADocumentType(Exception):
+    pass
+
+
+def _refuse_document_type(*_):
+    raise _DeclaresADocumentType()
+
+
+def _xml(name, data):
+    """A package member parsed as XML, refused if it declares a document type (#210).
+
+    The declaration is found by expat itself rather than by searching the bytes for `<!DOCTYPE`:
+    expat honours the document's own encoding, so a UTF-16 nuspec that a byte search would read
+    past is seen here. The handler fires at the start of the declaration, before any entity in it
+    is declared, let alone expanded, and raising from it stops the parse there. An entity
+    declaration can only appear inside a DTD, so refusing the DTD refuses every entity with it;
+    the entity handler is set as well so that stays true without resting on that rule.
+    """
+    scan = xml.parsers.expat.ParserCreate()
+    scan.StartDoctypeDeclHandler = _refuse_document_type
+    scan.EntityDeclHandler = _refuse_document_type
+    try:
+        scan.Parse(data, True)
+    except _DeclaresADocumentType:
+        raise Refused(f"{name} declares a document type (DTD); a map package is data, not code (0016), and "
+                      f"a DTD's entities are instructions the parser would run, so it is refused unparsed")
+    except xml.parsers.expat.ExpatError as error:
+        raise Refused(f"{name} is not well-formed XML: {error}")
+    return ET.fromstring(data)
+
+
 def read_package(nupkg):
     try:
         archive = zipfile.ZipFile(nupkg)
     except (OSError, zipfile.BadZipFile) as error:
         raise Usage(f"{nupkg} is not a readable .nupkg: {error}")
     with archive:
-        names = set(archive.namelist())
+        # #229: the entry count, before any member is read. MAX_PACKAGE_BYTES bounds the archive's
+        # bytes and MAX_MEMBER_BYTES one member's, and between them sits an archive of a million
+        # empty entries: each is a ZipInfo held in memory, and each name below is matched against
+        # every one of them. `infolist()` is the central directory zipfile has already parsed, so
+        # counting it reads nothing further, and the refusal happens before `_read_member` opens
+        # anything. The count is of the records zipfile actually parsed, not of the number the
+        # end-of-directory record declares, so it is a measurement rather than a claim the
+        # package makes about itself.
+        entries = archive.infolist()
+        if len(entries) > MAX_ARCHIVE_ENTRIES:
+            raise Refused(f"{nupkg} holds {len(entries)} entries, over the {MAX_ARCHIVE_ENTRIES} a map "
+                          f"package may hold; every package this factory builds holds ten, so it is "
+                          f"refused before any member is read")
+        names = {info.filename for info in entries}
         nuspecs = [n for n in names if "/" not in n and n.endswith(".nuspec")]
         if len(nuspecs) != 1:
             raise Refused(f"{nupkg}: expected one root .nuspec, found {sorted(nuspecs) or 'none'}")
-        metadata = ET.fromstring(archive.read(nuspecs[0])).find("{*}metadata")
+        metadata = _xml(nuspecs[0], _read_member(archive, nuspecs[0])).find("{*}metadata")
         package_id = metadata.findtext("{*}id") if metadata is not None else None
         version = metadata.findtext("{*}version") if metadata is not None else None
         if not package_id or not version:
@@ -195,25 +463,30 @@ def read_package(nupkg):
         if not props:
             raise Refused(f"{package_id} {version} has no {props_name}, so it declares no "
                           f"RulesFactoryMap item and is not a map package (0015)")
-        items = [e for e in ET.fromstring(archive.read(props[0])).iter() if e.tag.endswith("RulesFactoryMap")]
+        items = [e for e in _xml(props[0], _read_member(archive, props[0])).iter() if e.tag.endswith("RulesFactoryMap")]
         if len(items) != 1:
             raise Refused(f"{props_name} declares {len(items)} RulesFactoryMap items; a map package declares one")
         item = items[0].attrib
-        for field in ("Include", "Manifest", "ConsumerChecker"):
+        for field in ("Include", "Manifest", "ConsumerChecker", "Verification"):
             if not item.get(field):
-                raise Refused(f"{props_name}: the RulesFactoryMap item has no {field}")
+                detail = ("; packages published before decision 0048 are legacy/unbound and cannot "
+                          "establish which corpus bytes their publish gate checked"
+                          if field == "Verification" else "")
+                raise Refused(f"{props_name}: the RulesFactoryMap item has no {field}{detail}")
         if item.get("PackageId") != package_id or item.get("PackageVersion") != version:
             raise Refused(f"{props_name} says {item.get('PackageId')} {item.get('PackageVersion')}; "
                           f"the nuspec says {package_id} {version}")
 
         parts = {}
-        for field, label in (("Include", "map"), ("Manifest", "manifest"), ("ConsumerChecker", "checker")):
+        for field, label in (("Include", "map"), ("Manifest", "manifest"), ("ConsumerChecker", "checker"),
+                             ("Verification", "verification")):
             path = _props_path(item[field])
             if path not in names:
                 what = ("the consumer-phase checker (#51), so an engine built on it could not run the "
-                        "checks its own overlay can change" if label == "checker" else f"its {label}")
+                        "checks its own overlay can change" if label == "checker" else
+                        "its package verification record (0048)" if label == "verification" else f"its {label}")
                 raise Refused(f"{package_id} {version} names {path} as {what}, and the package does not contain it")
-            parts[label] = (path, archive.read(path))
+            parts[label] = (path, _read_member(archive, path))
     return package_id, version, parts
 
 
@@ -227,68 +500,387 @@ def _json(label, raw):
 # --- the corpus --------------------------------------------------------------------------
 
 
-def verify_corpus(document, manifest, corpus_path, licensed_copy_operator=None):
-    """(corpus, bytes, path) once the corpus is proved to be the map's baseline.
+def licence_class(licence):
+    """`public-domain`, `open` or `licensed-proprietary` for a `licence` the factory knows; else None."""
+    found = LICENCE_IDENTIFIER.match(licence) if isinstance(licence, str) else None
+    identifier = found.group(1) if found else ""
+    if identifier == PUBLIC_DOMAIN or identifier.startswith(PUBLIC_DOMAIN + "-"):
+        return "public-domain"
+    if identifier in OPEN_LICENCES:
+        return "open"
+    if identifier == LICENSED_PROPRIETARY:
+        return LICENSED_PROPRIETARY
+    return None
 
-    `licensed_copy_operator` is an allowlisted login when the caller established the exception
-    (0022), else None. It admits a `local-copy` corpus and nothing else; `corpus_path` None then
-    means the file `envVar` names.
+
+def admit(corpus):
+    """`(licence class, distribution)` for an admissible corpus; `Refused` for any other (0068).
+
+    The one place a manifest corpus is classified. Every command that reads a corpus reaches here,
+    so there is no second string-parsing of `licence` anywhere and no path that admits a
+    licensed-proprietary corpus into public distribution. Fail-closed: anything unclassifiable is
+    refused, and nothing defaults where a default could be wrong.
     """
-    if not isinstance(document, dict) or not isinstance(manifest, dict):
-        raise Refused("the packaged map or manifest is not a JSON object")
-    source_id = document.get("corpus")
-    cited = {source_id}
-    for entry in document.get("entries") or []:
-        locator = entry.get("locator") if isinstance(entry, dict) else None
+    if not isinstance(corpus, dict):
+        raise Refused(f"a manifest corpus is an object declaring `licence` and, where it is "
+                      f"restricted, `distribution`; this is {type(corpus).__name__} "
+                      f"(docs/decisions/0068)")
+
+    source_id = corpus.get("sourceId")
+    licence = corpus.get("licence")
+    found = licence_class(licence)
+    if found is None:
+        raise Refused(f"{source_id}'s manifest `licence` is {licence!r}, which is not public domain "
+                      f"(`{PUBLIC_DOMAIN}`, or `{PUBLIC_DOMAIN}-<whose>`), not an open licence the factory "
+                      f"admits ({', '.join(OPEN_LICENCES)}), and not `{LICENSED_PROPRIETARY}`: the factory "
+                      f"admits only a corpus whose licence it knows, and a licence it does not know is "
+                      f"refused until a decision admits it (docs/decisions/0028, docs/decisions/0068)")
+
+    declared = corpus.get("distribution", ABSENT)
+    if declared is not ABSENT and (isinstance(declared, bool) or declared not in DISTRIBUTIONS):
+        raise Refused(f"{source_id}'s manifest `distribution` is {declared!r}, outside "
+                      f"{{{', '.join(DISTRIBUTIONS)}}}: where artifacts derived from a corpus may go is "
+                      f"declared, and a value the factory cannot read is refused rather than guessed "
+                      f"(docs/decisions/0068)")
+
+    if found == LICENSED_PROPRIETARY:
+        if declared is ABSENT:
+            raise Refused(f"{source_id} is `{LICENSED_PROPRIETARY}` and declares no `distribution`: a "
+                          f"licensed corpus is admitted only inside a private distribution boundary, and "
+                          f"absence is a refusal here rather than a default (docs/decisions/0068)")
+        if declared == PUBLIC:
+            raise Refused(f"{source_id} is `{LICENSED_PROPRIETARY}` and declares `distribution` "
+                          f"{PUBLIC!r}: licensed material may be produced and verified, and may not be "
+                          f"publicly distributed. Declare `{PRIVATE}`, or admit the corpus under a licence "
+                          f"that permits publishing it (docs/decisions/0068, docs/decisions/0028)")
+        return found, PRIVATE
+
+    return found, PUBLIC if declared is ABSENT else declared
+
+
+def distribution_requirement(corpus):
+    """Where artifacts derived from this corpus may go: `public` or `private` (0068)."""
+    return admit(corpus)[1]
+
+
+def strictest_distribution(distributions):
+    """The strictest of several requirements: private wins over public (0068 section 3).
+
+    A map citing several corpora, a package, a composition and an engine all inherit through here,
+    so `public + private -> private` is written once and cannot disagree with itself.
+    """
+    strictest = PUBLIC
+    for distribution in distributions:
+        if distribution not in DISTRIBUTIONS:
+            raise Refused(f"{distribution!r} is not a distribution requirement the factory knows "
+                          f"({', '.join(DISTRIBUTIONS)}); it is refused rather than treated as "
+                          f"unrestricted (docs/decisions/0068)")
+        if distribution == PRIVATE:
+            strictest = PRIVATE
+    return strictest
+
+
+def refuse_unadmitted_licence(corpus):
+    """Kept as the refusal-only spelling of `admit`, for callers that read no classification."""
+    admit(corpus)
+
+
+def cited_corpora(document):
+    """Every `sourceId` the map depends on: its envelope's, and every entry's locator's.
+
+    The envelope's `corpus` is the map's **principal** corpus -- the one its `baseline` stamps --
+    and it is a dependency like any other. Nothing else in the factory turns on which corpus
+    occupies that field (0039).
+    """
+    cited = {document.get("corpus")} if isinstance(document, dict) else set()
+    for item in document.get("entries") or []:
+        locator = item.get("locator") if isinstance(item, dict) else None
         if isinstance(locator, dict) and locator.get("sourceId"):
             cited.add(locator["sourceId"])
-    if len(cited) != 1:
-        raise Refused(f"the map cites {sorted(map(str, cited))}; an engine is produced from exactly one corpus")
-    corpora = [c for c in manifest.get("corpora") or [] if isinstance(c, dict) and c.get("sourceId") == source_id]
-    if len(corpora) != 1:
-        raise Refused(f"the packaged manifest declares {source_id!r} {len(corpora)} times; it must declare it once")
-    corpus = corpora[0]
+    return {c for c in cited if isinstance(c, str)}
+
+
+def bind_corpora(cited, corpora, corpus_paths):
+    """`{sourceId: path}`, or Refused/Usage saying which corpus has no file and which file no corpus.
+
+    One cited corpus and one file are bound to each other directly, which is what a single-corpus
+    `--corpus` has always meant and keeps every existing invocation working whatever the file is
+    called. Beyond one, a file is bound to the corpus whose manifest `committedPath` it is the
+    basename of: the manifest already says where each corpus is committed, so nothing new is
+    declared and nothing is guessed. A file matching no cited corpus, or two files matching one,
+    is refused rather than resolved.
+    """
+    if len(cited) == 1 and len(corpus_paths) == 1:
+        return {next(iter(cited)): corpus_paths[0]}
+    wanted = {}
+    for source_id in cited:
+        committed = corpora.get(source_id, {}).get("committedPath")
+        if not committed:
+            raise Refused(f"the map cites {source_id!r} and its manifest entry declares no "
+                          f"`committedPath`, so no supplied corpus file can be bound to it")
+        wanted.setdefault(os.path.basename(str(committed)), []).append(source_id)
+    for name, sources in sorted(wanted.items()):
+        if len(sources) > 1:
+            raise Refused(f"the manifest commits {', '.join(sorted(sources))} at the same file "
+                          f"name {name!r}; a supplied corpus could not be bound to one of them")
+    bound, unmatched = {}, []
+    for path in corpus_paths:
+        name = os.path.basename(path)
+        if name not in wanted:
+            unmatched.append(path)
+            continue
+        source_id = wanted[name][0]
+        if source_id in bound:
+            raise Refused(f"two corpus files are named {name!r}; {source_id} takes exactly one")
+        bound[source_id] = path
+    if unmatched:
+        raise Usage(f"{', '.join(sorted(unmatched))}: named by no corpus this map cites "
+                    f"(expected one of {', '.join(sorted(wanted))})")
+    missing = sorted(cited - set(bound))
+    if missing:
+        raise Usage(f"the map cites {', '.join(missing)} and no --corpus was supplied for "
+                    f"{'them' if len(missing) > 1 else 'it'}; every cited corpus is verified here")
+    return bound
+
+
+def verify_declared_corpus(source_id, corpus, corpus_path):
+    """rules-corpus's build of the corpus at `corpus_path`, once its baseline for `source_id` is the
+    manifest's declaration (0048, #558). The digest is rules-corpus's; nothing here computes one.
+
+    The supplied file must be the artifact the baseline names, so the identity proved is of these
+    bytes and not of some other source the definition declares.
+    """
+    derivation = corpus.get("hashDerivation") if isinstance(corpus, dict) else None
+    expected = corpus.get("contentHash") if isinstance(corpus, dict) else None
+    if not isinstance(expected, str) or SHA256_HEX.fullmatch(expected) is None:
+        raise Refused(f"{source_id} declares malformed contentHash {expected!r}; expected 64 lower-case "
+                      f"hexadecimal SHA-256 characters for {derivation}")
+    if derivation not in ADMITTED_HASH_DERIVATIONS:
+        raise Refused(f"NOT VERIFIED -- {source_id} declares hashDerivation {derivation!r}, which this "
+                      f"factory does not admit; admitted: {', '.join(sorted(ADMITTED_HASH_DERIVATIONS))}")
+    try:
+        built = rulescorpus.build_and_verify(corpus_path, read_corpus)
+    except (rulescorpus.Refused, rulescorpus.Unavailable) as error:
+        raise Refused(str(error))
+    definition = rulescorpus.companions(corpus_path)[0]
+    baseline = built["baselines"].get(source_id)
+    if baseline is None:
+        raise Refused(f"{definition} declares no baseline for {source_id} (it declares "
+                      f"{', '.join(sorted(built['baselines'])) or 'none'})")
+    if baseline["path"] != os.path.basename(corpus_path):
+        raise Refused(f"{definition}'s baseline for {source_id} is the artifact at {baseline['path']!r}, "
+                      f"not the supplied {os.path.basename(corpus_path)!r}")
+    if baseline["hashDerivation"] != derivation:
+        raise Refused(f"{definition} declares {source_id}'s hashDerivation {baseline['hashDerivation']!r}; "
+                      f"the manifest declares {derivation!r}")
+    if baseline["contentHash"] != expected:
+        raise Refused(f"{corpus_path} is not {source_id} at its declared baseline: rules-corpus gives "
+                      f"{baseline['contentHash']} under {derivation}, the manifest declares {expected}")
+    if baseline["asOf"] != corpus.get("asOf"):
+        raise Refused(f"{definition} declares {source_id} as of {baseline['asOf']!r}; the manifest "
+                      f"declares {corpus.get('asOf')!r}")
+    return built
+
+
+def read_corpus(corpus_path):
+    """The corpus's bytes, under MAX_CORPUS_BYTES, measured before the file is opened (#229).
+
+    Every file rules-corpus builds from is read through here (rulescorpus.py), and the corpus is
+    held whole because the map's entries are located in it afterwards; the question is only how much
+    of it intake will hold. `os.stat` answers that without opening anything, so a corpus over the cap is refused
+    without a byte of it being read -- which is the difference between a refusal and the
+    exhaustion the refusal exists to prevent.
+
+    The read is then chunked and counted against the cap a second time. The stat is a measurement
+    of the file a moment ago, and a file can grow between the stat and the read (an operator's own
+    pipeline still writing it, a FIFO, a file another process appends to); the counter makes the
+    bound hold on the bytes actually taken in rather than on the bytes that were there when they
+    were counted.
+    """
+    try:
+        size = os.path.getsize(corpus_path)
+    except OSError as error:
+        raise Usage(f"cannot read corpus {corpus_path}: {error}")
+    if size > MAX_CORPUS_BYTES:
+        raise Refused(f"{corpus_path} is {size} bytes, over the {MAX_CORPUS_BYTES} a corpus intake "
+                      f"reads may be; it is refused unread")
+    chunks, total = [], 0
+    try:
+        with open(corpus_path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(DOWNLOAD_CHUNK), b""):
+                total += len(chunk)
+                if total > MAX_CORPUS_BYTES:
+                    raise Refused(f"{corpus_path} is over the {MAX_CORPUS_BYTES} bytes a corpus intake "
+                                  f"reads may be; it grew past the {size} bytes it measured, and the "
+                                  f"read is stopped where the cap is")
+                chunks.append(chunk)
+    except OSError as error:
+        raise Usage(f"cannot read corpus {corpus_path}: {error}")
+    return b"".join(chunks)
+
+
+def verify_one(source_id, corpus, corpus_path):
+    """(corpus, built, distribution) once this corpus is admissible and rules-corpus has built it to
+    its declared baseline (`built` is rulescorpus.build_and_verify's result).
+
+    Admission is the first thing read (0028, 0068), before the posture, so a corpus the factory
+    may not consume is refused for that and not reported as NOT VERIFIED.
+    """
+    _, distribution = admit(corpus)
 
     posture = corpus.get("verification")
-    excepted = licensed_copy_operator is not None and posture == "local-copy"
-    if posture != "committed-copy" and not excepted:
-        raise Refused(f"NOT VERIFIED -- {source_id} is {posture!r}, not `committed-copy` (0013): an engine "
+    if posture != "committed-copy":
+        raise Refused(f"NOT VERIFIED -- {source_id} is {posture!r}, not committed-copy (0013): an engine "
                       f"produced from it could not re-derive its baseline wherever it is built")
-
-    baseline = document.get("baseline") or {}
-    for field in ("contentHash", "hashDerivation"):
-        if baseline.get(field) != corpus.get(field):
-            raise Refused(f"the map's baseline.{field} is {baseline.get(field)!r} and the manifest's is "
-                          f"{corpus.get(field)!r}; the map is not of the corpus the manifest declares")
-    if baseline.get("asOf") != corpus.get("asOf"):
-        raise Refused(f"the map's baseline.asOf is {baseline.get('asOf')!r} and the manifest's is {corpus.get('asOf')!r}")
 
     randomness = corpus.get("randomness")
     if isinstance(randomness, bool) or randomness not in RANDOMNESS:
-        raise Refused(f"{source_id} declares randomness {randomness!r}; a corpus declares `none` or `seeded` "
-                      f"(0019), and a manifest without the field is refused, not read as `none`")
+        raise Refused(f"{source_id} declares randomness {randomness!r}; a corpus declares none or seeded "
+                      f"(0019), and a manifest without the field is refused, not read as none")
 
-    derivation = corpus.get("hashDerivation")
-    derive = HASH_DERIVATIONS.get(derivation)
-    if derive is None:
-        raise Refused(f"NOT VERIFIED -- no way to compute hashDerivation {derivation!r}; known: "
-                      f"{', '.join(sorted(HASH_DERIVATIONS))}")
-    if corpus_path is None:
-        variable = corpus.get("envVar")
-        corpus_path = os.environ.get(variable) if excepted and isinstance(variable, str) and variable else None
-        if not corpus_path:
-            raise Refused(f"NOT VERIFIED -- no corpus file was given, and {source_id} names no local copy here "
-                          f"(${variable} is not set)" if excepted else "no corpus file was given")
-    try:
-        with open(corpus_path, "rb") as handle:
-            corpus_bytes = handle.read()
-    except OSError as error:
-        raise Usage(f"cannot read corpus {corpus_path}: {error}")
-    actual = derive(corpus_bytes)
-    if actual != corpus.get("contentHash"):
-        raise Refused(f"{corpus_path} is not {source_id} at the map's baseline: {derivation} gives {actual}, "
-                      f"the map was made of {corpus.get('contentHash')}")
-    return corpus, corpus_bytes, corpus_path
+    built = verify_declared_corpus(source_id, corpus, corpus_path)
+    return corpus, built, distribution
+
+
+def verify_corpora(document, manifest, corpus_paths):
+    """Every corpus the map cites, each resolved through the manifest and built by rules-corpus (0039).
+
+    The manifest is the authority for the set: a map may cite several corpora, and each one's
+    bytes are pinned by its own manifest entry rather than by the envelope's single `baseline`.
+    The envelope's stamp still has to agree with its own corpus's entry -- that is
+    `check-map.py --only manifest`'s -- and it pins that corpus and no other.
+
+    The baseline is **recomputed by rules-corpus from the bytes in hand**, never read across from
+    the manifest: the manifest is what says which bytes are wanted, not evidence that these are they.
+    """
+    if not isinstance(document, dict) or not isinstance(manifest, dict):
+        raise Refused("the packaged map or manifest is not a JSON object")
+    cited = cited_corpora(document)
+    if not cited:
+        raise Refused("the map cites no corpus")
+    principal = document.get("corpus")
+    if principal not in cited:
+        raise Refused(f"the map's envelope names corpus {principal!r}, which is not a string this "
+                      f"factory can resolve")
+    declared = {}
+    for source_id in sorted(cited):
+        matches = [c for c in manifest.get("corpora") or []
+                   if isinstance(c, dict) and c.get("sourceId") == source_id]
+        if len(matches) != 1:
+            raise Refused(f"the packaged manifest declares {source_id!r} {len(matches)} times; every "
+                          f"corpus the map cites is declared exactly once")
+        declared[source_id] = matches[0]
+
+    bound = bind_corpora(cited, declared, list(corpus_paths))
+    verified = []
+    for source_id in sorted(cited):
+        corpus, built, distribution = verify_one(source_id, declared[source_id], bound[source_id])
+        name = os.path.basename(bound[source_id])
+        verified.append({"sourceId": source_id, "corpus": corpus, "bytes": built["files"][name],
+                         "path": bound[source_id], "name": name, "distribution": distribution,
+                         "contentHash": built["baselines"][source_id]["contentHash"],
+                         "files": built["files"]})
+
+    # An engine has one randomness posture (0019) and nothing says whose it would be. Two corpora
+    # that disagree are refused rather than resolved by taking the envelope's, which would be
+    # behaviour invented for the principal corpus and 0039 declines to invent any.
+    postures = {v["corpus"]["randomness"] for v in verified}
+    if len(postures) > 1:
+        raise Refused(f"the corpora this map cites declare {', '.join(sorted(postures))}; an engine "
+                      f"draws random values as its corpus declares (0019) and these do not agree")
+    return verified
+
+
+# --- package/corpus relationship ----------------------------------------------------------
+
+
+def _verification_digest(label, value):
+    if not isinstance(value, str) or SHA256_HEX.fullmatch(value) is None:
+        raise Refused(f"package verification {label} is {value!r}; a SHA-256 identity is 64 lower-case "
+                      f"hexadecimal characters")
+    return value
+
+
+def read_verification_binding(parts, document, manifest):
+    """Validate package members and declarations named by verificationFormat 1 (0048)."""
+    record = _json("verification", parts["verification"][1])
+    if not isinstance(record, dict) or record.get("verificationFormat") != VERIFICATION_FORMAT:
+        found = record.get("verificationFormat") if isinstance(record, dict) else None
+        raise Refused(f"package verificationFormat is {found!r}; this factory reads {VERIFICATION_FORMAT}")
+
+    artifacts = record.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise Refused("package verification artifacts is not a list")
+    expected_roles = {"map", "manifest", "checker"}
+    by_role = {}
+    for item in artifacts:
+        role = item.get("role") if isinstance(item, dict) else None
+        if role not in expected_roles or role in by_role:
+            raise Refused(f"package verification has invalid or duplicate artifact role {role!r}; expected "
+                          f"exactly {', '.join(sorted(expected_roles))}")
+        by_role[role] = item
+    if set(by_role) != expected_roles:
+        raise Refused(f"package verification artifact roles are {sorted(by_role)}; expected "
+                      f"{sorted(expected_roles)}")
+    for role in sorted(expected_roles):
+        item = by_role[role]
+        path, raw = parts[role]
+        if item.get("path") != path:
+            raise Refused(f"package verification {role}.path is {item.get('path')!r}; package props name {path!r}")
+        expected = _verification_digest(f"{role}.sha256", item.get("sha256"))
+        actual = hashlib.sha256(raw).hexdigest()
+        if actual != expected:
+            raise Refused(f"package verification {role}.sha256 is {expected}, but {path} is {actual}")
+
+    cited = cited_corpora(document)
+    records = record.get("corpora")
+    if not isinstance(records, list):
+        raise Refused("package verification corpora is not a list")
+    by_source = {}
+    for item in records:
+        source_id = item.get("sourceId") if isinstance(item, dict) else None
+        if not isinstance(source_id, str) or source_id in by_source:
+            raise Refused(f"package verification has malformed or duplicate corpus sourceId {source_id!r}")
+        by_source[source_id] = item
+    if set(by_source) != cited:
+        raise Refused(f"package verification corpus set is {sorted(by_source)}; map cites {sorted(cited)}")
+
+    declarations = {}
+    for item in ((manifest.get("corpora") or []) if isinstance(manifest, dict) else []):
+        if isinstance(item, dict) and item.get("sourceId") in cited:
+            source_id = item["sourceId"]
+            if source_id in declarations:
+                raise Refused(f"the packaged manifest declares {source_id!r} more than once")
+            declarations[source_id] = item
+    if set(declarations) != cited:
+        raise Refused(f"packaged manifest corpus set is {sorted(declarations)}; map cites {sorted(cited)}")
+
+    for source_id in sorted(cited):
+        bound, declared = by_source[source_id], declarations[source_id]
+        derivation = bound.get("hashDerivation")
+        if derivation != declared.get("hashDerivation"):
+            raise Refused(f"package verification {source_id}.hashDerivation is {derivation!r}; manifest declares "
+                          f"{declared.get('hashDerivation')!r}")
+        expected = _verification_digest(f"{source_id}.contentHash", bound.get("contentHash"))
+        if expected != declared.get("contentHash"):
+            raise Refused(f"package verification {source_id}.contentHash is {expected}; manifest declares "
+                          f"{declared.get('contentHash')!r}")
+    return record, by_source
+
+
+def verify_resolved_corpora_binding(bound, verified):
+    """Require intake-resolved corpus bytes to be the exact identities certified by the package."""
+    actual_sources = {item["sourceId"] for item in verified}
+    if actual_sources != set(bound):
+        raise Refused(f"intake resolved corpora {sorted(actual_sources)} but package verification binds "
+                      f"{sorted(bound)}")
+    for item in verified:
+        source_id = item["sourceId"]
+        actual = item["contentHash"]
+        expected = bound[source_id]["contentHash"]
+        if actual != expected:
+            raise Refused(f"{item['path']} resolves {source_id} as {actual}, but this package was verified "
+                          f"against {expected}")
 
 
 # --- the factory's checker ---------------------------------------------------------------
@@ -364,23 +956,30 @@ def run_consumer_checks(parts, log=None):
 # --- the whole of intake -----------------------------------------------------------------
 
 
-def intake(package_spec, corpus_path, log=None, licensed_copy_operator=None):
+def intake(package_spec, corpus_paths, log=None):
     with tempfile.TemporaryDirectory(prefix="factory-download-") as downloads:
-        nupkg = resolve_package(package_spec, downloads, log)
+        nupkg, nupkg_sha256 = resolve_package(package_spec, downloads, log)
         package_id, version, parts = read_package(nupkg)
-        with open(nupkg, "rb") as handle:
-            nupkg_sha256 = hashlib.sha256(handle.read()).hexdigest()
     _note(log, f"--- intake: {package_id} {version}")
     document = _json("map", parts["map"][1])
     manifest = _json("manifest", parts["manifest"][1])
+    verification, bound_corpora = read_verification_binding(parts, document, manifest)
+    _note(log, f"package verificationFormat {verification['verificationFormat']}: map, manifest and checker "
+               f"digests match package members")
     schema_version = check_contract(document)
     _note(log, f"map schemaVersion {schema_version}: read by this factory's check-map.py")
-    corpus, corpus_bytes, corpus_path = verify_corpus(document, manifest, corpus_path, licensed_copy_operator)
-    excepted = licensed_copy_operator is not None and corpus.get("verification") == "local-copy"
-    _note(log, f"corpus {corpus['sourceId']}: {corpus['hashDerivation']} {corpus['contentHash']} matches {corpus_path}"
-               + (f" (local-copy, under the licensed-copy exception for {licensed_copy_operator}; its bytes "
-                  f"are not copied into the engine)" if excepted else ""))
-    _note(log, f"corpus {corpus['sourceId']}: randomness {corpus['randomness']} (0019)")
+    if isinstance(corpus_paths, str):
+        corpus_paths = [corpus_paths]
+    corpora = verify_corpora(document, manifest, corpus_paths)
+    verify_resolved_corpora_binding(bound_corpora, corpora)
+    for verified in corpora:
+        corpus = verified["corpus"]
+        _note(log, f"corpus {corpus['sourceId']}: {corpus['hashDerivation']} {verified['contentHash']} "
+                   f"built and verified by rules-corpus {rulescorpus.COMMIT[:12]} from {verified['path']}")
+    _note(log, f"randomness {corpora[0]['corpus']['randomness']} (0019), agreed by all "
+               f"{len(corpora)} cited corpus(es)")
+    distribution = strictest_distribution(v["distribution"] for v in corpora)
+    _note(log, f"distribution {distribution} (0068), the strictest of {len(corpora)} cited corpus(es)")
     _note(log, "--- intake: the factory's check-map.py --phase consumer (the package's checker is not run)")
     run_consumer_checks(parts, log)
     return Intake(
@@ -388,9 +987,15 @@ def intake(package_spec, corpus_path, log=None, licensed_copy_operator=None):
         map=document, map_raw=parts["map"][1],
         manifest=manifest, manifest_raw=parts["manifest"][1],
         checker_raw=parts["checker"][1],  # hashed for provenance, never executed (0016)
+        verification=verification, verification_raw=parts["verification"][1],
         part_paths={label: path for label, (path, _) in parts.items()},
-        corpus=corpus, corpus_bytes=corpus_bytes, corpus_name=os.path.basename(corpus_path),
-        randomness=corpus["randomness"],
-        # The login the exception was used for (0022), or None: set only for a local-copy corpus.
-        licensed_copy_operator=licensed_copy_operator if excepted else None,
+        corpora=corpora,
+        # The principal corpus: the one the map's envelope names and its `baseline` stamps. It is
+        # a dependency like the others, and nothing turns on which corpus occupies the field
+        # beyond the stamp having to agree with it (0039).
+        corpus=next(v["corpus"] for v in corpora if v["sourceId"] == document.get("corpus")),
+        randomness=corpora[0]["corpus"]["randomness"],
+        # Where what is built from this package may go: the strictest of its corpora (0068). A
+        # composition folds these again, so one package and several are the same rule.
+        distribution=distribution,
     )

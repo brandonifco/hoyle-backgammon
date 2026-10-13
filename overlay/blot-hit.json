@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "PositionTests.A_lone_adversary_man_on_the_destination_is_taken_up_onto_the_bar",
+      "mutation": "Position.Apply removed a hit blot from its point without putting it on the bar; this test went red."
+    },
+    {
+      "test": "EnterFromBarTests.A_blot_hit_begins_its_journey_anew_however_far_advanced",
+      "mutation": "The same mutation, a hit blot not put on the bar; this test went red."
+    }
+  ]
+}

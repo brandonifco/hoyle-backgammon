@@ -1,0 +1,17 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "BearingOffDetailTests.The_last_man_off_wins_the_game",
+      "mutation": "BearingOff.HasWon required more than fifteen men off, so nobody ever won; this test went red."
+    },
+    {
+      "test": "DeterminismTests.A_finished_game_ends_with_the_winner_bearing_off_his_last_man",
+      "mutation": "BearingOff.HasWon held once any man was off; this test went red. The_last_man_off_wins_the_game stayed green under it. Re-observed after the class's game moved from seed 20260913 to 20260905, which still finishes under ruleset version 4 (map 6.0.0, rules-factory#125); still red. Re-observed after the game moved back from seed 20260905 to 20260913, which finishes again under ruleset version 5 (docs/decisions/0009); still red."
+    }
+  ]
+}

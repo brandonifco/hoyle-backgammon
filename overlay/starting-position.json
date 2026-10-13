@@ -1,0 +1,13 @@
+{
+  "status": "implemented",
+  "implementedIn": {
+    "ruleset": "hoyle-1909-backgammon",
+    "version": 6
+  },
+  "tests": [
+    {
+      "test": "StartingPositionTests.The_four_points_are_the_four_the_corpus_names",
+      "mutation": "Setup.Arrangement put the three men on pip 7 instead of pip 8; this test went red."
+    }
+  ]
+}

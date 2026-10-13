@@ -4,58 +4,70 @@
     "net10.0": {
       "RulesFactory.Maps.HoyleBackgammon": {
         "type": "Direct",
-        "requested": "[6.0.0, 6.0.0]",
-        "resolved": "6.0.0",
-        "contentHash": "cl4jD9ybRKUS5mE8pRWtQNUSqWdnyLASDvtML+D9ZKGzpbw3dUtS4+oCInEZI8OaNnCskXiFh1HI+kPoF4LSnA=="
+        "requested": "[7.0.0, 7.0.0]",
+        "resolved": "7.0.0",
+        "contentHash": "b6Yl7lvuFS4QVZvUfQAjZY+xD8NTtFRZk3pSphpjmrOH7v/iCLCCR29oTt0fUCUhUfm2Z3xNzpuGP43xeMGFBw=="
       },
       "RulesKernel": {
         "type": "Direct",
-        "requested": "[0.3.0, )",
-        "resolved": "0.3.0",
-        "contentHash": "x52TbzXTrKKrq6dgQTqWayvO/NLsAEMMfPChdbaBeE4fP9hNVB4ILbIIwaBKQOKnA4FRODNJ2UIKSFFT8ByFGA=="
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "KApaRg9KEEiwg+cnZDPU0MPNRtHyuWYqCFpYYo1tS+l7tIXNBM+fu5Br4h9UdpFVry7Wis3xoA5b7se/4sn8KA=="
+      },
+      "RulesKernel.Analyzers": {
+        "type": "Direct",
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "zR0tUW0miz4pR5bg7NvZtN/Cs9D2IXfOXuQkhZyUEY0Zt8YXXQKelvvvnPLvzsuSsX4mLGJGkXG8EWRh3JCztA=="
       },
       "RulesKernel.Randomness": {
         "type": "Direct",
-        "requested": "[0.3.0, )",
-        "resolved": "0.3.0",
-        "contentHash": "txm7VjBd07XHowLLGUv5+zU0/9m+Pfus8HfPbngsY5TYSNNznNOYJ/zhWrhS5W+IUknHpQ4eYDcqLmEqkyZ/Kw==",
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "rY2mfqbBExBwF+89soUR+TuRBt+eU7V3H/XSLxIyUtpENlAHMnGduoUcDfyuRL7+1/lx6uH/oxvKmQ8FNi13LA==",
         "dependencies": {
-          "RulesKernel": "0.3.0"
+          "RulesKernel": "1.0.0"
         }
       },
       "tabletop.dice": {
         "type": "Project",
         "dependencies": {
-          "RulesKernel.Randomness": "[0.3.0, )"
+          "RulesKernel.Randomness": "[1.0.0, )"
         }
       }
     },
     "net8.0": {
       "RulesFactory.Maps.HoyleBackgammon": {
         "type": "Direct",
-        "requested": "[6.0.0, 6.0.0]",
-        "resolved": "6.0.0",
-        "contentHash": "cl4jD9ybRKUS5mE8pRWtQNUSqWdnyLASDvtML+D9ZKGzpbw3dUtS4+oCInEZI8OaNnCskXiFh1HI+kPoF4LSnA=="
+        "requested": "[7.0.0, 7.0.0]",
+        "resolved": "7.0.0",
+        "contentHash": "b6Yl7lvuFS4QVZvUfQAjZY+xD8NTtFRZk3pSphpjmrOH7v/iCLCCR29oTt0fUCUhUfm2Z3xNzpuGP43xeMGFBw=="
       },
       "RulesKernel": {
         "type": "Direct",
-        "requested": "[0.3.0, )",
-        "resolved": "0.3.0",
-        "contentHash": "x52TbzXTrKKrq6dgQTqWayvO/NLsAEMMfPChdbaBeE4fP9hNVB4ILbIIwaBKQOKnA4FRODNJ2UIKSFFT8ByFGA=="
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "KApaRg9KEEiwg+cnZDPU0MPNRtHyuWYqCFpYYo1tS+l7tIXNBM+fu5Br4h9UdpFVry7Wis3xoA5b7se/4sn8KA=="
+      },
+      "RulesKernel.Analyzers": {
+        "type": "Direct",
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "zR0tUW0miz4pR5bg7NvZtN/Cs9D2IXfOXuQkhZyUEY0Zt8YXXQKelvvvnPLvzsuSsX4mLGJGkXG8EWRh3JCztA=="
       },
       "RulesKernel.Randomness": {
         "type": "Direct",
-        "requested": "[0.3.0, )",
-        "resolved": "0.3.0",
-        "contentHash": "txm7VjBd07XHowLLGUv5+zU0/9m+Pfus8HfPbngsY5TYSNNznNOYJ/zhWrhS5W+IUknHpQ4eYDcqLmEqkyZ/Kw==",
+        "requested": "[1.0.0, )",
+        "resolved": "1.0.0",
+        "contentHash": "rY2mfqbBExBwF+89soUR+TuRBt+eU7V3H/XSLxIyUtpENlAHMnGduoUcDfyuRL7+1/lx6uH/oxvKmQ8FNi13LA==",
         "dependencies": {
-          "RulesKernel": "0.3.0"
+          "RulesKernel": "1.0.0"
         }
       },
       "tabletop.dice": {
         "type": "Project",
         "dependencies": {
-          "RulesKernel.Randomness": "[0.3.0, )"
+          "RulesKernel.Randomness": "[1.0.0, )"
         }
       }
     }

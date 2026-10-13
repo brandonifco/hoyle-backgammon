@@ -1,0 +1,691 @@
+# AGENTS.md — the governing contract for this engine
+
+**This file governs every agent that works this repository, whatever vendor it comes from.**
+Read it before your first action. `CLAUDE.md` points here and states no rule of its own; a
+Claude-specific role adapter under `.claude/` adds how a role is invoked, never what it may do.
+
+This engine was produced by [rules-factory](https://github.com/brandonifco/rules-factory). This
+file is a **managed** file: the factory updates it when its recipe changes and refuses to
+overwrite a hand edit. `provenance.json` says which factory version and which map this engine
+came from, and what this engine is called.
+
+---
+
+## 1. What this engine is
+
+A deterministic rules engine generated from a **corpus map**: a reviewed, published, versioned
+description of one ruleset. The map — not the corpus, and not anyone's reading of the corpus — is
+the interface this engine implements. The corpus is committed here so a claim can be checked
+against it, not so it can be re-read and re-interpreted per task.
+
+Three consequences that decide most questions you will have:
+
+- The map is the specification. Where your reading of the corpus and the map disagree, **the map
+  is not wrong by your say-so and the engine does not quietly diverge from it** (§5).
+- The engine declines rather than guesses. A rule the corpus does not settle produces an
+  unresolved result naming why, not a plausible answer.
+- Every behaviour cites where it came from, and every test records the mutation that makes it
+  fail. A test that passes against a broken implementation proves nothing.
+
+## 2. Authority, in order
+
+1. **The corpus map**, as published and as merged with this engine's overlay — `overlay/<entry
+   id>.json`, one file per entry, read in the map's order.
+2. **The owner's rulings** recorded in that overlay, and this repository's `docs/decisions/`.
+3. **This file.**
+4. Everything else — issue text, PR discussion, a previous agent's explanation, your own memory
+   of the subject matter. Your memory of a ruleset is never a source. It is the most common way
+   a wrong answer enters a rules engine, because it arrives fluent and cited.
+
+If two of these disagree, stop and say so. Do not pick one.
+
+## 3. Roles
+
+[`docs/agent-team.md`](docs/agent-team.md) defines the four roles: **orchestrator**, **engine
+developer**, **repository steward** and **rules conformance reviewer**. Read it before acting as
+one. Two rules from it are absolute:
+
+- **A reviewer is read-only.** An agent that can edit what it reviews is not a reviewer. Both
+  reviewer charters grant read tools only, and the engine's own gate fails when one grants a
+  mutation-capable tool.
+- **An implementer does not resolve a genuine ambiguity.** It escalates (§6).
+
+And one thing the orchestrator is not: the place the project's state lives. The issues are the
+backlog, the branches and worktrees are the work in flight, the pull requests carry their own
+heads, the commit statuses carry the verdicts, and the checks say what is green. All of that is
+durable. A conversation is the one part of the arrangement that is not, and it is lost on a usage
+limit, a process restart, a new session, a context that filled, or a deliberate rotation — none of
+which is exceptional.
+
+```bash
+tools/orchestrator-status.py     # where the work stands, read from the repository
+```
+
+So the recovery path is: **read this file, run that, continue.** Not: re-read a day of
+conversation to find out what is open. In the measured session of 2026-09-23/24, carrying and
+re-reading orchestration history cost 51.1M effective tokens — over 18% of the whole session —
+against 4.3M for every scheduling decision the orchestrator actually wrote. The command stores
+nothing and writes nothing, so it adds no second backlog to keep in step; it reads git and GitHub,
+which remain the only record, and says `NOT CHECKED` for whatever it could not reach.
+
+## 4. One issue, one worktree, one branch, one pull request
+
+Work is dispatched from GitHub issues and nowhere else. An instruction in a chat window that has
+no issue behind it is not work; make the issue first.
+
+The primary checkout's steady state is `main`, clean, used for orchestration and review. **All
+implementation happens in a worktree outside the repository directory**, so that one task cannot
+contaminate another and a half-finished change cannot reach `main`:
+
+Before the first dispatch on a new machine, §11: the SDK, a restore and a `gh` the packets can
+read are the machine's part, and the gate does not run without them.
+
+```bash
+tools/dispatch-agent.sh <issue number>      # creates the worktree and the branch, and prints the path
+tools/dispatch-agent.sh --sweep             # removes what merged work left behind; every dispatch runs it
+tools/dispatch-agent.sh --cleanup <n>       # this one issue, after its pull request merged
+```
+
+Dispatch refuses rather than leaving readiness to your judgement: an issue that is closed, blocked
+or awaiting a decision, one that already has a worktree, and a primary checkout with uncommitted
+changes. A worktree is never created inside the repository: one that lives there is eventually
+committed, scanned by a tool that did not expect it, or deleted by a clean step.
+
+**Finishing is part of the work, and it is not left to anybody's memory.** `tools/dispatch-agent.sh
+--sweep` removes every worktree and branch whose pull request merged at **exactly** its tip, and
+every dispatch runs it before it opens the next worktree. Exactly that tip, and nothing weaker: a
+worktree dispatched and not yet committed in sits at `main`'s tip, so "its commits are in `main`"
+would take the work of an agent who has not started. A worktree with uncommitted or untracked files
+is named and left alone, and a sweep that cannot reach GitHub says `NOT CHECKED` rather than
+reporting a clean repository it never looked at. `tools/agent-doctor.py` reports the same
+leftovers, and removes nothing.
+
+**Delete only what you created, and by its exact path — never by wildcard in a directory you
+share.** On 2026-09-17 an agent tidying up in the repository that builds this engine ran `rm -rf
+<shared scratchpad>/*`, took two other agents' worktrees and their uncommitted work, and that work
+had to be rebuilt from nothing. Every agent of one session shares that directory. Before any `rm`
+outside your own worktree, list what it would remove and name each path: `git worktree remove
+<path>`, `rm -r <the one directory you made>`. This rule has no check. It rests on your word, and
+the reason is written here so that it is not one.
+
+`tools/new-issue.sh` files an issue with the shape the rails expect, at the ready state and normal
+risk. Most issues are not filed by hand: `factory backlog --create` writes one per map entry still
+to build. **The issues are the backlog**, and this engine holds no copy of it: the factory renders
+it from the map and `overlay/` on demand (`factory backlog --render --dir <this
+engine>`), and writes none of it here.
+
+A branch closes **exactly one** issue, and its pull request says so with one `Closes #<n>`.
+Stage explicit paths; `git add -A` and `git add .` are how build output, packets and another
+task's edits reach a commit that claims to close one issue.
+
+**Where the rails are, when this engine is not the whole repository.** GitHub runs a workflow only
+from `.github/workflows/` at the root of a repository, and shows a pull request template only from
+the root. So an engine produced into a subdirectory of a larger repository carries neither: its
+`validate`, `pr-policy`, `conformance-gate` and `verdict-requeue` workflows and its pull request
+template are at the **repository root**, written there by `factory produce`, rendered so every step
+runs in this directory, and rewritten on every produce. `provenance.json` records where this engine
+sits (`repository.enginePath`) and hashes what the root holds, `scripts/engine-gate.py repository`
+holds the two to each other, and `tools/agent-doctor.py` reports the gate workflow where GitHub
+reads it. Every path this document names below is relative to this engine, wherever the workflow
+that runs it lives; an engine that **is** its repository root carries all five files itself, and
+nothing about this section applies to it. What is never right is a workflow file under an embedded
+engine: GitHub would not run it, and a rail that cannot run is worse than a missing one because it
+reads as present (rules-factory decision 0069).
+
+The pull request is filled in from `.github/pull_request_template.md`, and `tools/pr-policy.py`
+checks it mechanically as a required check: one linked issue, every section filled, a command and
+its output rather than a claim, an entry and a locator for an implementation (§7, *what a change
+owes*), a line for every living
+document this engine owns, who reviewed, and exactly one state and one risk label on the issue.
+None of that is about form. Each line of it is something a reviewer would otherwise have to take
+on trust.
+
+A change that makes a document untrue is not finished, and almost nothing that makes one untrue is
+visible to a parser. So the body carries a `## Documentation` line per document, each ticked with a
+note saying what you looked for:
+
+```bash
+tools/pr-policy.py --docs-skeleton          # the section for this tree, unticked, to complete
+```
+
+**The documents that section is about are this engine's own** — its `README.md`, its own `docs/`,
+and any rail it has adopted. The rails the factory writes are not listed: `produce` refuses a hand
+edit to each, so a tick beside one is a tick nobody here can act on. A numbered decision record
+under `docs/decisions/` is frozen — superseded by a new record, never rewritten — and is listed
+only when this change edits it. Every other `*.md` the diff touches is listed as `updated`,
+whoever owns it. An engine that owns no documents yet says so in a sentence, and that answer stops
+being true the day somebody writes a README.
+
+Paths in that section are written relative to the engine directory. For an engine embedded under a
+repository root, a changed document outside the engine — the repository's `README.md`, a template
+it keeps at its root — is spelled `../README.md`, `../.github/pull_request_template.md`: the
+engine's own `README.md` stays `README.md`, and no engine path begins with `..`. The skeleton
+prints that spelling; the check demands it and accepts no other for such a document. A rename is one line, at the new
+path, because that is the only path GitHub reports.
+
+### One agent, one attempt: a review finding starts a fresh one
+
+The four things above do not move when a review sends work back. **The agent does.**
+
+An implementation attempt runs once: implement, `tools/re-produce.sh` if the overlay moved, the
+gate, one pull request, and stop. A blocking finding starts a **new** attempt on the same issue,
+the same branch, the same worktree and the current pull request head — never a resumption of the
+agent that wrote the code, however much it remembers.
+
+It remembers nothing this repository does not. The worktree holds the implementation, the map
+holds the rule, the overlay holds the mutations, the pull request holds the claim, and the commit
+statuses hold the verdicts. What a resumed agent adds is its own transcript, which is not
+evidence and is not free: an agent's cost is its turns multiplied by the size of its context
+(`docs/agent-team.md`), so the eighth round of a resumed conversation pays for the first seven on
+every turn. One live implementer taken through about eight review rounds that way cost roughly
+45M effective tokens, most of it re-reading itself.
+
+```bash
+tools/repair-packet.py <pr number> --finding "..."   # the brief for the next attempt
+```
+
+The brief is assembled, not written: the head, the branch, the worktree that holds it, the
+issue's acceptance criteria, the entries, the verdicts standing at that head, and what must be
+green all come from the repository. **The findings are the one thing the caller supplies**,
+because which findings block is the orchestrator's judgement and nothing here can compute it. What
+it leaves out is deliberate — the previous attempt's transcript, the earlier reviews, the
+orchestration around them — and a repair attempt handed the argument it is repairing is anchored
+by it.
+
+Nothing else changes. The branch still closes exactly one issue with one `Closes #<n>`; the
+repair commit still moves the head and still ends every verdict recorded before it (§7); the new
+head is reviewed from a new packet, by a new reviewer. What the repair does not end is the
+**evidence** the last review established about what it did not touch: the repair commits that
+review's attestation, and the next packet is a delta of it (`tools/review-scope.py`'s `delta`, §7).
+
+### A factory update is work under these rails too
+
+A `factory produce` update to this engine — a new map version, a new kernel pin, a new factory
+recipe — is not a special case outside this section. It is opened from an issue (`tools/new-issue.sh`,
+under `--produce`, files one with the shape for it), dispatched to a worktree, produced there, and
+opened as a pull request that closes that issue like any other:
+
+```bash
+tools/new-issue.sh --produce --title "..."   # what moves, from what to what, and why now
+tools/dispatch-agent.sh <issue number>
+tools/re-produce.sh                          # from the factory commit provenance.json names
+```
+
+Its pull request body carries the `## Produced by the factory` section and its marker, declaring
+the factory version, the map package and version, the kernel version, and what moved.
+**`tools/pr-policy.py` checks that claim; it does not take it.** The three facts must equal
+`provenance.json` in this tree, that record must say the factory was not dirty, and every changed
+file must be one the factory writes — classified by this engine's own vendored ownership table, the
+same one `produce` wrote the files by. **One hand-written file voids the claim**, by name, and the
+pull request is then judged as the ordinary pull request it is.
+
+Two things follow, and neither is a loophole:
+
+- **An edit the new input forces is a separate issue.** A new map version that adds an entry, or a
+  handler whose contract changed, is a rules decision the factory did not make. Putting it in the
+  same branch makes the claim false and the diff unreviewable; file it, and work it under §5.
+- **The claim waives no verdict the diff owes.** It changes what the pull request must *say* — no
+  single entry id and no locator where a map bump regenerates every entry, and no mutation where
+  nothing wrote a test — and never what it must prove. `tools/conformance-gate.py` decides which
+  verdicts are needed from the diff's review class (§7). A factory update that moved the map, the
+  corpora or the randomness, or that carries one hand-written file, is a `semantic-implementation`
+  and owes the verdict a regeneration of rules always did. One that moved none of them — a new
+  factory or kernel, the same map — is `generated-or-provenance` when its pull request claims it
+  on the `review class:` line, and owes the structural and provenance validation that is
+  `tools/pr-policy.py`'s: what replaces the mutation is the produce command and its output, the
+  gate's output, and a provenance recompute showing the committed record is the one a re-produce
+  writes.
+
+`.claude/hooks/primary-checkout-guard.py` enforces the primary checkout's cleanliness for Claude
+agents. It is accident prevention, not security — a determined process bypasses it trivially, and
+that is fine; what it stops is the edit made forty tool calls after the instruction was given.
+
+**Escape hatch.** Sanctioned orchestrator work in the primary checkout sets, for that command
+only:
+
+```bash
+RULES_ENGINE_ALLOW_PRIMARY_MUTATION=1
+```
+
+and says in the pull request or the report why it was necessary. The variable's name is
+configuration: `.github/agent-policy.json` under `worktrees.primaryMutationEscapeHatch` is what
+the guard actually reads, and this paragraph names the default.
+
+## 5. The map is the interface, and you do not remap it
+
+You implement the entry the issue names, from the map merged with this engine's overlay:
+
+```bash
+tools/entry-packet.py <entry id>            # the assignment, assembled from the map
+```
+
+The packet is the entry as published and merged, its locator and the evidence verbatim, its
+dependencies and reachability, where its cross-references land, the owner's rulings that apply,
+the handler the generated code declares once the entry is `implemented` — the one you have to
+write, not the one on disk while it is still `mapped` — and what the gate will ask of you. Every
+line of it is the map's own bytes or a fact computed from them.
+
+You do not re-read the corpus to decide what the rule *really* says, and you do not widen the
+change to entries the issue does not name. A packet is written outside the repository and is never
+committed: it is derived from the map, and a committed copy of the interface goes stale.
+
+**Where the map and the corpus appear to disagree, stop.** Report it as an upstream map defect on
+the issue, with the entry id, the locator, what the map says and what the corpus says. Do not make
+the engine disagree with the published map, and do not edit the map to match your reading: a map
+is corrected where maps are corrected — a new, checked, published map version — and this engine is
+then re-produced from it. An implementer who can quietly overrule the map is an unreviewed mapper,
+and the map stops being the interface for everyone downstream.
+
+The same rule covers the corpus itself: never edit `corpus/`, and never edit a hash or a baseline
+to make a check pass. The check is the point.
+
+## 6. Ambiguity is escalated, not resolved
+
+Stop and escalate when you find any of these, before writing the implementation:
+
+- the corpus genuinely does not settle the question the entry asks;
+- the map and the corpus disagree (§5);
+- the issue's acceptance criteria cannot be met as written;
+- the change would need an architectural decision this repository has not recorded;
+- two recorded decisions conflict.
+
+Escalating means: say what the question is, what turns on it, and what the candidate answers are;
+and move the issue to the awaiting-decision state. **You may not answer your own escalation and
+return the issue to ready.** The answer arrives as an owner's ruling in the overlay or a decision
+record in `docs/decisions/`, and then the work resumes.
+
+Declining is a legitimate outcome. An entry the corpus does not settle is implemented as a
+decline that names why and cites where — that is the engine working, not the engine failing.
+
+## 7. Evidence
+
+- **The gate is `./scripts/validate.sh full`.** It is the one definition of acceptable here, and
+  it checks the rails themselves too: a reviewer charter that grants a tool that writes, and a
+  rail citing a document this engine does not have, both fail it. Do
+  not invent a substitute, do not run a narrower command and report the gate as passed, and do
+  not change the gate to make a change pass.
+- **Every test records the mutation that makes it fail.** The overlay holds it. A test whose
+  named mutation was never observed to fail is a test nobody has watched fail, and this project
+  has shipped two checks that counted work they had not done. **The gate refuses a placeholder
+  there**: on an entry of the merge whose `status` is `implemented`, `"mutation": "PENDING"` — or
+  `TBD`, `TODO`, `none`, `n/a`, `scratch`, `placeholder`, `xxx`, `unknown`, `later`, `fixme`,
+  `wip`, `?`, `-`, however cased, punctuated or spelled in Unicode — fails
+  `scripts/map-overlay.py`, and so do one word repeated and anything shorter than three words and
+  twelve characters. Write the real one, and finish with `tools/re-produce.sh`. The floor exists
+  because until it did, an engine's gate passed with `PENDING` recorded against work nobody had
+  done. It refuses an unfilled placeholder and **nothing more**: it cannot tell whether the edit
+  was made, whether the test went red, or whether you copied the sentence from another entry. That
+  is still your word, and the point of writing it down is that a reviewer can re-run it. A word may
+  appear twice in an honest mutation and the floor allows it. And the mutations are read **after**
+  the merge is built, so a run that fails on an overlay's structure or on a ruling has not looked
+  at them: a refusal naming no mutation is not a clean bill. The rule is stated in full at the top
+  of `scripts/map-overlay.py`, which is also where to look before assuming a refusal is wrong.
+- **Run the mutation with `tools/mutate.py`, and keep the spec.** The sentence in the overlay is
+  what a reader understands; the spec is what a reviewer re-runs. One JSON object per mutation —
+  the test it should turn red, and the edits that should do it — and the tool applies them, runs
+  that test alone, and puts the source back in a `finally`, so an interrupted run leaves nothing
+  mutated behind:
+
+  ```bash
+  tools/mutate.py mutations/*.json          # or `-` to read one from stdin
+  ```
+
+  It refuses an `old` string that does not occur exactly as many times as the spec says, before it
+  writes anything: a mutation applied to the wrong site, or to nothing, proves nothing and would
+  still print a colour. A spec's edits apply in order, each to the text the earlier ones left, so
+  `old` is counted there and may not overlap text an earlier edit wrote. A failed write puts back
+  what was already written, and restoration is byte for byte, for every name the spec gave a file.
+  Matching is plain substring search on the file's text as UTF-8 with its line endings untouched:
+  CR LF is two characters, so an `old` that spans a line ending must name the file's own ending,
+  and an `old` of LF alone also matches the LF inside a CR LF. It refuses an empty `old`, and a
+  spec whose edits cancel out and would leave every file as it was. It runs each test unmutated first, because a test that was already red
+  proves nothing either. And it names the one failure the prose cannot — **a mutation that leaves
+  its test green**, which is precisely the test nobody has watched fail — by reporting it and
+  exiting non-zero. Paste its output into the pull request as the evidence, and put the specs
+  wherever the change keeps them; they are yours, not the engine's, and nothing requires you to
+  commit them.
+- **Write the handler while the entry is still `mapped`, and re-produce once.** There is no
+  placeholder step, and no reason to produce twice. Every entry that is *not* `implemented`
+  already has an optional hook,
+  `static partial void {Member}({Member}Request request, ref Resolution<TOutput>? resolution)`,
+  so the rule body and the handler compile with the entry `mapped`. Write them, write the tests
+  against **the rule body's own types** — which is what a mutation names anyway — and watch each
+  mutation turn one red. Then set `status: implemented` with the mutations you actually observed,
+  run `tools/re-produce.sh` once, and convert the hook to the required
+  `internal static partial Resolution<TOutput> {Member}({Member}Request request)`; the build names
+  the handler to change (CS8795 on the declaration, CS0759 on the old hook). **The status flip
+  changes the dispatch, not the rule.** The rule body and its tests are untouched by it, so the
+  mutations you recorded are still the mutations.
+  - **What you cannot observe before the flip:** anything resolved through `EntryPoints` or
+    `Registry.Resolve`. `Registry.Answer` dispatches to a handler only when the entry's status is
+    `Implemented`, so while it is `mapped` the entry declines `UnsupportedRule` and the hook is
+    never called — that is the correspondence table's row 2, and it is deliberate. The generated
+    `..._declines_UnsupportedRule_row_2` test therefore stays **green** with your hook in place,
+    and becomes `..._is_implemented_so_a_hand_written_handler_answers_it` at the flip. So name
+    rule-body tests in the overlay when you flip it, and add entry-point tests, with the
+    mutations you then observe, in the change that follows.
+- **A skipped test is not a test that ran.** The gate counts a test as having run only when its
+  result says `Passed` or `Failed` — it started and reached a verdict of its own. A
+  `[Fact(Skip = "...")]` is recorded as `NotExecuted` and counts as nothing, as does a test that
+  was only discovered. The `tests-ran` step of `scripts/engine-gate.py` reports the executed count
+  and the skipped count separately, and requires at least one executed test from **every** test
+  project in **every** target framework, so a framework that silently stopped running is not
+  covered by another that ran twice. Skipping a test to get the gate green removes the evidence the gate was
+  asked for, and it says so.
+- **Report what happened, not what should have happened.** Paste the command and its actual
+  output. "Tests pass" is not evidence; a run is.
+- **A reviewer is given the context its role judges, not asked to find it.**
+  `tools/review-packet.py <pr number>` snapshots the pull request's exact head commit, then
+  assembles the issue, the claim, the entries as that commit has them, the overlay's before and
+  after, the bounded base-to-head diff and what must be green. Its sections are in the order a
+  semantic reviewer reads them: the entry before the implementation, always.
+
+  `--role` cuts it for one reviewer, and the whole packet remains the default:
+
+  ```bash
+  tools/review-packet.py <pr number> --role structural
+  ```
+
+  A **structural** packet carries the pull request's claim in full and the changed paths with the
+  ownership class of each, and no entry packet — the steward does not judge whether the rule was
+  read correctly, so the map's bytes are not its to weigh, and this cut therefore needs no restored
+  map package at all. A **semantic** packet carries the entry packets first and not the pull
+  request's case for its own reading. An **independent** packet carries the assignment and the
+  current bytes whole, with no other reviewer's conclusions, and says so where a reader will look
+  for them. **The role is part of the identity**: the `*.review.json` names it, and
+  `tools/record-verdict.py` refuses a verdict the cut could not have been formed on — a semantic
+  verdict on a packet with no entry evidence in it is what the binding below exists to refuse,
+  arriving by another door. File output includes the human packet, its entry packets and a
+  `*.review.json` identity that names the exact head/base commits and hashes the packet bytes,
+  reviewed policy and provenance context. The caller's checkout is not review evidence.
+
+  **A packet that names an entry needs the map that commit declares.** The entry packets are built
+  from a map, and it is held to the digest the reviewed commit's `provenance.json` records, read
+  once, so the bytes checked are the bytes read. Give the restored package's `corpus-map.json`:
+  `tools/review-packet.py <pr number> --package-map <path>`. Without it the map's identity is
+  whatever MSBuild resolves inside the snapshot, which is unproven, so file output is refused and
+  `--stdout` remains for reading such a packet — it writes nothing, and nothing can be recorded
+  from it. A refused packet leaves no file and no directory behind.
+
+  **An engine composed of several map packages needs one `--package-map` each**, and each is held
+  to its own recorded digest. Which package an entry came from is the entry id's to say: in a
+  composition an id is qualified by the package that enumerated it (`Srd52Combat.round-down`), so
+  a packet names that package at its own version, and an upstream defect is reported against it
+  under the id the published map has — the id without the prefix. An entry another package of the
+  composition supersedes is not work: the packet says so, and there is nothing to implement.
+- **A verdict consumes the packet identity.** `tools/record-verdict.py --pr <n> --packet
+  <packet.review.json> --reviewer <id> --verdict pass|fail` verifies those packet bytes and
+  records the status only when the pull request still has the exact reviewed head. It takes the
+  review context from that packet, not from the caller's checkout. A later commit is therefore
+  refused rather than inheriting an earlier review; regenerate the packet and review the new
+  bytes — or, after a repair, the delta of them (below). Legacy commit statuses remain readable, but
+  a new verdict is never inferred from the current head. A verdict that lives only in a conversation is worth nothing to this repository.
+
+  **What the verdict gate proves, and what it does not.** A verdict is a commit status, and
+  **anyone who can write a commit status on this repository can post one**: any collaborator with
+  write access, any workflow whose token carries `statuses: write`, anyone holding a leaked token.
+  Nothing in the mechanism attributes a verdict to the reviewer it names. So the gate is an
+  integrity check — against a review that was skipped, forgotten, or formed on other bytes — and
+  **not an authentication of who reviewed**. What it does prove is worth keeping and is exactly the
+  commit binding above: a verdict names one SHA, so it cannot be replayed onto a commit nobody
+  read, and a further commit ends it. The three required checks are pinned to the app that posts
+  them, so a hand-posted status cannot impersonate one; a verdict context cannot be pinned the same
+  way, because it is posted by a person's token and the pin names an app. Recording a verdict that
+  was never formed is therefore stopped by honesty and by review, not by permissions — which is
+  what makes an invented verdict a serious act rather than a shortcut.
+
+  **Recording it is the whole of the step.** `.github/workflows/verdict-requeue.yml` sees the
+  status and asks the gate to report again at that commit; there is no re-run to remember. If the
+  check is still red a minute later, the thing to read is that workflow's run, not the verdict.
+
+  **Changing the risk label is the whole of that step too, whenever it is changed.** The gate
+  reads the risk label from the linked issue, and an issue can be relabelled long after the gate
+  has passed. The same workflow sees that event and asks the gate to report again for every open
+  pull request closing the issue, so raising risk turns the required check red again by itself and
+  it stays red until an independent verdict is recorded at the head being merged. Lowering risk
+  takes the same route, and the gate then finds the independent verdict no longer required.
+
+  A change that owes a semantic review needs the semantic verdict (*what a change owes*, below);
+  an issue classified as needing independent review needs one of the configured independent
+  contexts as well. **A
+  recorded failure at any configured context blocks outright**, and a pass recorded elsewhere does
+  not clear it: the chain advances when a provider is unavailable, never because its verdict was
+  unwelcome. A failure is answered by fixing the code, fixing the map, or getting an owner's
+  ruling.
+- **A review leaves an attestation, and the review after a repair is bounded by it.** The recorder
+  writes, beside the identity it consumed, a deterministic attestation of the claims the review
+  covered — each entry of the slice, each invariant `reviews/invariants.json` declares — and the
+  fingerprint of every unit each rests on; the status carries its SHA-256. Commit it under
+  `reviews/attestations/` with the repair. Then:
+
+  ```bash
+  tools/review-scope.py delta <pr number> --prior <attestation> --package-map <path>
+  ```
+
+  computes, from the map's dependencies, a lexical reference graph of the C# and those
+  fingerprints — never from anybody's word — which claims the repair invalidated, and writes a
+  packet of those alone. **A changed commit alone invalidates nothing.** Where the change cannot be
+  bounded — the charter, the review policy, a corpus, a map's frame, a foundational file or a
+  decision record moved; a file the graph cannot read changed; the repair invalidated too much — it
+  refuses and names the reason, and `tools/review-packet.py <pr number> --role semantic --prior
+  <attestation>` writes the full packet that answers it. A delta PASS posts `<context>/delta`, which no
+  gate requires; **the final acceptance review** (`--review final --prior <attestation>`)
+  rereads the whole slice once and posts the verdict the merge needs. A full review that passes
+  first time needs no final one. When nothing a comprehensive PASS rested on moved, `delta` writes
+  a carry, and recording it with `--package-map` posts that reviewer's own PASS at the new head,
+  after computing the carry again from the repository. The prior is always the **latest** review
+  recorded on the branch: an older one is refused, so a later finding cannot be skipped by naming
+  an earlier pass. `docs/review-evidence.md` says how to
+  read all of it, what can and cannot be reused, and how an engine produced before this migrates:
+  its first review is a full one, and that is its baseline.
+- **What a change owes is its review class's to say.** `scripts/factory/reviewclass.py` computes
+  it from the diff, one reading for `tools/pr-policy.py`, `tools/conformance-gate.py` and
+  `tools/review-packet.py`, and the first section of every packet states it. Five classes:
+
+  | Class | What it is | What it owes |
+  |---|---|---|
+  | `semantic-implementation` | handlers, rule behaviour, the overlay, the corpus, anything on the semantic surface that is not shown below to be inert | named entries and a locator, `reviews/self-review/<entry>.json` for each, a semantic packet, a semantic verdict |
+  | `semantic-ruling` | a decision that changes how rules are read: an existing decision record edited or deleted, or a new one whose header says it supersedes another | the entries it affects, or a `decision scope:`; `reviews/rulings/<decision>.json` in place of a self-review; a semantic packet; a semantic verdict |
+  | `decision-record-only` | one or more **new** decision records that overrule none, and nothing else | structural validation: no entry, no self-review, no packet, no verdict |
+  | `generated-or-provenance` | a factory update whose maps, corpora and randomness are the same at the base and the head, every changed file one the factory writes and hashed by the head record | structural and provenance validation (the `## Produced by the factory` section, admitted): no self-review, no verdict |
+  | `documentation` | a document, a process file, or C# whose code is byte-identical to its base line for line and differs only in what its comments say | structural validation |
+
+  **The diff decides; the pull request's words can only add review.** The `review class:` line of
+  `## Map and rules conformance` is checked against the computed class. It can claim an
+  exemption the diff shows and it can raise a class; it cannot lower one. A diff that touches the
+  semantic surface and claims nothing is reviewed as a `semantic-implementation`, exactly as it was
+  before the classes existed, and `tools/pr-policy.py` says how to claim the exemption. **A diff
+  that cannot be shown inert is an implementation**: a path the table cannot place, a file that
+  cannot be read, a record that cannot be compared, a factory update with a hand-written file in
+  it, a handler renamed off the surface (the old path of a rename is read and counts as deleted).
+  The surface a diff is judged by is the union of the base's policy and the head's, so a pull
+  request cannot narrow it for its own change. A new decision record is `decision-record-only` and
+  an edit to an existing one is a `semantic-ruling`, because a tool cannot tell a typo from a
+  reversal, and a reviewer can; only line endings and trailing space are cosmetic, since in a
+  nested list the indentation is the meaning.
+  `tools/review-packet.py` refuses a **semantic** packet for a change that owes none: an entry, a
+  self-review and a packet written to satisfy a policy are the ceremony this removes.
+- **No reviewer is paid before the implementer has attacked its own work.** For a
+  `semantic-implementation`, a semantic, independent or final packet is refused until every entry
+  it names has a committed
+  `reviews/self-review/<entry id>.json` answering the twenty classes of
+  `docs/adversarial-self-review.md`, bound to the entry's claim digest at the reviewed head
+  (`tools/review-scope.py self-review <entry id> --package-map <path>`). A repair that touches what
+  the entry rests on makes the record stale, and the attack is redone.
+- **A reviewer starts from a clean session with a packet.** The packet is the interface and the
+  conversation is not: no implementer transcript, no earlier reviewer's reasoning, no summary is
+  review evidence, and a reviewer handed one is anchored by it.
+- **An overlay change is finished by a re-produce.** `tools/re-produce.sh` runs it. Marking an
+  entry implemented writes `overlay/<entry id>.json`, and the generated files and `provenance.json`
+  are both derived from the overlay; the gate hashes the derived files against the record.
+  Regenerating the C# moves those hashes, but an overlay edited and nothing else run moves only
+  `buildInputs[overlay/<entry id>.json]` — the record's hashes of the overlay files against the
+  files on disk, compared as a **set**, so a file added or removed is caught as loudly as one
+  edited — so that is the comparison that catches every form of it. Only the factory can write that record: it names the
+  factory commit the engine was produced from and hashes every one of that factory's recipe files,
+  so nothing inside the engine can refresh it — and nothing should try. A record an engine wrote
+  about itself would hash whatever is on disk, and a gate that re-blesses its own bytes proves
+  nothing.
+
+  One file per entry is what keeps two entry branches out of each other's way, and
+  `provenance.json` is the one place they still meet: merging one into the other leaves conflict
+  markers in it, and a file with markers in it is not JSON. **That is not a conflict to resolve by
+  hand.** Every hash in the record is recomputed by the re-produce that follows, so both sides are
+  discarded whichever is kept and neither is more right than the other. `tools/re-produce.sh`
+  recognises it and says so, and `tools/re-produce.sh --resolve-record` takes a side and
+  re-produces over it in one command.
+
+- A check that examines nothing is a failure, never an ok. If a step could not run, say it could
+  not run.
+
+### An engine that declares an action surface is accepted through it
+
+An engine whose public API can start a state, list the actions legal in it and apply one has more to
+prove than its entries: every entry's tests can pass while the surface stalls, offers what it then
+refuses, or declines far more than the open question needs (rules-factory decision 0078).
+The engine **declares** it, and the factory does not guess: `acceptance.json` at the engine root,
+which `produce` reads and never writes, holds `seedsPerConfiguration`, `stepCap`, `leastCompleted`
+(above 0, at most 1, to 18 decimal places, compared exactly) and an `allowlist`. With it, `produce` emits
+`tests/<name>.Tests/Generated/ActionSurfaceAcceptance.g.cs`; without it, nothing, and a harness
+emitted earlier is removed. You write the adapter, `tests/<name>.Tests/ActionSurface.cs`: two
+`global using` aliases, `ActionSurfaceState` and `ActionSurfaceAction`, and the six members the
+harness declares partial (the configurations, `Start`, `IsOver`, `LegalActions`, `Apply`, `Render`).
+Without it the test project does not build, and the compiler names each missing member (CS8795).
+
+Each run starts from one configuration and one seed and, at each step, applies **every** offered
+action and then advances by one chosen from the seed. Each invariant is its own test over the same
+runs, played once and in parallel:
+
+1. every offered action is accepted: applying it resolves, or declines on the allowlist; and none of
+   `IsOver`, `LegalActions` and `Apply` changes the state it is given (checked on each configuration's first
+   seed and its replay, by a dump before and after each call);
+2. nothing throws, and a failure names the exception's type and first frame;
+3. a state that is not over offers an action or says why, never nothing in silence;
+4. a run ends within `stepCap`;
+5. a run stops early only on a `RequiresInterpretation` decline whose locator is an allowlisted entry's:
+   `UnsupportedRule`, `OutsideCurrentScope` and `MissingRulesData` name work not done, not a reading
+   still open;
+6. at least `leastCompleted` of each configuration's seeds reach a natural end, and a configuration
+   that produced no runs fails;
+7. replaying each configuration's first seed gives the same history (the step a run ends on
+   included), the same state at the start of every step, the last being the final one, and the same
+   ending: completed, stopped on a decline (reason, locator, attempted operation), or the invariant
+   that stopped it, each as fields. States are compared by a structural dump, taken when each was
+   reached, that walks public and private fields unless a type is known to be an exact scalar, a
+   known collection, a grouping or a `System` or compiler-generated enumerable (dumped by its items, a
+   grouping's key too), with every string framed by its length; it enumerates what it dumps, so a
+   state that holds a deferred query has it evaluated on every dump; record equality is
+   not used, because a record compares its collections by reference. `Render` must give unequal
+   actions unequal lines, which the harness checks at every step, because the history comparison
+   relies on it.
+
+A last test fails an allowlisted entry whose locator another entry also cites, since one documented
+decline would then excuse another.
+
+**The allowlist is built only from what the engine actually declined**, in runs of the surface, in the
+gate or in a longer probe, each item an entry id and a sentence saying where the engine documents
+that reading. The harness names to the test output each item its own runs did not reach, so a stale
+item is visible; it is not a failure, since the gate's seeds may not reach what a longer probe did.
+A decline is as narrow as the open question: where the open readings give the same answer for the
+state at hand, the engine answers and does not decline (`docs/adversarial-self-review.md`,
+`refusal-classification`).
+
+**Cost is reduced by making the engine faster, not by checking less.** The three numbers are the only
+knobs, and visible. The harness has no parameter that applies a subset of the offered actions, because
+that weakens invariant 1 exactly where it is hardest to hold, in the states that offer the most.
+Optimized builds are already on in every configuration (rules-factory decision 0077).
+
+## 8. Determinism
+
+Same inputs, same outputs, on any machine, in any order, forever. No wall-clock time, no
+ambient locale or culture, no environment-dependent ordering, no unseeded randomness, no hash
+codes or object identity in anything observable. Where the corpus declares randomness, it is
+drawn only through the kernel's seeded facilities, and `provenance.json` records that
+declaration. An engine whose corpus declares no randomness does not reference a randomness
+package at all, and the gate checks it.
+
+## 9. Configuration, not code
+
+`.github/agent-policy.json` is this engine's own. It holds the issue state and risk label
+strings, the review contexts, the paths that count as a semantic surface, the ordered
+independent-review chain, and the worktree environment variables. The factory writes it once and
+never touches it again.
+
+**Change the chain, the labels or the roots by editing that file — never by editing a script.**
+No emitted **script** names a vendor: a vendor named in code would be one you had to edit code to
+change, and that is a defect worth an issue.
+
+**The semantic surface is this engine's alone.** `review.semanticPaths` are written relative to the
+engine (`src/**`, `overlay/**`, `corpus/**`), and every check that reads them --
+`tools/conformance-gate.py`, `tools/review-packet.py` and `tools/pr-policy.py` -- first takes a
+changed path in the engine's own terms and drops one that is not under it. For an engine embedded
+beneath a repository root, a file of the host repository (a script that authors the map, a README,
+the host's own workflows) is therefore never on the semantic surface, and no string in
+`semanticPaths` can put it there: `../tools/build-map.py` and `engine/src/**` do not reach the host,
+they match nothing the engine holds. **A host repository is responsible for gating its own
+rule-bearing files.** This engine's rails will not ask for a semantic verdict on account of one.
+What keeps the gate firing today is a side effect, not a guarantee: a
+change to a host file that this engine is generated from regenerates `src/**`, and those files are on
+the surface. A host file that decides a rule and that no generated file follows is the case it does
+not cover; give it a check of the host's own, such as a workflow at the repository root that
+regenerates from it and fails when the committed output differs (rules-factory decision 0072).
+
+Two emitted things do name vendors, and both are defaults rather than the contract:
+
+- **A bundled Claude adapter.** `CLAUDE.md` and `.claude/` point at this file and state no rule of
+  their own (§2). An engine worked by another agent reads `AGENTS.md`, which is the governing
+  document and names no vendor; the adapter is there because one vendor needed a file of its own,
+  and adding another is configuration, not a change to the contract.
+- **A default review chain.** The `independentReviewChain` this engine's policy shipped with names
+  vendors, in order. It is engine-owned, written once, and never touched again: yours to reorder,
+  cut, or replace with names of your own.
+
+## 10. For a non-Claude agent
+
+- Run `tools/agent-doctor.py --local` first. Its first three rows are the machine's
+  prerequisites (§11), and the gate cannot run until they are true.
+- You are probably in a worktree. Confirm before your first write: `git rev-parse
+  --git-common-dir` differing from `git rev-parse --git-dir` means you are.
+- The gate is `./scripts/validate.sh full`. Nothing else is.
+- Never implement a rule from memory. Work from the entry the issue names.
+- Never edit `corpus/`, `provenance.json`, or a generated file under `Generated/` by hand. The
+  generated files are rewritten from the map; an edit there is overwritten and reported.
+- After changing anything under `overlay/`, run `tools/re-produce.sh`. The record and the
+  generated files are the factory's to write, and the gate fails while they are older than the
+  overlay.
+- A pull request that is a `factory produce` update says so in its `## Produced by the factory`
+  section, and carries what produce wrote and nothing else (§4). One file that produce did not
+  write voids the claim, which is why the files named above are also the only ones it can cover.
+
+## 11. What this checkout needs before you run anything
+
+Three things are true of the **machine**, not of this repository, and none of them is visible in a
+file listing. `tools/agent-doctor.py --local` reports all three before any other row, and it
+changes nothing; run it before your first command rather than discovering them one refusal at a
+time.
+
+- **The SDK `global.json` pins.** It is pinned with `rollForward: disable`, so a machine with a
+  different .NET SDK cannot run the gate at all, and the failure does not name the pin. Install
+  the exact version user-locally if you cannot install it system-wide:
+
+  ```bash
+  curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version <the pinned version> --install-dir ~/.dotnet
+  export PATH="$HOME/.dotnet:$PATH"
+  ```
+
+  `FACTORY_DOTNET_SDK_OVERRIDE` is for a local run only. A run under it proves that SDK and not
+  the one `provenance.json` records, and says so in its own output; it is never how a verdict is
+  reached.
+
+- **A restore, before the first packet.** `tools/entry-packet.py` asks MSBuild where the restore
+  put the map package, so in a fresh worktree it refuses until `dotnet restore` has run. Run it
+  once per worktree.
+
+- **A `gh` new enough for the fields the packets read.** `tools/review-packet.py` and
+  `tools/conformance-gate.py` ask `gh pr view --json closingIssuesReferences`. An older `gh` — the
+  2.45.0 Ubuntu 24.04 packages, for one — refuses that field, and on such a `gh` some of
+  `gh pr edit` and `gh issue view` fail on these repositories as well. Install a newer `gh` and
+  point `$RULES_ENGINE_GH` at it; every rail that shells out reads that variable.
+
+None of these is a defect in this engine, and none of them is fixed by editing a rail. They are
+what the machine owes the work.
