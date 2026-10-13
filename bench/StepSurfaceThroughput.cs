@@ -147,6 +147,75 @@ long StepLean(out long turns, out long hash)
 
     return clock.ElapsedTicks;
 }
+
+// 4. Each operation alone, over the states one batch of playouts passes through: how the turn splits.
+void OperationCosts()
+{
+    var playStates = new List<TurnState>();
+    var turnStates = new List<TurnState>();
+    var chanceStates = new List<TurnState>();
+    var decisions = new List<PlayDecision>();
+    for (ulong seed = 1; seed <= (ulong)Math.Min(playouts, 200); seed++)
+    {
+        var source = Pcg32.FromSeed(seed, stream: 1);
+        var decider = new RandomDecider(seed);
+        var state = TurnLoop.Begin(start);
+        OpeningRoll? roll = null;
+        while (!state.IsOver)
+        {
+            var decision = TurnLoop.Next(state);
+            switch (decision)
+            {
+                case ChanceDecision chance:
+                    if (chance.Kind == ChanceKind.Throw)
+                    {
+                        chanceStates.Add(state);
+                    }
+
+                    var sampled = chance.Sample(source);
+                    roll = sampled.Roll ?? roll;
+                    state = sampled.State;
+                    break;
+                case AdoptionDecision adoption:
+                    state = adoption.Apply(decider.AdoptOpeningThrow(roll!));
+                    break;
+                case PassDecision pass:
+                    state = pass.Apply();
+                    break;
+                case PlayDecision choice:
+                    playStates.Add(state);
+                    decisions.Add(choice);
+                    state = choice.Apply(decider.ChoosePlay(choice.Player, choice.Plays));
+                    turnStates.Add(state);
+                    break;
+                default:
+                    throw new InvalidOperationException("the game declined");
+            }
+        }
+    }
+
+    void Time(string name, int count, Action once)
+    {
+        once();
+        var clock = Stopwatch.StartNew();
+        for (int i = 0; i < repetitions; i++)
+        {
+            once();
+        }
+
+        double ms = clock.ElapsedTicks * 1000.0 / Stopwatch.Frequency / repetitions;
+        Console.WriteLine($"{name,-52} {count,7} calls/run  {ms,8:F2} ms/run  =>  {count / (ms / 1000.0),12:N0} per second, {ms * 1000.0 / count,8:F3} us each");
+    }
+
+    long sink = 0;
+    Time("Next at a Play state (LegalPlays.For)", playStates.Count, () => { foreach (var s in playStates) { sink += ((PlayDecision)TurnLoop.Next(s)).Plays.Length; } });
+    Time("PlayDecision.Apply(index 0) (winner check, next state)", decisions.Count, () => { foreach (var d in decisions) { sink += d.Apply(0).Position.GetHashCode(); } });
+    Time("Next at a Turn state (suspension check, option)", turnStates.Count, () => { foreach (var s in turnStates) { sink += TurnLoop.Next(s) is ChanceDecision ? 1 : 0; } });
+    Time("Next + ChanceDecision.Apply(chosen throw)", chanceStates.Count, () => { foreach (var s in chanceStates) { sink += ((ChanceDecision)TurnLoop.Next(s)).Apply(new DiceThrow(6, 5)).Phase == TurnPhase.Play ? 1 : 0; } });
+    var rng = Pcg32.FromSeed(99UL, stream: 1);
+    Time("Next + ChanceDecision.Sample (two draws)", chanceStates.Count, () => { foreach (var s in chanceStates) { sink += ((ChanceDecision)TurnLoop.Next(s)).Sample(rng).Thrown.First; } });
+    Console.WriteLine($"(sink {sink}; keeps the loops from being optimised away)");
+}
 // STEP-END
 
 void Report(string name, Func<(long Ticks, long Turns, long Hash)> run)
@@ -173,6 +242,7 @@ Report("Game.Play (builds a GameRecord)", () => { long ticks = GamePlay(out long
 // STEP-BEGIN
 Report("step surface, with Turn records", () => { long ticks = StepWithRecord(out long t, out long h); return (ticks, t, h); });
 Report("step surface, lean playout", () => { long ticks = StepLean(out long t, out long h); return (ticks, t, h); });
+OperationCosts();
 // STEP-END
 
 internal sealed class RandomDecider(ulong seed) : IDecider
