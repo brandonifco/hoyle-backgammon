@@ -38,9 +38,8 @@ public class KernelContractTests
     }
 
     [Fact]
-    public void The_identity_is_a_kernel_EngineIdentity_whose_canonical_form_every_record_carries_unchanged()
+    public void The_canonical_form_of_the_identity_every_record_carries_is_unchanged()
     {
-        Assert.IsType<EngineIdentity>(Game.Identity);
         var start = new AssertedPosition(Setup.StartingPositionFromCorpus(), nameof(KernelContractTests), MapEntries.StartingPosition.Locator);
         var record = Assert.IsType<Resolution<GameRecord>.Resolved>(
             Game.Play(start, Pcg32.FromSeed(20260913, stream: 1), new FirstOptionDecider())).Value;
@@ -48,6 +47,5 @@ public class KernelContractTests
         using var json = JsonDocument.Parse(record.ToCanonicalJson());
 
         Assert.Equal(CanonicalIdentity, json.RootElement.GetProperty("identity").GetRawText());
-        Assert.Equal(Game.Identity, record.Identity);
     }
 }

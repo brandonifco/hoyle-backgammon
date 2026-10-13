@@ -916,7 +916,7 @@
     },
     {
       "path": "overlay/throw-two-dice.json",
-      "sha256": "fbd7729c0f34092cf0bc63a7eb196a78680bcb8ebc8d6bbd38260c77fba84fc8"
+      "sha256": "905d5019f48f6bd9fb579f73382d351f853f67f019f7007185717cea182b3d75"
     },
     {
       "path": "overlay/win-condition.json",
