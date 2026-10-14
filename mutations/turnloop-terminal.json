@@ -1,0 +1,22 @@
+[
+  {
+    "test": "TurnLoopTerminalTests.Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "new TerminalDecision(state, Outcome.ResultOf(state.Position, state.Winner!.Value))",
+        "new": "new TerminalDecision(state, Resolution<GameResult>.FromValue(new GameResult(state.Winner!.Value, GameValue.Hit)))"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopTerminalTests.A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "return Outcome.Winner(position) is { } winner",
+        "new": "return Outcome.Winner(state.Position) is { } winner"
+      }
+    ]
+  }
+]

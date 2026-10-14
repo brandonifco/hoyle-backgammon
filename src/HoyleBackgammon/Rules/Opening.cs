@@ -44,11 +44,17 @@ public static class Opening
             attempts.Add(attempt);
             if (attempt.First != attempt.Second)
             {
-                var opener = attempt.First > attempt.Second ? Player.White : Player.Black;
-                return new OpeningRoll(attempts.ToImmutable(), opener);
+                return new OpeningRoll(attempts.ToImmutable(), OpenerOf(attempt));
             }
         }
     }
+
+    /// <summary>
+    /// The player whose die is the higher of an untied pair — White's die first, Black's second — and so has the
+    /// right to begin.
+    /// </summary>
+    internal static Player OpenerOf(DiceThrow attempt) =>
+        attempt.First > attempt.Second ? Player.White : Player.Black;
 
     /// <summary>
     /// The opener's first throw: either the deciding pair adopted as it stands, or a fresh

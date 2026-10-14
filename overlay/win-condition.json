@@ -12,6 +12,14 @@
     {
       "test": "DeterminismTests.A_finished_game_ends_with_the_winner_bearing_off_his_last_man",
       "mutation": "BearingOff.HasWon held once any man was off; this test went red. The_last_man_off_wins_the_game stayed green under it. Re-observed after the class's game moved from seed 20260913 to 20260905, which still finishes under ruleset version 4 (map 6.0.0, rules-factory#125); still red. Re-observed after the game moved back from seed 20260905 to 20260913, which finishes again under ruleset version 5 (docs/decisions/0009); still red."
+    },
+    {
+      "test": "TurnLoopTerminalTests.A_finished_game_is_over_for_good_and_a_state_one_play_from_the_end_is_not",
+      "mutation": "TurnLoop.Played looked for a winner in the position before the play instead of the one the play reached (`Outcome.Winner(state.Position)`), so the game never ended; this test went red (mutations/turnloop-terminal.json)."
+    },
+    {
+      "test": "TurnStateTests.A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+      "mutation": "TurnLoop.Played left the pending throw in the state it returned for the next turn; this test went red at the first state after a play (mutations/turnloop-state.json)."
     }
   ]
 }

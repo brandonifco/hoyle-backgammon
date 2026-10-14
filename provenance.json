@@ -836,7 +836,7 @@
     },
     {
       "path": "overlay/die-faces.json",
-      "sha256": "4e3498e141fd1d9470af13e8d69a346e103312ac00e37f76a09173614d5c15a5"
+      "sha256": "9115f06e15dac56f593765a0999ed98948d25d89ae80552c92170c063980ecca"
     },
     {
       "path": "overlay/direction-of-travel.json",
@@ -852,11 +852,11 @@
     },
     {
       "path": "overlay/full-table-suspension.json",
-      "sha256": "0934d1bbb7069099d90ee9cf42f764ec5cca840c9f5be3e78b8b50fe90f4f842"
+      "sha256": "cd8928f4b81473b5391c0813f0612b5946a88d1f9647c0159c885eb81b699b03"
     },
     {
       "path": "overlay/game-value.json",
-      "sha256": "08d29f76fb2051e033a9bd3c6425a2e482aed1a8e226bf73d782702d52aec3ea"
+      "sha256": "d92ce7a5098545ff7861574261d0e3b041bbb81520858c56afb098120c34db36"
     },
     {
       "path": "overlay/hit-pays-single-stake.json",
@@ -880,19 +880,19 @@
     },
     {
       "path": "overlay/must-play-whole-throw.json",
-      "sha256": "f4ec153657afdcbef078fa165e54dbb292f83807b81b8ae4726a09f4126724fc"
+      "sha256": "962c140a1cd81a34eec95591c0efcf6a14bd4871d84233e38d9e7bb4a950b9ed"
     },
     {
       "path": "overlay/next-game-opening.json",
-      "sha256": "bec1c6f5d2d72ec6ae442e9004651eda30b7ea616c69efea7fcb171c1a589f3b"
+      "sha256": "77e3355c23b5eaf6d50eec18f27297c991943d621ca39e82c5fed2b854d99615"
     },
     {
       "path": "overlay/opening-roll.json",
-      "sha256": "02c5f7006d1bc49e1eee340d348ba155d740f08fc944e649575fd4f50a520965"
+      "sha256": "7fb019ab7d64b7b144be48ae1d05df6dfb14d3e2ba3fcafd01f9ab8c678503eb"
     },
     {
       "path": "overlay/opening-thrower-option.json",
-      "sha256": "fcc4b6eee949728516172857d449e5cf100077a95f8f3108c4faf8b034fa84a3"
+      "sha256": "99af6f186155915b4bbbb96cb0b11acef2be03cde17778c2d3d598858aee0be6"
     },
     {
       "path": "overlay/player-count.json",
@@ -916,11 +916,11 @@
     },
     {
       "path": "overlay/throw-two-dice.json",
-      "sha256": "905d5019f48f6bd9fb579f73382d351f853f67f019f7007185717cea182b3d75"
+      "sha256": "b8d147c183887166e5dd930e6d5bc0edf757caa09201c4733f4a5670e1a40f0e"
     },
     {
       "path": "overlay/win-condition.json",
-      "sha256": "38dee2425de1dcd75b7b78ec427529e36546d2770d43ed7ffc05e5f60b95000b"
+      "sha256": "a7ef05dabf6508ab8eac47ce401109f59e5c0cab7ef40c8b58c59dd14de3fa30"
     },
     {
       "path": "src/HoyleBackgammon/HoyleBackgammon.csproj",

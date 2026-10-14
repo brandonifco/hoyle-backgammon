@@ -64,6 +64,14 @@
     {
       "test": "MustPlayWholeThrowEntryPointTests.Either_die_alone_playable_but_not_both_plays_the_higher_naming_the_owners_ruling",
       "mutation": "The request takes an AssertedPosition and the answer is an AssertedAnswer carrying it back. Through EntryPoints.MustPlayWholeThrow, not LegalPlays. Brandon's ruling of 2026-09-15, not the corpus's (docs/decisions/0010); replaces Either_die_alone_playable_but_not_both_declines_citing_page_275. Ruleset 5's decline restored; this test went red. The lower number compelled; red. must-play-whole-throw/1 never named; red. Named wherever the throw was not played whole, so the throw with only the six playable at all named it too; red, and so did WholeThrowTests.Where_only_one_die_can_ever_be_played_that_die_is_compelled."
+    },
+    {
+      "test": "TurnLoopPurityTests.The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list",
+      "mutation": "The decision offered LegalPlays.For's plays in another order (sorted by their text, descending); this test went red (mutations/turnloop-purity.json)."
+    },
+    {
+      "test": "TurnLoopPurityTests.Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing",
+      "mutation": "PlayDecision.Apply(Play) accepted any play handed to it (`|| offered is not null` on the search's condition), so a play the engine never offered was applied; this test went red (mutations/turnloop-purity.json)."
     }
   ],
   "rulings": [

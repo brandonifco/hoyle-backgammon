@@ -1,0 +1,37 @@
+[
+  {
+    "test": "TurnLoopPurityTests.Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnState.cs",
+        "old": "public OutstandingOption? Option { get; }",
+        "new": "public OutstandingOption? Option { get; internal set; }"
+      },
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "public TurnState Apply(bool adopt) => TurnLoop.Adopt(State, Option, adopt);",
+        "new": "public TurnState Apply(bool adopt) { var next = TurnLoop.Adopt(State, Option, adopt); State.Option = null; return next; }"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopPurityTests.The_plays_offered_are_LegalPlays_in_its_order_and_applying_one_never_edits_the_list",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "new PlayDecision(state, resolved.Value)",
+        "new": "new PlayDecision(state, [.. resolved.Value.OrderByDescending(p => p.ToString(), StringComparer.Ordinal)])"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopPurityTests.Applying_a_play_the_decision_did_not_offer_is_refused_and_changes_nothing",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "ReferenceEquals(offered, play) || SamePlay(offered, play)",
+        "new": "ReferenceEquals(offered, play) || SamePlay(offered, play) || offered is not null"
+      }
+    ]
+  }
+]

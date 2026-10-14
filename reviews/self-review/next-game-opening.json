@@ -1,0 +1,112 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "next-game-opening",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "not-applicable",
+      "reason": "the entry states no count that the step surface implements; it only supplies or omits the opener"
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "no collection is read; the opener is one optional player"
+    },
+    "exact-min-max": {
+      "outcome": "not-applicable",
+      "reason": "the entry states no numeric bound that the step surface implements"
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus words a hit and a gammon as separate cases, which Outcome.Next decides and this change does not touch"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the opener is a player and no arithmetic is done on a caller value"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "supplying an opener never declines or refuses; both players are accepted and E4 plays each"
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    }
+  }
+}

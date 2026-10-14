@@ -40,6 +40,10 @@
     {
       "test": "DeterminismTests.A_game_version_five_declined_finishes_and_names_the_owners_rulings_it_relied_on",
       "mutation": "Seed 20260907, adopting the opening throw and taking the middle play, declined under ruleset 5 at a man re-entered mid-bear-off and finishes under ruleset 6 as a backgammon against a loser with nothing off and a man in the winner's home table, naming bearing-off-eligible/1 on two turns and game-value/2 on its value, in the record and its canonical bytes (docs/decisions/0010). Ruleset 5's decline of a man re-entered mid-bear-off restored; this test went red. bearing-off-eligible/1 never named; red. Named only on a throw that began re-entered, not after entering; red. game-value's overlap decline restored; red. The overlap valued a gammon; red. game-value/2 never named; red. Named only for a man up, not for a man in the winner's home table; red. Game.Play not setting GameRecord.ValueRulings; red, and no other test. The canonical serialisation omitting valueRulings; red."
+    },
+    {
+      "test": "TurnLoopTerminalTests.Every_game_driven_to_its_end_reports_the_result_Outcome_ResultOf_gives_and_the_one_Game_Play_records",
+      "mutation": "The terminal decision valued every win a hit (`new GameResult(state.Winner!.Value, GameValue.Hit)` for Outcome.ResultOf); this test went red on the first gammon (mutations/turnloop-terminal.json)."
     }
   ],
   "rulings": [

@@ -1,0 +1,134 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "opening-roll",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "Game_Play_as_a_client_of_the_step_surface_gives_the_bytes_the_loop_it_replaced_gave_over_a_thousand_seeds",
+        "Driving_the_step_surface_by_chosen_outcomes_reproduces_the_record_too",
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "tested",
+      "tests": [
+        "The_opening_roll_lists_only_the_non_tied_throws_renormalised_over_thirty",
+        "Sampling_the_opening_roll_throws_again_on_a_tie_and_gives_the_deciding_pair_the_option",
+        "The_sampled_frequencies_of_the_opening_roll_agree_with_the_listed_probabilities_over_a_fixed_seed"
+      ]
+    },
+    "empty-collections": {
+      "outcome": "tested",
+      "tests": [
+        "The_opening_roll_lists_only_the_non_tied_throws_renormalised_over_thirty"
+      ]
+    },
+    "exact-min-max": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+        "Sampling_the_opening_roll_throws_again_on_a_tie_and_gives_the_deciding_pair_the_option"
+      ]
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "Driving_the_step_surface_by_chosen_outcomes_reproduces_the_record_too",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "not-applicable",
+      "reason": "the corpus sentence behind this entry holds no disjunction that the step surface implements"
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_each_of_the_thirty_opening_throws_gives_the_state_sampling_it_gives_whatever_ties_came_before",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+        "Sampling_needs_a_generator",
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "Two_states_are_equal_when_the_game_stands_in_the_same_place_and_not_otherwise",
+        "Applying_each_of_the_thirty_opening_throws_gives_the_state_sampling_it_gives_whatever_ties_came_before"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the ways and totals are constants (30 over 30) and no caller value is added to them"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "An_outcome_a_die_cannot_show_or_an_opening_tie_is_refused_and_leaves_the_state_as_it_was",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+        "Sampling_the_opening_roll_throws_again_on_a_tie_and_gives_the_deciding_pair_the_option",
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "the opening roll never declines; a tied chosen outcome is an argument error, not a rules decline, and H3 pins it"
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    }
+  }
+}

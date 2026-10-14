@@ -20,6 +20,38 @@
     {
       "test": "IdentityTests.The_replay_schema_is_version_four",
       "mutation": "Named beside the seeded replay whose schema it pins (docs/decisions/0006; 0009, which adds each turn's owner's rulings and makes the schema 3; 0010, which adds the rulings the game's value relies on, valueRulings, and makes it 4). Game.Identity's replay schema set back to 3 (`new ReplaySchemaVersion(3)`); this test went red, with both SeededGameReplayTests. Before this rename, with the schema at 3, it went red with the schema set back to 2, and before the rename to three with it set back to 1."
+    },
+    {
+      "test": "TurnLoopChanceTests.A_throw_lists_exactly_the_twenty_one_distinct_throws_with_their_exact_probabilities",
+      "mutation": "The outcome table gave a doublet 2 ways and an unlike pair 1 (`higher == lower ? 2 : 1`); this test went red (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChanceTests.The_sampled_frequencies_of_a_throw_agree_with_the_listed_probabilities_over_a_fixed_seed",
+      "mutation": "ChanceDecision.Sample threw both dice and reported the first twice, so only the six doublets were ever drawn and 6 outcomes were seen, not 21; this test went red (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChanceTests.Sampling_a_throw_takes_two_draws_in_throw_order_and_keeps_the_order_drawn",
+      "mutation": "ChanceDecision.Sample reported the pair with its dice in the other order (`new DiceThrow(t.Second, t.First)`); this test went red on the order drawn (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChanceTests.Sampling_needs_a_generator",
+      "mutation": "ChanceDecision.Sample answered a null generator with one of its own (`source ??= Pcg32.FromSeed(0UL, 1UL)`); this test went red (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChosenOutcomeTests.Applying_each_of_the_twenty_one_throws_gives_the_state_sampling_it_gives_in_either_order_drawn",
+      "mutation": "TurnLoop.Thrown held the throw as given instead of higher die first, so a throw drawn (2, 5) and the outcome (5, 2) reached unequal states; this test went red (mutations/turnloop-chosen.json)."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.Game_Play_as_a_client_of_the_step_surface_gives_the_bytes_the_loop_it_replaced_gave_over_a_thousand_seeds",
+      "mutation": "ChanceDecision.Sample threw once and discarded it before the throw it kept (`_ = Opening.Throw(source); var thrown = Opening.Throw(source);`), four draws a turn for two; this test went red against the loop Game.Play replaced, which is copied into the tests as ReferenceGame, and so did the pinned seeded replay (mutations/turnloop-equivalence.json)."
+    },
+    {
+      "test": "TurnStateTests.Two_states_are_equal_when_the_game_stands_in_the_same_place_and_not_otherwise",
+      "mutation": "Listed here because a pending throw is this entry's product and is part of what makes two states equal. TurnState.Equals ignored the side to move (`ToMove == other.ToMove` removed); this test went red (mutations/turnloop-state.json)."
+    },
+    {
+      "test": "TurnStateTests.Next_needs_a_state",
+      "mutation": "Listed here as the step surface's entry point, which this entry's throw is the commonest decision of. TurnLoop.Next dropped its null check, and separately TurnLoop.Begin did, so a null reached a member access and a NullReferenceException came out for the ArgumentNullException; this test went red under each (mutations/turnloop-state.json)."
     }
   ]
 }

@@ -1,0 +1,72 @@
+[
+  {
+    "test": "TurnLoopEquivalenceTests.Game_Play_as_a_client_of_the_step_surface_gives_the_bytes_the_loop_it_replaced_gave_over_a_thousand_seeds",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "var thrown = Opening.Throw(source);",
+        "new": "_ = Opening.Throw(source); var thrown = Opening.Throw(source);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/Game.cs",
+        "old": "state = adoption.Apply(adopted);",
+        "new": "state = adoption.Apply(!adopted);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.Driving_the_step_surface_by_chosen_outcomes_reproduces_the_record_too",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "return TurnLoop.Rolled(State, outcome);",
+        "new": "return TurnLoop.Rolled(State, new DiceThrow(outcome.Second, outcome.First));"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "? new TurnState(TurnPhase.Turn, start.Position, first, null, null, null)",
+        "new": "? new TurnState(TurnPhase.Turn, start.Position, first, new OutstandingOption(first, new DiceThrow(2, 1)), null, null)"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.A_game_played_from_a_position_with_a_player_wholly_suspended_records_the_forfeited_turns_as_the_loop_did",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "new(TurnPhase.Turn, state.Position, state.ToMove!.Value.Adversary(), state.Option, null, null);",
+        "new": "new(TurnPhase.Turn, state.Position, state.ToMove, state.Option, null, null);"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.Both_players_wholly_suspended_declines_the_same_way_in_every_driver",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "return Movement.IsWhollySuspended(state.Position, toMove.Adversary())\n                ?",
+        "new": "return false\n                ?"
+      }
+    ]
+  },
+  {
+    "test": "TurnLoopEquivalenceTests.Game_Play_keeps_its_runaway_guard_counting_the_turns_passed_and_the_step_surface_has_none",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/Game.cs",
+        "old": "for (int turn = 0; turn < turnLimit; turn++)",
+        "new": "for (int turn = 0; turn <= turnLimit; turn++)"
+      }
+    ]
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "test": "TurnStateTests.Two_states_are_equal_when_the_game_stands_in_the_same_place_and_not_otherwise",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnState.cs",
+        "old": "        && ToMove == other.ToMove\n",
+        "new": ""
+      }
+    ]
+  },
+  {
+    "test": "TurnStateTests.A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": ": new TurnState(TurnPhase.Turn, position, state.ToMove!.Value.Adversary(), state.Option, null, null);",
+        "new": ": new TurnState(TurnPhase.Turn, position, state.ToMove!.Value.Adversary(), state.Option, state.PendingThrow, null);"
+      }
+    ]
+  },
+  {
+    "test": "TurnStateTests.Next_needs_a_state",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "ArgumentNullException.ThrowIfNull(state);\n        switch (state.Phase)",
+        "new": "switch (state.Phase)"
+      }
+    ]
+  },
+  {
+    "test": "TurnStateTests.Next_needs_a_state",
+    "edits": [
+      {
+        "file": "src/HoyleBackgammon/TurnLoop.cs",
+        "old": "ArgumentNullException.ThrowIfNull(start);\n        return opener",
+        "new": "return opener"
+      }
+    ]
+  }
+]

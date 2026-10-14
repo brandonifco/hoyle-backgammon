@@ -16,6 +16,26 @@
     {
       "test": "OpeningRollTests.In_the_event_of_a_tie_the_players_throw_again",
       "mutation": "Opening.RollForTheRight accepted the first pair thrown, ties included (`attempt.First > 0` for `attempt.First != attempt.Second`); this test went red."
+    },
+    {
+      "test": "TurnLoopChanceTests.The_opening_roll_lists_only_the_non_tied_throws_renormalised_over_thirty",
+      "mutation": "The step surface's opening table kept the tied pairs (`white != black` replaced by `white >= 1`), listing 36 outcomes over a total of 30; this test went red (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChanceTests.The_sampled_frequencies_of_the_opening_roll_agree_with_the_listed_probabilities_over_a_fixed_seed",
+      "mutation": "Opening.RollForTheRight accepted the first pair thrown, ties included (`attempt.First > 0` for `attempt.First != attempt.Second`), so a tie was sampled as the roll and 36 outcomes were seen, not 30; this test went red, with In_the_event_of_a_tie_the_players_throw_again beside it (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChanceTests.Sampling_the_opening_roll_throws_again_on_a_tie_and_gives_the_deciding_pair_the_option",
+      "mutation": "TurnLoop.Rolled named White the opener whatever the dice showed (`var opener = Player.White`); this test went red on a roll Black won (mutations/turnloop-chance.json)."
+    },
+    {
+      "test": "TurnLoopChosenOutcomeTests.Applying_each_of_the_thirty_opening_throws_gives_the_state_sampling_it_gives_whatever_ties_came_before",
+      "mutation": "TurnLoop.Rolled named the adversary of the player whose die was higher (`Opening.OpenerOf(deciding).Adversary()`); this test went red on its expected opener (mutations/turnloop-chosen.json)."
+    },
+    {
+      "test": "TurnLoopEquivalenceTests.Driving_the_step_surface_by_chosen_outcomes_reproduces_the_record_too",
+      "mutation": "ChanceDecision.Apply took an opening outcome with White's die and Black's swapped (`new DiceThrow(outcome.Second, outcome.First)`), which Sample does not; this test went red, because its driver hands each rolled pair to Apply and Game.Play samples it (mutations/turnloop-equivalence.json)."
     }
   ]
 }

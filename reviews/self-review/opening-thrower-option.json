@@ -1,0 +1,123 @@
+{
+  "selfReviewFormat": 1,
+  "entry": "opening-thrower-option",
+  "claimSha256": "f8460b568312950696ed5b41e150195e44a884e383e35dd673237c51b14109dd",
+  "classes": {
+    "action-dependency-interactions": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds",
+        "Game_Play_as_a_client_of_the_step_surface_gives_the_bytes_the_loop_it_replaced_gave_over_a_thousand_seeds"
+      ]
+    },
+    "caller-controlled-sizes": {
+      "outcome": "not-applicable",
+      "reason": "no size or count is caller-controlled here; the step surface has no limit and a caller bounds its own playouts"
+    },
+    "count-semantics": {
+      "outcome": "not-applicable",
+      "reason": "no count is implemented here beyond the two draws of a throw again, pinned by C5 under throw-two-dice"
+    },
+    "empty-collections": {
+      "outcome": "not-applicable",
+      "reason": "no collection is read; the option is one player and one pair of dice"
+    },
+    "exact-min-max": {
+      "outcome": "not-applicable",
+      "reason": "the entry states no numeric bound; the option is his on his first actual throw, which S1 pins"
+    },
+    "exception-leakage": {
+      "outcome": "tested",
+      "tests": [
+        "Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds",
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws"
+      ],
+      "reason": "Legal paths never throw: every game in the equivalence and terminal tests runs to its end. A bad argument (null, a face no die shows, a play not offered, an index out of range) throws ArgumentException, ArgumentOutOfRangeException or ArgumentNullException by design, as Opening, DiceThrow and Movement already do for programmer errors; it is never a rules decline."
+    },
+    "exclusive-or": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds"
+      ]
+    },
+    "idempotence": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy",
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws"
+      ]
+    },
+    "immutability": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "integer-extremes": {
+      "outcome": "not-applicable",
+      "reason": "the entry takes positions and players through the step surface, with no integer a caller chooses"
+    },
+    "invalid-construction": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "invalid-intermediate-state": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws"
+      ]
+    },
+    "invalid-public-input": {
+      "outcome": "tested",
+      "tests": [
+        "Next_needs_a_state"
+      ]
+    },
+    "missing-content-masking": {
+      "outcome": "not-applicable",
+      "reason": "the step surface reads no optional content, so nothing can be missing and mask a decline"
+    },
+    "order-dependence": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "Driving_the_step_surface_reproduces_the_Game_Play_record_byte_for_byte_over_a_thousand_seeds"
+      ]
+    },
+    "overflow-underflow": {
+      "outcome": "not-applicable",
+      "reason": "the option holds a player and a throw and does no arithmetic on a caller value"
+    },
+    "partial-mutation-before-refusal": {
+      "outcome": "tested",
+      "tests": [
+        "Applying_every_action_from_a_sample_of_states_leaves_each_source_equal_to_a_fresh_copy"
+      ]
+    },
+    "phase-state-boundaries": {
+      "outcome": "tested",
+      "tests": [
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws",
+        "A_game_the_previous_one_settled_who_opens_has_no_roll_and_no_option_in_any_driver",
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants"
+      ]
+    },
+    "refusal-classification": {
+      "outcome": "not-applicable",
+      "reason": "answering the option never declines or refuses; both answers are legal and S1 follows each"
+    },
+    "sentinel-wraparound": {
+      "outcome": "tested",
+      "tests": [
+        "A_state_is_made_only_by_the_loop_so_every_state_a_caller_holds_satisfies_the_loops_invariants",
+        "A_wholly_suspended_opener_passes_and_still_holds_his_option_until_he_throws"
+      ]
+    }
+  }
+}

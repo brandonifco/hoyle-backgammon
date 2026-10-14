@@ -140,82 +140,87 @@ public static class Game
         ArgumentNullException.ThrowIfNull(decider);
         ArgumentOutOfRangeException.ThrowIfLessThan(turnLimit, 1);
 
+        // The loop itself is TurnLoop's: Play is a client of the same step surface any other caller drives, which is
+        // what keeps the two from disagreeing about what a game is. What stays here is what a record needs and a
+        // step does not: the decider and the generator, the turns as they happened, and the runaway guard.
+        //
         // next-game-opening: after a hit the winner "throws first in the game next following",
         // with no roll for the right and so no option to throw again. After a gammon or a
         // backgammon the players "throw again for the right to begin, as at starting". An
         // opener supplied here is the first case; null is the second.
-        var roll = opener is null ? Opening.RollForTheRight(source) : null;
-        var toMove = opener ?? roll!.Opener;
+        var state = TurnLoop.Begin(start, opener);
+        OpeningRoll? roll = null;
+        if (TurnLoop.Next(state) is ChanceDecision { Kind: ChanceKind.OpeningRoll } rolling)
+        {
+            var rolled = rolling.Sample(source);
+            roll = rolled.Roll;
+            state = rolled.State;
+        }
 
-        // The option belongs to the opener's first throw, and is not taken until he actually
-        // throws: a player who is wholly suspended does not throw, and must not consume the
-        // dice (or the decision) on a turn he never gets.
-        bool optionOutstanding = roll is not null;
         bool adopted = false;
-
-        var position = start.Position;
         var turns = ImmutableArray.CreateBuilder<Turn>();
 
         for (int turn = 0; turn < turnLimit; turn++)
         {
-            // full-table-suspension: a suspended player does not throw. If both are suspended
-            // at once -- each with a man up against the other's full home table, which
-            // fifteen men a side does permit -- neither can ever move, and the corpus says
-            // only that "the adversary continues to throw and move". No entry covers the
-            // combination.
+            var decision = TurnLoop.Next(state);
+
+            // full-table-suspension: a suspended player does not throw. If both are suspended at once -- each with a
+            // man up against the other's full home table, which fifteen men a side does permit -- neither can ever
+            // move, and the corpus says only that "the adversary continues to throw and move". No entry covers the
+            // combination, so the loop declines it (TurnLoop.Next).
             //
             // This branch is live, and reachable only from an asserted start. Under
-            // rules-factory/docs/decisions/0006 no sequence of play produces it: a player's
-            // own move never puts his own man on the bar, a move never adds ADVERSARY men to
-            // the adversary's home table, and a player already suspended does not move at all,
-            // so a newly-suspended player was suspended already. (Under the reading 0006
-            // rejected it does arise in play -- enter onto your own blot in the adversary's
-            // table, and that table is then "full" while you still have a man up.) What keeps
-            // it live is that Play demands a position rather than deriving one: a caller may
-            // assert the deadlock, and DeterminismTests
+            // rules-factory/docs/decisions/0006 no sequence of play produces it: a player's own move never puts his
+            // own man on the bar, a move never adds ADVERSARY men to the adversary's home table, and a player
+            // already suspended does not move at all, so a newly-suspended player was suspended already. (Under the
+            // reading 0006 rejected it does arise in play -- enter onto your own blot in the adversary's table, and
+            // that table is then "full" while you still have a man up.) What keeps it live is that Play demands a
+            // position rather than deriving one: a caller may assert the deadlock, and DeterminismTests
             // .Two_players_suspended_against_each_other_is_an_interaction_no_entry_covers does.
-            if (Movement.IsWhollySuspended(position, toMove))
+            if (decision is PassDecision pass)
             {
-                if (Movement.IsWhollySuspended(position, toMove.Adversary()))
-                {
-                    return Resolution<GameRecord>.FromUnresolved(new UnresolvedResult(
-                        UnresolvedReason.UnsupportedInteraction,
-                        "continue a game in which both players are wholly suspended against "
-                        + "each other's full home tables",
-                        MapEntries.FullTableSuspension.Locator));
-                }
-
-                turns.Add(new Turn(toMove, null, null, position));
-                toMove = toMove.Adversary();
+                turns.Add(new Turn(pass.Player, null, null, state.Position));
+                state = pass.Apply();
                 continue;
             }
 
-            DiceThrow thrown;
-            if (optionOutstanding && roll is not null && toMove == roll.Opener)
+            if (decision is UnresolvedDecision declined)
             {
-                optionOutstanding = false;
-                adopted = decider.AdoptOpeningThrow(roll);
-                thrown = Opening.OpeningThrow(roll, adopted, source);
-            }
-            else
-            {
-                thrown = Opening.Throw(source);
+                return Resolution<GameRecord>.FromUnresolved(declined.Result);
             }
 
-            var legal = LegalPlays.For(position, toMove, Movement.Entitlement(thrown));
-            if (legal is Resolution<ImmutableArray<Play>>.Unresolved unresolved)
+            // The option belongs to the opener's first throw, and is not taken until he actually throws: a player
+            // who is wholly suspended does not throw, and must not consume the dice (or the decision) on a turn he
+            // never gets.
+            DiceThrow thrown = default;
+            if (decision is AdoptionDecision adoption)
             {
-                return Resolution<GameRecord>.FromUnresolved(unresolved.Result);
+                adopted = decider.AdoptOpeningThrow(roll!);
+                state = adoption.Apply(adopted);
+                thrown = adoption.Option.Deciding;
+                decision = TurnLoop.Next(state);
             }
 
-            var plays = ((Resolution<ImmutableArray<Play>>.Resolved)legal).Value;
-            var play = plays[decider.ChoosePlay(toMove, plays)];
-            position = play.Result;
-            turns.Add(new Turn(toMove, thrown, play, position));
-
-            if (Outcome.Winner(position) is { } winner)
+            if (decision is ChanceDecision { Kind: ChanceKind.Throw } throwing)
             {
-                return Outcome.ResultOf(position, winner).Match(
+                var sampled = throwing.Sample(source);
+                thrown = sampled.Thrown;
+                state = sampled.State;
+                decision = TurnLoop.Next(state);
+            }
+
+            if (decision is not PlayDecision choice)
+            {
+                return Resolution<GameRecord>.FromUnresolved(((UnresolvedDecision)decision).Result);
+            }
+
+            var play = choice.Plays[decider.ChoosePlay(choice.Player, choice.Plays)];
+            state = choice.Apply(play);
+            turns.Add(new Turn(choice.Player, thrown, play, state.Position));
+
+            if (state.IsOver)
+            {
+                return ((TerminalDecision)TurnLoop.Next(state)).Result.Match(
                     result => Resolution<GameRecord>.FromValue(new GameRecord(
                         Identity,
                         MapPackage.FromProvenance,
@@ -225,8 +230,6 @@ public static class Game
                     }),
                     Resolution<GameRecord>.FromUnresolved);
             }
-
-            toMove = toMove.Adversary();
         }
 
         throw new InvalidOperationException(
